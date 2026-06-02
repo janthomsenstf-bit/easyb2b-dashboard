@@ -2,10 +2,8 @@
 
 import { signIn } from 'next-auth/react';
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,22 +13,20 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    console.log('Login attempt:', { email, password });
 
     try {
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        redirect: true,
+        callbackUrl: '/dashboard',
       });
 
-      if (result?.error) {
-        setError('Email oder Passwort ungültig');
-      } else if (result?.ok) {
-        router.push('/dashboard');
-      }
+      console.log('SignIn result:', result);
     } catch (err) {
+      console.error('SignIn error:', err);
       setError('Ein Fehler ist aufgetreten');
-    } finally {
       setLoading(false);
     }
   };
