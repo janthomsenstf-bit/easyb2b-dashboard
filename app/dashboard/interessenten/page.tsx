@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { MOCK_INTERESSENTEN, getStatusLabel, getStatusColor } from '@/lib/mockdata';
+import { MOCK_INTERESSENTEN, MOCK_UNTERNEHMEN, getStatusLabel, getStatusColor } from '@/lib/mockdata';
+import { berechneTrustScore, getLevelColor, getLevelLabel, getLevelBackground } from '@/lib/trustscore';
 
 export default function InteressentenPage() {
   const [filterStatus, setFilterStatus] = useState('alle');
@@ -79,10 +80,38 @@ export default function InteressentenPage() {
               </div>
             </div>
 
-            {/* Anfrage-Bezug */}
-            <div style={{ backgroundColor: '#f9f9f9', borderRadius: '6px', padding: '10px', marginBottom: '12px', fontSize: '13px' }}>
-              <span style={{ color: '#999' }}>Interesse an:</span>{' '}
-              <strong>{i.anfrageFirma}</strong>
+            {/* Anfrage-Bezug + Trust-Badge */}
+            <div style={{ backgroundColor: '#f9f9f9', borderRadius: '6px', padding: '10px', marginBottom: '12px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ color: '#999' }}>Interesse an:</span>{' '}
+                <strong>{i.anfrageFirma}</strong>
+              </div>
+              {/* Trust-Score falls Unternehmen bekannt */}
+              {(() => {
+                const u = MOCK_UNTERNEHMEN.find(u => u.email === i.email);
+                if (!u) return null;
+                const trust = berechneTrustScore({
+                  persoenlichesGespraech: u.persoenlichesGespraech,
+                  websiteGeprueft: u.websiteGeprueft,
+                  linkedinGeprueft: u.linkedinGeprueft,
+                  empfehlungVorhanden: u.empfehlungVorhanden,
+                  eventTeilnahmen: u.events.length,
+                  erfolgreicheMatches: u.successStories,
+                  negativeHinweise: u.negativeHinweise,
+                  spamRisiko: u.spamRisiko,
+                  verifizierungsStatus: u.verifizierungsStatus,
+                });
+                return (
+                  <div style={{
+                    padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                    backgroundColor: getLevelBackground(trust.level),
+                    color: getLevelColor(trust.level),
+                    border: `1px solid ${getLevelColor(trust.level)}40`,
+                  }}>
+                    Trust {trust.score} · {getLevelLabel(trust.level)}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Kontakt-Info */}

@@ -31,12 +31,29 @@ model Unternehmen {
   kurzbeschreibung  String?
   profil            String?
 
-  // Easy-B2B Status
-  verifiziert       VerifizierungsStatus @default(unbekannt)
-  netzwerkStatus    NetzwerkStatus       @default(interessiert)
+  // Easy-B2B Netzwerkstatus
+  netzwerkStatus    NetzwerkStatus      @default(interessiert)
   erstkontakt       DateTime?
   letzteAktivitaet  DateTime?
   interneNotiz      String?
+
+  // ── VERIFIZIERUNG ────────────────────────────────────────────
+  verifizierungsStatus  VerifizierungsStatus @default(ungeprueft)
+  verifiziertAm         DateTime?
+  verifiziertDurch      String?            // Operator-Name
+  verifizierungsNotiz   String?
+
+  // ── VERTRAUENS-SCORE (intern, nicht öffentlich) ──────────────
+  vertrauensScore       Int                @default(0)
+  vertrauensLevel       VertrauensLevel    @default(niedrig)
+
+  // Vertrauensfaktoren (Checkboxen für Operatoren)
+  persoenlichesGespraech Boolean           @default(false)
+  websiteGeprueft        Boolean           @default(false)
+  linkedinGeprueft       Boolean           @default(false)
+  empfehlungVorhanden    Boolean           @default(false)
+  negativeHinweise       Boolean           @default(false)
+  spamRisiko             Boolean           @default(false)
 
   // Beziehungen
   anfragen          Anfrage[]
@@ -63,10 +80,18 @@ enum UnternehmenGroesse {
 }
 
 enum VerifizierungsStatus {
-  unbekannt
-  in_pruefung
-  verifiziert
-  abgelehnt
+  ungeprueft      // Neu, noch kein Kontakt
+  in_pruefung     // Operator hat Prüfung gestartet
+  verifiziert     // Geprüft und freigegeben
+  eingeschraenkt  // Teilweise freigegeben, Vorsicht geboten
+  abgelehnt       // Nicht akzeptiert
+}
+
+enum VertrauensLevel {
+  niedrig    //  0–30
+  mittel     // 31–60
+  hoch       // 61–80
+  sehr_hoch  // 81–100
 }
 
 enum NetzwerkStatus {
