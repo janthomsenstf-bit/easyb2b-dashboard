@@ -31,6 +31,14 @@ model Unternehmen {
   kurzbeschreibung  String?
   profil            String?
 
+  // ── KULTUR & ZUSAMMENARBEIT (unternehmensbezogen) ────────────
+  kulturprofil        String?       // allg. Kulturbeschreibung
+  arbeitsweise        String?       // wie arbeiten sie?
+  kommunikationsstil  KommunikationStil?
+  bevorzugteSprache   Sprache?
+  funFactStandard     String?       // generelle FunFact-Antwort des Unternehmens
+  persoenlicheNotiz   String?       // Operator-Beobachtung zur Person/Firma
+
   // Easy-B2B Netzwerkstatus
   netzwerkStatus    NetzwerkStatus      @default(interessiert)
   erstkontakt       DateTime?
@@ -100,6 +108,15 @@ enum NetzwerkStatus {
   partner
   pausiert
   inaktiv
+}
+
+enum KommunikationStil {
+  direkt_informell    // dänisch-typisch
+  strukturiert_formal // deutsch-typisch
+  offen_herzlich
+  zurueckhaltend
+  digital_bevorzugt
+  persoenlich_bevorzugt
 }
 
 // ─── SUCCESS STORIES ─────────────────────────────────────────────
@@ -197,6 +214,14 @@ model Anfrage {
   mustHaves       String?
   niceToHaves     String?
   reifegrad       Reifegrad
+
+  // ── FUNFACT & PERSÖNLICHE NOTE (anfragebezogen) ───────────────
+  funFactFrage        String?       // z.B. "Wie würdet ihr einen Deal feiern?"
+  funFactAntwort      String?       // Rohantwort des Unternehmens
+  funFactAntwortKI    String?       // KI-verbesserte Version
+  kulturHinweis       String?       // interner Hinweis zur Kultur
+  gespraechseinstieg  String?       // Vorschlag für ersten Kontakt
+  funFactOeffentlich  Boolean       @default(false)  // Im Marktplatz anzeigen?
   gueltigBis      DateTime
   sichtbarkeit    Sichtbarkeit
   status          AnfrageStatus @default(eingehend)

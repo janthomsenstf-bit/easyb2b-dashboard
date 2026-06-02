@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import {
+  getKommunikationStilLabel,
+  getKommunikationStilIcon,
+} from '@/lib/funfact';
+import {
   MOCK_UNTERNEHMEN,
   getNetzwerkLabel,
   getNetzwerkColor,
@@ -325,6 +329,49 @@ export default function UnternehmenPage() {
                     <div style={{ color: '#666', marginTop: '2px' }}>{getEventFormatLabel(e.format)} · {e.rolle} · {e.eventDatum}</div>
                   </div>
                 ))}
+              </DetailSection>
+            )}
+
+            {/* ── KULTUR & ZUSAMMENARBEIT ─── */}
+            {(selectedUnternehmen.kulturprofil || selectedUnternehmen.kommunikationsstil || selectedUnternehmen.funFactStandard) && (
+              <DetailSection title="Kultur & Zusammenarbeit">
+                {selectedUnternehmen.kommunikationsstil && (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 12px', borderRadius: '20px', marginBottom: '10px',
+                    backgroundColor: '#e8f0fe', color: '#003366',
+                    fontSize: '13px', fontWeight: 600,
+                  }}>
+                    <span>{getKommunikationStilIcon(selectedUnternehmen.kommunikationsstil)}</span>
+                    {getKommunikationStilLabel(selectedUnternehmen.kommunikationsstil)}
+                  </div>
+                )}
+                {selectedUnternehmen.kulturprofil && (
+                  <div style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, marginBottom: '10px' }}>
+                    {selectedUnternehmen.kulturprofil}
+                  </div>
+                )}
+                {selectedUnternehmen.arbeitsweise && (
+                  <div style={{ backgroundColor: '#f9f9f9', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#555', marginBottom: '10px' }}>
+                    <span style={{ fontWeight: 600, color: '#666', marginRight: '6px' }}>Arbeitsweise:</span>
+                    {selectedUnternehmen.arbeitsweise}
+                  </div>
+                )}
+                {selectedUnternehmen.funFactStandard && (
+                  <div style={{ backgroundColor: '#fff8e1', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#555', border: '1px solid #ffe082' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#f57f17', marginBottom: '4px' }}>FUNFACT</div>
+                    "{selectedUnternehmen.funFactStandard}"
+                  </div>
+                )}
+              </DetailSection>
+            )}
+
+            {/* Persönliche Notiz des Operators */}
+            {selectedUnternehmen.persoenlicheNotiz && (
+              <DetailSection title="Persönliche Notiz (Operator)">
+                <div style={{ backgroundColor: '#e8f5e9', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#2e7d32', border: '1px solid #a5d6a7', fontStyle: 'italic' }}>
+                  💬 {selectedUnternehmen.persoenlicheNotiz}
+                </div>
               </DetailSection>
             )}
 

@@ -19,6 +19,13 @@ export interface MockUnternehmen {
   telefon?: string;
   sprachen: string[];
   kurzbeschreibung: string;
+  // Kultur & Zusammenarbeit
+  kulturprofil?: string;
+  arbeitsweise?: string;
+  kommunikationsstil?: string;
+  bevorzugteSprache?: string;
+  funFactStandard?: string;
+  persoenlicheNotiz?: string;
   // Verifizierung
   verifizierungsStatus: string;
   verifiziertAm?: string;
@@ -67,6 +74,11 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     telefon: '+45 12 34 56 78',
     sprachen: ['daenisch', 'englisch'],
     kurzbeschreibung: 'Dänischer Fischverarbeiter mit 40 Jahren Erfahrung. Premium-Produkte für den europäischen Markt.',
+    kulturprofil: 'Familiengeführt, direkte Entscheidungswege, sehr auf langfristige Partnerschaften ausgerichtet.',
+    kommunikationsstil: 'direkt_informell',
+    bevorzugteSprache: 'englisch',
+    funFactStandard: 'Am liebsten treffen wir uns persönlich – am besten beim Fisch.',
+    persoenlicheNotiz: 'Lars ist sehr offen und herzlich. Schätzt direkte Kommunikation, kein Smalltalk nötig.',
     verifizierungsStatus: 'verifiziert',
     verifiziertAm: '2025-05-12',
     verifiziertDurch: 'Jan Thomsen',
@@ -100,6 +112,11 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     telefon: '+49 461 123 456',
     sprachen: ['deutsch', 'englisch'],
     kurzbeschreibung: 'Mittelständischer Maschinenbauer mit Fokus auf CNC-Fertigung und Stahlverarbeitung. Grenznah zu Dänemark.',
+    kulturprofil: 'Bodenständig, strukturiert, verlässlich. Typisch norddeutsch-pragmatisch.',
+    arbeitsweise: 'Klare Aufgabenverteilung, wöchentliche Abstimmungen, wenig Bürokratie für die Größe.',
+    kommunikationsstil: 'strukturiert_formal',
+    bevorzugteSprache: 'deutsch',
+    funFactStandard: 'Nach einem guten Deal gibt es Currywurst – das ist bei uns Tradition seit 1987.',
     verifizierungsStatus: 'verifiziert',
     verifiziertAm: '2025-05-20',
     verifiziertDurch: 'Jan Thomsen',
@@ -135,6 +152,12 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     email: 'mette@danskdesign.dk',
     sprachen: ['daenisch', 'englisch', 'deutsch'],
     kurzbeschreibung: 'Preisgekröntes Designstudio für nachhaltige Möbel im skandinavischen Stil.',
+    kulturprofil: 'Kreativ, offen, sehr international. Team aus 6 Nationen. Design ist hier Lebenseinstellung.',
+    arbeitsweise: 'Flat hierarchy, viele kurze Sprints, Feedback-Kultur sehr stark.',
+    kommunikationsstil: 'offen_herzlich',
+    bevorzugteSprache: 'englisch',
+    funFactStandard: 'Als Studio würden wir eine Kooperation feiern, indem wir gemeinsam etwas bauen – buchstäblich.',
+    persoenlicheNotiz: 'Mette hat selbst einen deutschen Hintergrund – spricht fließend Deutsch, was die Kommunikation sehr erleichtert.',
     verifizierungsStatus: 'verifiziert',
     verifiziertAm: '2025-05-05',
     verifiziertDurch: 'Jan Thomsen',
@@ -200,6 +223,12 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     telefon: '+49 4621 456 789',
     sprachen: ['deutsch', 'daenisch'],
     kurzbeschreibung: 'Speditionsunternehmen mit täglichen Routen Hamburg–Kopenhagen. Zweisprachig, grenznah.',
+    kulturprofil: 'Das Grenzland ist ihre Heimat. Deutsch-dänisch ist nicht Herausforderung, sondern Alltag.',
+    arbeitsweise: 'Operativ, schnell, lösungsorientiert. Keine langen Meetings.',
+    kommunikationsstil: 'direkt_informell',
+    bevorzugteSprache: 'deutsch',
+    funFactStandard: 'Wir feiern Deals auf der Autobahn zwischen Hamburg und Kolding – mit dem besten Kaffee aus dem Lkw.',
+    persoenlicheNotiz: 'Jens spricht fließend Dänisch. Sehr verlässlicher Charakter, hält was er verspricht.',
     verifizierungsStatus: 'verifiziert',
     verifiziertAm: '2025-04-15',
     verifiziertDurch: 'Jan Thomsen',
@@ -354,6 +383,13 @@ export interface MockAnfrage {
   anzeigenId: string;
   firmenname: string;
   standort: string;
+  // FunFact & Persönliche Note
+  funFactFrage?: string;
+  funFactAntwort?: string;
+  funFactAntwortKI?: string;
+  kulturHinweis?: string;
+  gespraechseinstieg?: string;
+  funFactOeffentlich?: boolean;
   richtung: 'de_dk' | 'dk_de';
   art: string;
   branche: string;
@@ -415,6 +451,12 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+45 12 34 56 78',
     interessentenCount: 3,
     createdAt: '2025-05-15',
+    funFactFrage: 'Wie würdet ihr eine erfolgreiche Kooperation feiern?',
+    funFactAntwort: 'Wir würden wahrscheinlich zusammen Fisch essen und Bier trinken.',
+    funFactAntwortKI: 'Am liebsten würden wir eine erfolgreiche Kooperation ganz unkompliziert feiern – mit frischem Fisch, einem guten dänischen Bier und einem ehrlichen Gespräch auf Augenhöhe.',
+    kulturHinweis: 'Dänischer Kommunikationsstil: direkt, informell, herzlich. Kein langer Smalltalk nötig.',
+    gespraechseinstieg: 'Frag nach der Familientradition im Unternehmen – Nordic Fish ist seit Generationen in Familienhand.',
+    funFactOeffentlich: true,
   },
   {
     id: 'anf-002',
@@ -434,6 +476,12 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 461 123 456',
     interessentenCount: 1,
     createdAt: '2025-05-20',
+    funFactFrage: 'Was sollte ein Partner über eure Arbeitsweise wissen?',
+    funFactAntwort: 'Wir sind direkt und erwarten das auch. Keine langen E-Mail-Ketten.',
+    funFactAntwortKI: 'Typisch Müller Maschinenbau: Wir reden lieber einmal kurz am Telefon als zehnmal hin und her zu mailen. Direkt, klar, verlässlich.',
+    kulturHinweis: 'Strukturiert, pünktlich, erwartet klare Unterlagen. Typisch deutsch, aber ohne Bürokratie.',
+    gespraechseinstieg: 'Thomas ist ein Macher – fang direkt mit konkreten Zahlen und Kapazitäten an.',
+    funFactOeffentlich: true,
   },
   {
     id: 'anf-003',
@@ -489,6 +537,12 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     email: 'pia@bornholm-keramik.dk',
     interessentenCount: 4,
     createdAt: '2025-05-01',
+    funFactFrage: 'Was verbindet euch mit Deutschland/Dänemark?',
+    funFactAntwort: 'Ich liebe es, wenn Deutsche meine Keramik in die Hand nehmen und sofort wissen, dass da Liebe drin steckt.',
+    funFactAntwortKI: 'Für Pia Sørensen ist Keramik mehr als ein Produkt – es ist ein Gespräch ohne Worte. Wenn ein Kunde aus Deutschland ein Stück in die Hand nimmt und lächelt, ist das besser als jeder Vertrag.',
+    kulturHinweis: 'Sehr persönlicher, künstlerischer Ansatz. Nicht als rein kommerziellen Partner angehen.',
+    gespraechseinstieg: 'Frag nach der Insel Bornholm – Pia liebt es, darüber zu erzählen.',
+    funFactOeffentlich: true,
   },
   {
     id: 'anf-006',
