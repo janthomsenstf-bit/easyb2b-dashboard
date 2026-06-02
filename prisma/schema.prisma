@@ -7,6 +7,113 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── UNTERNEHMEN (ZENTRALE ENTITÄT) ──────────────────────────────
+
+model Unternehmen {
+  id                String              @id @default(cuid())
+
+  // Stammdaten
+  firmenname        String
+  land              Land
+  standort          String
+  website           String?
+  linkedin          String?
+  branche           String?
+  groesse           UnternehmenGroesse?
+
+  // Ansprechpartner
+  ansprechpartner   String
+  email             String              @unique
+  telefon           String?
+
+  // Kommunikation
+  sprachen          Sprache[]
+  kurzbeschreibung  String?
+  profil            String?
+
+  // Easy-B2B Status
+  verifiziert       VerifizierungsStatus @default(unbekannt)
+  netzwerkStatus    NetzwerkStatus       @default(interessiert)
+  erstkontakt       DateTime?
+  letzteAktivitaet  DateTime?
+  interneNotiz      String?
+
+  // Beziehungen
+  anfragen          Anfrage[]
+  interessentenRollen Interessent[]
+  successStories    SuccessStory[]
+  eventTeilnahmen   EventTeilnahme[]
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+enum Land {
+  deutschland
+  daenemark
+  andere
+}
+
+enum UnternehmenGroesse {
+  solo          // 1 Person
+  klein         // 2–10
+  mittel        // 11–50
+  gross         // 51–250
+  konzern       // 250+
+}
+
+enum VerifizierungsStatus {
+  unbekannt
+  in_pruefung
+  verifiziert
+  abgelehnt
+}
+
+enum NetzwerkStatus {
+  interessiert
+  aktiv
+  partner
+  pausiert
+  inaktiv
+}
+
+// ─── SUCCESS STORIES ─────────────────────────────────────────────
+
+model SuccessStory {
+  id              String      @id @default(cuid())
+  titel           String
+  beschreibung    String
+  ergebnis        String?
+  oeffentlich     Boolean     @default(false)
+  unternehmen     Unternehmen @relation(fields: [unternehmenId], references: [id])
+  unternehmenId   String
+  createdAt       DateTime    @default(now())
+}
+
+// ─── EVENTS & TEILNAHMEN ─────────────────────────────────────────
+
+model EventTeilnahme {
+  id              String      @id @default(cuid())
+  eventName       String
+  eventDatum      DateTime
+  format          EventFormat
+  unternehmen     Unternehmen @relation(fields: [unternehmenId], references: [id])
+  unternehmenId   String
+  rolle           String?     // z.B. "Pitcher", "Gast", "Sponsor"
+  notiz           String?
+  createdAt       DateTime    @default(now())
+}
+
+enum EventFormat {
+  pitch_and_meet
+  betriebsbesichtigung
+  branchentag
+  connect_in_car
+  netzwerktreffen
+  interview
+  sonstiges
+}
+
 // ─── BRANCHEN & WISSENSBASIS ─────────────────────────────────────
 
 model Branche {
@@ -49,6 +156,12 @@ model Anfrage {
   branche         Branche       @relation(fields: [brancheId], references: [id])
   brancheId       String
   gesuchteBranche String?
+
+  // Unternehmen-Relation (optional — bestehende Daten bleiben gültig)
+  unternehmen     Unternehmen?  @relation(fields: [unternehmenId], references: [id])
+  unternehmenId   String?
+
+  // Fallback-Felder (bleiben erhalten für Abwärtskompatibilität)
   firmenname      String
   standort        String
   website         String?
@@ -148,6 +261,12 @@ model Interessent {
   id              String              @id @default(cuid())
   anfrage         Anfrage             @relation(fields: [anfrageId], references: [id])
   anfrageId       String
+
+  // Unternehmen-Relation (optional — bestehende Daten bleiben gültig)
+  unternehmen     Unternehmen?        @relation(fields: [unternehmenId], references: [id])
+  unternehmenId   String?
+
+  // Fallback-Felder (bleiben erhalten für Abwärtskompatibilität)
   firmenname      String
   ansprechpartner String
   email           String

@@ -31,6 +31,7 @@ export default function DashboardLayout({
 
   const navItems = [
     { label: 'Übersicht', href: '/dashboard', icon: '📊' },
+    { label: 'Unternehmen', href: '/dashboard/unternehmen', icon: '🏢' },
     { label: 'Anfragen', href: '/dashboard/anfragen', icon: '📋' },
     { label: 'Interessenten', href: '/dashboard/interessenten', icon: '👥' },
     { label: 'Matchmaking', href: '/dashboard/matchmaking', icon: '🎯' },

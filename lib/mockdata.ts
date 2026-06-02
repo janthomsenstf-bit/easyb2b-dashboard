@@ -3,6 +3,224 @@
 // Später durch echte Prisma-Queries ersetzen
 // =============================================================
 
+// ─── UNTERNEHMEN ─────────────────────────────────────────────
+
+export interface MockUnternehmen {
+  id: string;
+  firmenname: string;
+  land: 'deutschland' | 'daenemark' | 'andere';
+  standort: string;
+  website?: string;
+  linkedin?: string;
+  branche: string;
+  groesse: string;
+  ansprechpartner: string;
+  email: string;
+  telefon?: string;
+  sprachen: string[];
+  kurzbeschreibung: string;
+  verifiziert: string;
+  netzwerkStatus: string;
+  erstkontakt: string;
+  letzteAktivitaet: string;
+  interneNotiz?: string;
+  anfrageCount: number;
+  interessentCount: number;
+  successStories: number;
+  events: MockEvent[];
+}
+
+export interface MockEvent {
+  eventName: string;
+  eventDatum: string;
+  format: string;
+  rolle: string;
+}
+
+export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
+  {
+    id: 'unt-001',
+    firmenname: 'Nordic Fish A/S',
+    land: 'daenemark',
+    standort: 'Esbjerg, Dänemark',
+    website: 'https://nordicfish.dk',
+    linkedin: 'nordic-fish-as',
+    branche: 'Lebensmittel & Fischerei',
+    groesse: 'mittel',
+    ansprechpartner: 'Lars Henriksen',
+    email: 'lars@nordicfish.dk',
+    telefon: '+45 12 34 56 78',
+    sprachen: ['daenisch', 'englisch'],
+    kurzbeschreibung: 'Dänischer Fischverarbeiter mit 40 Jahren Erfahrung. Premium-Produkte für den europäischen Markt.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'aktiv',
+    erstkontakt: '2025-05-10',
+    letzteAktivitaet: '2025-05-28',
+    anfrageCount: 1,
+    interessentCount: 0,
+    successStories: 0,
+    events: [],
+  },
+  {
+    id: 'unt-002',
+    firmenname: 'Müller Maschinenbau GmbH',
+    land: 'deutschland',
+    standort: 'Flensburg, Deutschland',
+    website: 'https://maschinenbau-fl.de',
+    branche: 'Maschinenbau & Industrie',
+    groesse: 'mittel',
+    ansprechpartner: 'Thomas Müller',
+    email: 'mueller@maschinenbau-fl.de',
+    telefon: '+49 461 123 456',
+    sprachen: ['deutsch', 'englisch'],
+    kurzbeschreibung: 'Mittelständischer Maschinenbauer mit Fokus auf CNC-Fertigung und Stahlverarbeitung. Grenznah zu Dänemark.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'aktiv',
+    erstkontakt: '2025-05-18',
+    letzteAktivitaet: '2025-05-25',
+    anfrageCount: 1,
+    interessentCount: 0,
+    successStories: 0,
+    events: [
+      { eventName: 'Pitch & Meet Flensburg', eventDatum: '2025-06-15', format: 'pitch_and_meet', rolle: 'Pitcher' },
+    ],
+  },
+  {
+    id: 'unt-003',
+    firmenname: 'Dansk Design Studio ApS',
+    land: 'daenemark',
+    standort: 'Kolding, Dänemark',
+    website: 'https://danskdesign.dk',
+    linkedin: 'dansk-design-studio',
+    branche: 'Möbel & Design',
+    groesse: 'klein',
+    ansprechpartner: 'Mette Andersen',
+    email: 'mette@danskdesign.dk',
+    sprachen: ['daenisch', 'englisch', 'deutsch'],
+    kurzbeschreibung: 'Preisgekröntes Designstudio für nachhaltige Möbel im skandinavischen Stil.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'aktiv',
+    erstkontakt: '2025-05-01',
+    letzteAktivitaet: '2025-05-26',
+    anfrageCount: 1,
+    interessentCount: 0,
+    successStories: 0,
+    events: [],
+  },
+  {
+    id: 'unt-004',
+    firmenname: 'Frische-Markt Hamburg GmbH',
+    land: 'deutschland',
+    standort: 'Hamburg, Deutschland',
+    website: 'https://frischemarkt-hh.de',
+    branche: 'Lebensmittelhandel',
+    groesse: 'gross',
+    ansprechpartner: 'Klaus Bergmann',
+    email: 'bergmann@frischemarkt-hh.de',
+    telefon: '+49 40 123 456',
+    sprachen: ['deutsch'],
+    kurzbeschreibung: 'Großer Lebensmittel-Distributor in Norddeutschland. Spezialisiert auf frische Fisch- und Meeresfrüchte.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'partner',
+    erstkontakt: '2025-05-18',
+    letzteAktivitaet: '2025-05-28',
+    anfrageCount: 0,
+    interessentCount: 1,
+    successStories: 0,
+    events: [],
+  },
+  {
+    id: 'unt-005',
+    firmenname: 'Schleswig Logistik GmbH',
+    land: 'deutschland',
+    standort: 'Schleswig, Deutschland',
+    website: 'https://schleswig-logistik.de',
+    branche: 'Logistik & Transport',
+    groesse: 'mittel',
+    ansprechpartner: 'Jens Petersen',
+    email: 'petersen@schleswig-logistik.de',
+    telefon: '+49 4621 456 789',
+    sprachen: ['deutsch', 'daenisch'],
+    kurzbeschreibung: 'Speditionsunternehmen mit täglichen Routen Hamburg–Kopenhagen. Zweisprachig, grenznah.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'partner',
+    erstkontakt: '2025-04-10',
+    letzteAktivitaet: '2025-05-20',
+    interneNotiz: 'Sehr zuverlässiger Partner. Kooperation mit DSV erfolgreich. Für weitere Anfragen vormerken.',
+    anfrageCount: 1,
+    interessentCount: 0,
+    successStories: 1,
+    events: [
+      { eventName: 'Branchentag Logistik Südjütland', eventDatum: '2025-03-20', format: 'branchentag', rolle: 'Teilnehmer' },
+    ],
+  },
+  {
+    id: 'unt-006',
+    firmenname: 'DSV Transport Kolding',
+    land: 'daenemark',
+    standort: 'Kolding, Dänemark',
+    website: 'https://dsv.com',
+    branche: 'Logistik & Transport',
+    groesse: 'konzern',
+    ansprechpartner: 'Henrik Larsen',
+    email: 'larsen@dsv-kolding.dk',
+    sprachen: ['daenisch', 'englisch', 'deutsch'],
+    kurzbeschreibung: 'Internationaler Logistikkonzern. Kolding-Niederlassung fokussiert auf deutsch-dänischen Korridor.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'partner',
+    erstkontakt: '2025-04-18',
+    letzteAktivitaet: '2025-05-15',
+    anfrageCount: 0,
+    interessentCount: 1,
+    successStories: 1,
+    events: [],
+  },
+  {
+    id: 'unt-007',
+    firmenname: 'GreenTech Aarhus',
+    land: 'daenemark',
+    standort: 'Aarhus, Dänemark',
+    website: 'https://greentech-aarhus.dk',
+    linkedin: 'greentech-aarhus',
+    branche: 'Umwelttechnologie',
+    groesse: 'klein',
+    ansprechpartner: 'Mikkel Jensen',
+    email: 'mikkel@greentech-aarhus.dk',
+    sprachen: ['daenisch', 'englisch', 'deutsch'],
+    kurzbeschreibung: 'CleanTech-Startup mit innovativer Wasseraufbereitungstechnologie. Sucht erste Pilotpartner in Deutschland.',
+    verifiziert: 'in_pruefung',
+    netzwerkStatus: 'interessiert',
+    erstkontakt: '2025-05-22',
+    letzteAktivitaet: '2025-05-28',
+    anfrageCount: 1,
+    interessentCount: 0,
+    successStories: 0,
+    events: [
+      { eventName: 'Pitch & Meet Hamburg', eventDatum: '2025-06-20', format: 'pitch_and_meet', rolle: 'Pitcher' },
+    ],
+  },
+  {
+    id: 'unt-008',
+    firmenname: 'Bornholm Keramik',
+    land: 'daenemark',
+    standort: 'Rønne, Dänemark',
+    branche: 'Kunsthandwerk & Keramik',
+    groesse: 'solo',
+    ansprechpartner: 'Pia Sørensen',
+    email: 'pia@bornholm-keramik.dk',
+    sprachen: ['daenisch', 'englisch'],
+    kurzbeschreibung: 'Handgefertigte Keramik aus Bornholm. Kleine Manufaktur mit starker Marke in Skandinavien.',
+    verifiziert: 'verifiziert',
+    netzwerkStatus: 'aktiv',
+    erstkontakt: '2025-04-28',
+    letzteAktivitaet: '2025-05-27',
+    anfrageCount: 1,
+    interessentCount: 0,
+    successStories: 0,
+    events: [],
+  },
+];
+
 export interface MockAnfrage {
   id: string;
   anzeigenId: string;
@@ -469,4 +687,79 @@ export function getStatusColor(status: string): string {
 
 export function getRichtungLabel(richtung: string): string {
   return richtung === 'de_dk' ? '🇩🇪 → 🇩🇰' : '🇩🇰 → 🇩🇪';
+}
+
+export function getVerifizierungsLabel(status: string): string {
+  const labels: Record<string, string> = {
+    unbekannt: 'Unbekannt',
+    in_pruefung: 'In Prüfung',
+    verifiziert: 'Verifiziert',
+    abgelehnt: 'Abgelehnt',
+  };
+  return labels[status] || status;
+}
+
+export function getVerifizierungsColor(status: string): string {
+  const colors: Record<string, string> = {
+    unbekannt: '#999',
+    in_pruefung: '#FF9900',
+    verifiziert: '#4CAF50',
+    abgelehnt: '#f44336',
+  };
+  return colors[status] || '#999';
+}
+
+export function getNetzwerkLabel(status: string): string {
+  const labels: Record<string, string> = {
+    interessiert: 'Interessiert',
+    aktiv: 'Aktiv',
+    partner: 'Partner',
+    pausiert: 'Pausiert',
+    inaktiv: 'Inaktiv',
+  };
+  return labels[status] || status;
+}
+
+export function getNetzwerkColor(status: string): string {
+  const colors: Record<string, string> = {
+    interessiert: '#2196F3',
+    aktiv: '#4CAF50',
+    partner: '#9C27B0',
+    pausiert: '#999',
+    inaktiv: '#ccc',
+  };
+  return colors[status] || '#999';
+}
+
+export function getGroesseLabel(groesse: string): string {
+  const labels: Record<string, string> = {
+    solo: 'Solo (1)',
+    klein: 'Klein (2–10)',
+    mittel: 'Mittel (11–50)',
+    gross: 'Groß (51–250)',
+    konzern: 'Konzern (250+)',
+  };
+  return labels[groesse] || groesse;
+}
+
+export function getLandFlag(land: string): string {
+  const flags: Record<string, string> = {
+    deutschland: '🇩🇪',
+    daenemark: '🇩🇰',
+    andere: '🌍',
+  };
+  return flags[land] || '🌍';
+}
+
+export function getEventFormatLabel(format: string): string {
+  const labels: Record<string, string> = {
+    pitch_and_meet: 'Pitch & Meet',
+    betriebsbesichtigung: 'Betriebsbesichtigung',
+    branchentag: 'Branchentag',
+    connect_in_car: 'Connect in Car',
+    netzwerktreffen: 'Netzwerktreffen',
+    interview: 'Interview',
+    sonstiges: 'Sonstiges',
+  };
+  return labels[format] || format;
 }
