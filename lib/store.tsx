@@ -23,6 +23,20 @@ export interface Aktivitaet {
   typ: 'anlegen' | 'bearbeiten' | 'status';
 }
 
+// Zwischen-Entität: n:m zwischen Projekt (Anfrage) und Interessent
+export interface ProjektInteressent {
+  id: string;
+  projektId: string;       // = anfrageId
+  interessentId: string;
+  zuordnungsart: 'automatisch' | 'manuell';
+  status: string;          // vorgeschlagen | in_pruefung | freigegeben | abgelehnt | kontakt_hergestellt | abgeschlossen
+  grund?: string;
+  notiz?: string;
+  erstelltAm: string;
+  erstelltVon: string;
+  letzteAktivitaet: string;
+}
+
 interface DashboardStore {
   // Editierbare Entitäten
   unternehmen: MockUnternehmen[];
@@ -36,10 +50,35 @@ interface DashboardStore {
   updateKontakt: (id: string, patch: Partial<MockNetzwerkkontakt>) => void;
   addKontakt: (k: MockNetzwerkkontakt) => void;
 
+  // Projektzuordnungen (n:m)
+  zuordnungen: ProjektInteressent[];
+  addZuordnung: (z: Omit<ProjektInteressent, 'id'>) => void;
+  updateZuordnung: (id: string, patch: Partial<ProjektInteressent>) => void;
+
   // Aktivitätenprotokoll
   aktivitaeten: Aktivitaet[];
   logge: (was: string, bezug: string, typ?: Aktivitaet['typ']) => void;
 }
+
+// Seed: jede automatische Marktplatz-Zuordnung aus MOCK_INTERESSENTEN
+function statusZuZuordnung(s: string): string {
+  return {
+    neu: 'vorgeschlagen', freigegeben: 'freigegeben', kontakt_laeuft: 'kontakt_hergestellt',
+    erfolgreich: 'abgeschlossen', abgelehnt: 'abgelehnt', feedback_ausstehend: 'kontakt_hergestellt',
+  }[s] || 'in_pruefung';
+}
+
+const SEED_ZUORDNUNGEN: ProjektInteressent[] = MOCK_INTERESSENTEN.map(i => ({
+  id: `zo-${i.id}`,
+  projektId: i.anfrageId,
+  interessentId: i.id,
+  zuordnungsart: 'automatisch' as const,
+  status: statusZuZuordnung(i.status),
+  grund: 'Über Marktplatz-Formular gemeldet',
+  erstelltAm: i.createdAt,
+  erstelltVon: 'System',
+  letzteAktivitaet: i.createdAt,
+}));
 
 const Ctx = createContext<DashboardStore | null>(null);
 
@@ -53,6 +92,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const [unternehmen, setUnternehmen] = useState<MockUnternehmen[]>(MOCK_UNTERNEHMEN);
   const [anfragen, setAnfragen] = useState<MockAnfrage[]>(MOCK_ANFRAGEN);
   const [kontakte, setKontakte] = useState<MockNetzwerkkontakt[]>(MOCK_NETZWERKKONTAKTE);
+  const [zuordnungen, setZuordnungen] = useState<ProjektInteressent[]>(SEED_ZUORDNUNGEN);
   const [aktivitaeten, setAktivitaeten] = useState<Aktivitaet[]>([]);
 
   const logge = (was: string, bezug: string, typ: Aktivitaet['typ'] = 'bearbeiten') => {
@@ -78,10 +118,18 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   };
   const addKontakt = (k: MockNetzwerkkontakt) => setKontakte(prev => [k, ...prev]);
 
+  const addZuordnung = (z: Omit<ProjektInteressent, 'id'>) => {
+    setZuordnungen(prev => [{ ...z, id: neueId('zo') }, ...prev]);
+  };
+  const updateZuordnung = (id: string, patch: Partial<ProjektInteressent>) => {
+    setZuordnungen(prev => prev.map(z => z.id === id ? { ...z, ...patch, letzteAktivitaet: 'gerade eben' } : z));
+  };
+
   return (
     <Ctx.Provider value={{
       unternehmen, anfragen, kontakte,
       updateUnternehmen, addUnternehmen, updateAnfrage, updateKontakt, addKontakt,
+      zuordnungen, addZuordnung, updateZuordnung,
       aktivitaeten, logge,
     }}>
       {children}

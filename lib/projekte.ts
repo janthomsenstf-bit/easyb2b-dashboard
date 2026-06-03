@@ -35,9 +35,9 @@ function tageSeit(datum: string): number {
   return Math.max(0, Math.round((HEUTE - t) / 86400000));
 }
 
-export function berechneProjekt(anfrage: MockAnfrage, interessenten: MockInteressent[]): ProjektStatus {
-  const eigene = interessenten.filter(i => i.anfrageId === anfrage.id);
-
+// `eigene` ist die bereits aufgelöste Liste der Interessenten dieses Projekts
+// (inkl. manuell zugeordneter — über die Zuordnungs-Zwischentabelle ermittelt).
+export function berechneProjekt(anfrage: MockAnfrage, eigene: MockInteressent[]): ProjektStatus {
   const kpi: ProjektKPI = {
     interessenten: eigene.length,
     freigegeben: eigene.filter(i => ['freigegeben', 'kontakt_laeuft', 'erfolgreich', 'feedback_ausstehend'].includes(i.status)).length,
@@ -87,6 +87,23 @@ export function berechneProjekt(anfrage: MockAnfrage, interessenten: MockInteres
 
 export function getGesundheitColor(g: Gesundheit): string {
   return { gruen: '#4CAF50', gelb: '#FF9900', rot: '#f44336' }[g];
+}
+
+// Status einer Projektzuordnung (eigene Logik, unabhängig vom Interessenten-Gesamtstatus)
+export const ZUORDNUNG_STATUS = ['vorgeschlagen', 'in_pruefung', 'freigegeben', 'abgelehnt', 'kontakt_hergestellt', 'abgeschlossen'];
+
+export function getZuordnungLabel(s: string): string {
+  return {
+    vorgeschlagen: 'Vorgeschlagen', in_pruefung: 'In Prüfung', freigegeben: 'Freigegeben',
+    abgelehnt: 'Abgelehnt', kontakt_hergestellt: 'Kontakt hergestellt', abgeschlossen: 'Abgeschlossen',
+  }[s] || s;
+}
+
+export function getZuordnungColor(s: string): string {
+  return {
+    vorgeschlagen: '#2196F3', in_pruefung: '#FF9900', freigegeben: '#4CAF50',
+    abgelehnt: '#f44336', kontakt_hergestellt: '#9C27B0', abgeschlossen: '#2e7d32',
+  }[s] || '#999';
 }
 
 export function getGesundheitEmoji(g: Gesundheit): string {

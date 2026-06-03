@@ -3,15 +3,21 @@
 import { useState } from 'react';
 import { MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor, getRichtungLabel, getLandFlag, type MockAnfrage } from '@/lib/mockdata';
 import { useStore } from '@/lib/store';
-import { berechneProjekt, getGesundheitColor, getGesundheitEmoji, type Gesundheit } from '@/lib/projekte';
+import { berechneProjekt, getGesundheitColor, getGesundheitEmoji, getZuordnungLabel, getZuordnungColor, type Gesundheit } from '@/lib/projekte';
 
 export default function ProjektePage() {
   const store = useStore();
   const [filterGesundheit, setFilterGesundheit] = useState<'alle' | Gesundheit>('alle');
   const [detailId, setDetailId] = useState<string | null>(null);
 
+  // Interessenten eines Projekts über die Zuordnungs-Zwischentabelle auflösen
+  const interessentenFuer = (projektId: string) => {
+    const ids = store.zuordnungen.filter(z => z.projektId === projektId).map(z => z.interessentId);
+    return MOCK_INTERESSENTEN.filter(i => ids.includes(i.id));
+  };
+
   // Jede Anfrage = ein Projekt
-  const projekte = store.anfragen.map(a => ({ anfrage: a, status: berechneProjekt(a, MOCK_INTERESSENTEN) }));
+  const projekte = store.anfragen.map(a => ({ anfrage: a, status: berechneProjekt(a, interessentenFuer(a.id)) }));
   const gefiltert = projekte.filter(p => filterGesundheit === 'alle' || p.status.gesundheit === filterGesundheit);
 
   const detail = detailId ? projekte.find(p => p.anfrage.id === detailId) : null;
@@ -129,7 +135,13 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
   status: ReturnType<typeof berechneProjekt>;
   onClose: () => void;
 }) {
-  const interessenten = MOCK_INTERESSENTEN.filter(i => i.anfrageId === a.id);
+  const store = useStore();
+  // Zuordnungen dieses Projekts (automatisch + manuell), aufgelöst auf Interessenten
+  const zuordnungen = store.zuordnungen
+    .filter(z => z.projektId === a.id)
+    .map(z => ({ z, i: MOCK_INTERESSENTEN.find(x => x.id === z.interessentId) }))
+    .filter(x => x.i) as { z: typeof store.zuordnungen[number]; i: typeof MOCK_INTERESSENTEN[number] }[];
+  const interessenten = zuordnungen.map(x => x.i);
   const matchVorschlaege = MOCK_MATCHES.filter(m => m.anfrageId === a.id);
   const aktiveMatches = interessenten.filter(i => ['kontakt_laeuft', 'erfolgreich', 'feedback_ausstehend'].includes(i.status));
 
@@ -194,20 +206,28 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
             <a href="/dashboard/anfragen" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Anfrage bearbeiten</a>
           </Section>
 
-          {/* 2. Interessenten */}
-          <Section titel={`2 · Interessenten (${interessenten.length})`}>
-            {interessenten.length === 0 ? (
+          {/* 2. Interessenten (über Zuordnungen) */}
+          <Section titel={`2 · Interessenten (${zuordnungen.length})`}>
+            {zuordnungen.length === 0 ? (
               <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Aber es gibt Match-Vorschläge (siehe unten).'}</p>
             ) : (
-              interessenten.map(i => (
-                <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
-                  <div>
-                    <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
-                    <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
+              zuordnungen.map(({ z, i }) => (
+                <div key={z.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div>
+                      <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
+                      <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
+                      <span style={{ marginLeft: '8px', padding: '1px 7px', borderRadius: '8px', fontSize: '9px', fontWeight: 700, backgroundColor: z.zuordnungsart === 'manuell' ? '#FF990020' : '#99999920', color: z.zuordnungsart === 'manuell' ? '#e65100' : '#777' }}>
+                        {z.zuordnungsart === 'manuell' ? '✋ manuell' : '⚙ auto'}
+                      </span>
+                    </div>
+                    {z.zuordnungsart === 'manuell' && z.grund && (
+                      <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>„{z.grund}" · {z.erstelltVon}, {z.erstelltAm}</div>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     {i.matchScore && <span style={{ fontSize: '12px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>}
-                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(i.status) }}>{getStatusLabel(i.status)}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getZuordnungColor(z.status) }}>{getZuordnungLabel(z.status)}</span>
                   </div>
                 </div>
               ))

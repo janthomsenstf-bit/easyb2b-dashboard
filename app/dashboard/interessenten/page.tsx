@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { MOCK_INTERESSENTEN, MOCK_ANFRAGEN, getStatusLabel, getStatusColor, type MockInteressent } from '@/lib/mockdata';
+import { useStore } from '@/lib/store';
+import { ZUORDNUNG_STATUS, getZuordnungLabel, getZuordnungColor } from '@/lib/projekte';
 
 // KI-Zusammenfassung (Mock — später Anthropic API)
 function kiZusammenfassung(i: MockInteressent): string {
@@ -152,12 +154,39 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
   onUpdate: (id: string, patch: Partial<MockInteressent>, meldung?: string) => void;
   onToast: (msg: string) => void;
 }) {
+  const store = useStore();
   const [kiText, setKiText] = useState<string | null>(null);
   const [kiLaedt, setKiLaedt] = useState(false);
+  const [zuordnenOffen, setZuordnenOffen] = useState(false);
+  const [neuProjekt, setNeuProjekt] = useState('');
+  const [neuGrund, setNeuGrund] = useState('');
 
   const anfrage = MOCK_ANFRAGEN.find(a => a.id === i.anfrageId);
   // Historie: andere Meldungen derselben Firma (per E-Mail-Domain oder Name)
   const historie = alle.filter(x => x.id !== i.id && (x.email === i.email || x.firmenname === i.firmenname));
+
+  // Projektzuordnungen dieses Interessenten
+  const meineZuordnungen = store.zuordnungen.filter(z => z.interessentId === i.id);
+  const zugeordneteProjektIds = meineZuordnungen.map(z => z.projektId);
+  const verfuegbareProjekte = store.anfragen.filter(a => !zugeordneteProjektIds.includes(a.id));
+
+  const handleZuordnen = () => {
+    if (!neuProjekt) return;
+    const proj = store.anfragen.find(a => a.id === neuProjekt);
+    store.addZuordnung({
+      projektId: neuProjekt,
+      interessentId: i.id,
+      zuordnungsart: 'manuell',
+      status: 'in_pruefung',
+      grund: neuGrund || 'Manuell durch Operator zugeordnet',
+      erstelltAm: 'gerade eben',
+      erstelltVon: 'Operator',
+      letzteAktivitaet: 'gerade eben',
+    });
+    store.logge(`${i.firmenname} manuell zu „${proj?.ziel}" zugeordnet`, i.firmenname, 'bearbeiten');
+    onToast(`${i.firmenname} dem Projekt zugeordnet ✓`);
+    setNeuProjekt(''); setNeuGrund(''); setZuordnenOffen(false);
+  };
 
   const handleKi = async () => {
     setKiLaedt(true);
@@ -261,6 +290,67 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
               </p>
             </Box>
           )}
+
+          {/* ── PROJEKTZUORDNUNG ── */}
+          <Box titel={`🔗 Projektzuordnung (${meineZuordnungen.length})`} bg="#f0f4ff">
+            {meineZuordnungen.map(z => {
+              const proj = store.anfragen.find(a => a.id === z.projektId);
+              return (
+                <div key={z.id} style={{ backgroundColor: 'white', borderRadius: '8px', padding: '12px', marginBottom: '8px', border: '1px solid #e0e0e0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#003366' }}>
+                        {proj?.ziel || z.projektId}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>{proj?.firmenname} · {proj?.anzeigenId}</div>
+                      {z.grund && <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '4px' }}>„{z.grund}"</div>}
+                      <div style={{ fontSize: '10px', color: '#bbb', marginTop: '4px' }}>
+                        {z.zuordnungsart === 'automatisch' ? '⚙ Automatisch' : '✋ Manuell'} · {z.erstelltVon} · {z.erstelltAm}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600,
+                        color: 'white', backgroundColor: z.zuordnungsart === 'manuell' ? '#FF9900' : '#999',
+                      }}>
+                        {z.zuordnungsart === 'manuell' ? 'manuell' : 'automatisch'}
+                      </span>
+                      <select
+                        value={z.status}
+                        onChange={e => { store.updateZuordnung(z.id, { status: e.target.value }); onToast(`Zuordnung: ${getZuordnungLabel(e.target.value)}`); }}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: `1px solid ${getZuordnungColor(z.status)}`, fontSize: '11px', color: getZuordnungColor(z.status), fontWeight: 600 }}
+                      >
+                        {ZUORDNUNG_STATUS.map(s => <option key={s} value={s}>{getZuordnungLabel(s)}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Zuordnen-Formular */}
+            {zuordnenOffen ? (
+              <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '14px', border: '1px solid #c5d3f0', marginTop: '4px' }}>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Projekt wählen</label>
+                <select value={neuProjekt} onChange={e => setNeuProjekt(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', marginBottom: '8px' }}>
+                  <option value="">— Projekt auswählen —</option>
+                  {verfuegbareProjekte.map(a => <option key={a.id} value={a.id}>{a.ziel} ({a.firmenname})</option>)}
+                </select>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Grund der Zuordnung</label>
+                <textarea value={neuGrund} onChange={e => setNeuGrund(e.target.value)} rows={2}
+                  placeholder="z.B. Hat im Telefonat am 03.06. Interesse an diesem Projekt geäußert."
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', marginBottom: '8px' }} />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={handleZuordnen} disabled={!neuProjekt} style={{ ...btnStyle(neuProjekt ? '#003366' : '#ccc'), cursor: neuProjekt ? 'pointer' : 'not-allowed' }}>Zuordnen</button>
+                  <button onClick={() => setZuordnenOffen(false)} style={{ ...btnStyle('transparent'), color: '#666', border: '1px solid #ddd' }}>Abbrechen</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setZuordnenOffen(true)} style={{ ...btnStyle('#003366'), marginTop: '4px' }}>
+                + Projekt zuordnen
+              </button>
+            )}
+          </Box>
 
           {/* ── INTERNE PRÜFUNG (editierbar) ── */}
           <Box titel="🔍 Interne Prüfung" bg="#f9f9f9">
