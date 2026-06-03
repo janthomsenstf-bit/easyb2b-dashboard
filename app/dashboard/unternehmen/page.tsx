@@ -1,39 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  getKommunikationStilLabel,
-  getKommunikationStilIcon,
-} from '@/lib/funfact';
-import {
-  MOCK_UNTERNEHMEN,
-  getNetzwerkLabel,
-  getNetzwerkColor,
-  getGroesseLabel,
-  getLandFlag,
-  getEventFormatLabel,
-} from '@/lib/mockdata';
-import {
-  berechneTrustScore,
-  getLevelLabel,
-  getLevelColor,
-  getLevelBackground,
-  getVerifizierungsStatusLabel,
-  getVerifizierungsStatusColor,
-} from '@/lib/trustscore';
-import { useStore, neueEntityId } from '@/lib/store';
+import { getKommunikationStilLabel, getKommunikationStilIcon } from '@/lib/funfact';
+import { MOCK_INTERESSENTEN, getNetzwerkLabel, getNetzwerkColor, getGroesseLabel, getLandFlag, getStatusLabel, getStatusColor, getRichtungLabel } from '@/lib/mockdata';
+import { berechneTrustScore, getLevelLabel, getLevelColor, getLevelBackground, getVerifizierungsStatusLabel, getVerifizierungsStatusColor } from '@/lib/trustscore';
+import { useStore, neueEntityId, type ProjektInteressent } from '@/lib/store';
+import { berechneProjekt, getGesundheitEmoji, getGesundheitColor, getZuordnungLabel, getZuordnungColor } from '@/lib/projekte';
 import EntityModal, { type FeldDef } from '@/components/EntityModal';
+
+// ─── FELD-DEFINITIONEN (wiederverwendbar) ─────────────────────
 
 const UNTERNEHMEN_FELDER: FeldDef[] = [
   { key: 'firmenname', label: 'Firmenname', pflicht: true },
-  { key: 'land', label: 'Land', typ: 'select', spalte: 1, optionen: [
-    { value: 'deutschland', label: '🇩🇪 Deutschland' }, { value: 'daenemark', label: '🇩🇰 Dänemark' }, { value: 'andere', label: 'Andere' },
-  ] },
+  { key: 'land', label: 'Land', typ: 'select', spalte: 1, optionen: [{ value: 'deutschland', label: '🇩🇪 Deutschland' }, { value: 'daenemark', label: '🇩🇰 Dänemark' }] },
   { key: 'standort', label: 'Standort', spalte: 2 },
   { key: 'branche', label: 'Branche', spalte: 1 },
-  { key: 'groesse', label: 'Größe', typ: 'select', spalte: 2, optionen: [
-    { value: 'solo', label: 'Solo (1)' }, { value: 'klein', label: 'Klein (2–10)' }, { value: 'mittel', label: 'Mittel (11–50)' }, { value: 'gross', label: 'Groß (51–250)' }, { value: 'konzern', label: 'Konzern (250+)' },
-  ] },
+  { key: 'groesse', label: 'Größe', typ: 'select', spalte: 2, optionen: [{ value: 'solo', label: 'Solo' }, { value: 'klein', label: 'Klein' }, { value: 'mittel', label: 'Mittel' }, { value: 'gross', label: 'Groß' }, { value: 'konzern', label: 'Konzern' }] },
   { key: 'ansprechpartner', label: 'Ansprechpartner', pflicht: true, spalte: 1 },
   { key: 'email', label: 'E-Mail', typ: 'email', pflicht: true, spalte: 2 },
   { key: 'telefon', label: 'Telefon', typ: 'tel', spalte: 1 },
@@ -43,20 +25,17 @@ const UNTERNEHMEN_FELDER: FeldDef[] = [
   { key: 'interneNotiz', label: 'Interne Notiz', typ: 'textarea' },
 ];
 
+type DetailTab = 'ueberblick' | 'projekte' | 'beteiligungen' | 'historie' | 'notizen';
+
 export default function UnternehmenPage() {
   const store = useStore();
   const [filterLand, setFilterLand] = useState('alle');
-  const [filterNetzwerk, setFilterNetzwerk] = useState('alle');
-  const [filterVerifiziert, setFilterVerifiziert] = useState('alle');
   const [selected, setSelected] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState<DetailTab>('ueberblick');
   const [toast, setToast] = useState<string | null>(null);
   const [modalOffen, setModalOffen] = useState<'neu' | 'edit' | null>(null);
-  const unternehmen = store.unternehmen;
 
-  const zeigeToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  };
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const verifiziere = (id: string, name: string) => {
     store.updateUnternehmen(id, { verifizierungsStatus: 'verifiziert', verifiziertAm: 'gerade eben', verifiziertDurch: 'Operator' });
@@ -66,18 +45,7 @@ export default function UnternehmenPage() {
 
   const speichereUnternehmen = (werte: Record<string, any>) => {
     if (modalOffen === 'neu') {
-      const neu = {
-        id: neueEntityId('unt'),
-        firmenname: werte.firmenname, land: werte.land || 'deutschland', standort: werte.standort || '',
-        website: werte.website, linkedin: werte.linkedin, branche: werte.branche || '', groesse: werte.groesse || 'klein',
-        ansprechpartner: werte.ansprechpartner, email: werte.email, telefon: werte.telefon,
-        sprachen: [], kurzbeschreibung: werte.kurzbeschreibung || '',
-        verifizierungsStatus: 'ungeprueft', vertrauensScore: 0, vertrauensLevel: 'niedrig' as const,
-        persoenlichesGespraech: false, websiteGeprueft: false, linkedinGeprueft: false,
-        empfehlungVorhanden: false, negativeHinweise: false, spamRisiko: false,
-        netzwerkStatus: 'interessiert', erstkontakt: 'gerade eben', letzteAktivitaet: 'gerade eben',
-        interneNotiz: werte.interneNotiz, anfrageCount: 0, interessentCount: 0, successStories: 0, events: [],
-      } as any;
+      const neu = { id: neueEntityId('unt'), ...werte, sprachen: [], verifizierungsStatus: 'ungeprueft', vertrauensScore: 0, vertrauensLevel: 'niedrig' as const, persoenlichesGespraech: false, websiteGeprueft: false, linkedinGeprueft: false, empfehlungVorhanden: false, negativeHinweise: false, spamRisiko: false, netzwerkStatus: 'interessiert', erstkontakt: 'gerade eben', letzteAktivitaet: 'gerade eben', anfrageCount: 0, interessentCount: 0, successStories: 0, events: [] } as any;
       store.addUnternehmen(neu);
       store.logge(`Unternehmen angelegt: ${werte.firmenname}`, werte.firmenname, 'anlegen');
       zeigeToast(`${werte.firmenname} angelegt ✓`);
@@ -89,468 +57,368 @@ export default function UnternehmenPage() {
     setModalOffen(null);
   };
 
-  const filtered = unternehmen.filter(u => {
-    if (filterLand !== 'alle' && u.land !== filterLand) return false;
-    if (filterNetzwerk !== 'alle' && u.netzwerkStatus !== filterNetzwerk) return false;
-    if (filterVerifiziert !== 'alle' && u.verifizierungsStatus !== filterVerifiziert) return false;
-    return true;
-  });
+  const filtered = store.unternehmen.filter(u => filterLand === 'alle' || u.land === filterLand);
+  const selectedU = selected ? store.unternehmen.find(u => u.id === selected) : null;
 
-  const selectedUnternehmen = selected
-    ? unternehmen.find(u => u.id === selected)
-    : null;
-
-  const totalDE = unternehmen.filter(u => u.land === 'deutschland').length;
-  const totalDK = unternehmen.filter(u => u.land === 'daenemark').length;
-  const totalVerifiziert = unternehmen.filter(u => u.verifizierungsStatus === 'verifiziert').length;
-  const totalPartner = unternehmen.filter(u => u.netzwerkStatus === 'partner').length;
+  // Detailansicht als Fullscreen-Overlay wenn gewählt
+  if (selectedU) {
+    return (
+      <>
+        {toast && <Toast msg={toast} />}
+        {modalOffen && (
+          <EntityModal titel={modalOffen === 'neu' ? 'Neues Unternehmen' : 'Bearbeiten'} felder={UNTERNEHMEN_FELDER} initial={modalOffen === 'edit' ? selectedU as any : {}} onSpeichern={speichereUnternehmen} onSchliessen={() => setModalOffen(null)} />
+        )}
+        <UnternehmenDetail
+          u={selectedU} store={store} tab={detailTab} setTab={setDetailTab}
+          onZurueck={() => { setSelected(null); setDetailTab('ueberblick'); }}
+          onEdit={() => setModalOffen('edit')}
+          onVerifizieren={() => verifiziere(selectedU.id, selectedU.firmenname)}
+          onToast={zeigeToast}
+        />
+      </>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', gap: '24px' }}>
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
-          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
-          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
-        }}>{toast}</div>
-      )}
-      {/* Modal */}
+    <div>
+      {toast && <Toast msg={toast} />}
       {modalOffen && (
-        <EntityModal
-          titel={modalOffen === 'neu' ? 'Neues Unternehmen anlegen' : 'Unternehmen bearbeiten'}
-          felder={UNTERNEHMEN_FELDER}
-          initial={modalOffen === 'edit' && selectedUnternehmen ? selectedUnternehmen as any : {}}
-          onSpeichern={speichereUnternehmen}
-          onSchliessen={() => setModalOffen(null)}
-        />
+        <EntityModal titel="Neues Unternehmen anlegen" felder={UNTERNEHMEN_FELDER} initial={{}} onSpeichern={speichereUnternehmen} onSchliessen={() => setModalOffen(null)} />
       )}
 
-      {/* LINKE SPALTE */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h1 style={{ margin: 0, color: '#003366', fontSize: '24px' }}>Unternehmen</h1>
-          <button onClick={() => { setSelected(null); setModalOffen('neu'); }} style={{ padding: '10px 18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-            + Neues Unternehmen
-          </button>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ margin: 0, color: '#003366', fontSize: '24px' }}>Unternehmen</h1>
+        <button onClick={() => setModalOffen('neu')} style={{ padding: '10px 18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>+ Neues Unternehmen</button>
+      </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '24px' }}>
-          {[
-            { label: 'Gesamt', value: unternehmen.length, color: '#003366' },
-            { label: '🇩🇪 Deutschland', value: totalDE, color: '#2196F3' },
-            { label: '🇩🇰 Dänemark', value: totalDK, color: '#E91E63' },
-            { label: '✅ Verifiziert', value: totalVerifiziert, color: '#4CAF50' },
-            { label: '🤝 Partner', value: totalPartner, color: '#9C27B0' },
-          ].map(s => (
-            <div key={s.label} style={{
-              backgroundColor: 'white', padding: '12px', borderRadius: '8px',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.07)', borderLeft: `3px solid ${s.color}`,
-            }}>
-              <div style={{ fontSize: '11px', color: '#666' }}>{s.label}</div>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: s.color }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <select value={filterLand} onChange={e => setFilterLand(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px' }}>
+          <option value="alle">Alle Länder</option>
+          <option value="deutschland">🇩🇪 Deutschland</option>
+          <option value="daenemark">🇩🇰 Dänemark</option>
+        </select>
+        <span style={{ alignSelf: 'center', fontSize: '13px', color: '#666' }}>{filtered.length} Unternehmen</span>
+      </div>
 
-        {/* Filter */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          {[
-            { label: 'Land', value: filterLand, setter: setFilterLand, options: [
-              { value: 'alle', label: 'Alle Länder' },
-              { value: 'deutschland', label: '🇩🇪 Deutschland' },
-              { value: 'daenemark', label: '🇩🇰 Dänemark' },
-            ]},
-            { label: 'Netzwerk', value: filterNetzwerk, setter: setFilterNetzwerk, options: [
-              { value: 'alle', label: 'Alle Status' },
-              { value: 'interessiert', label: 'Interessiert' },
-              { value: 'aktiv', label: 'Aktiv' },
-              { value: 'partner', label: 'Partner' },
-              { value: 'pausiert', label: 'Pausiert' },
-            ]},
-            { label: 'Verifizierung', value: filterVerifiziert, setter: setFilterVerifiziert, options: [
-              { value: 'alle', label: 'Alle' },
-              { value: 'verifiziert', label: 'Verifiziert' },
-              { value: 'in_pruefung', label: 'In Prüfung' },
-              { value: 'eingeschraenkt', label: 'Eingeschränkt' },
-              { value: 'ungeprueft', label: 'Ungeprüft' },
-            ]},
-          ].map(f => (
-            <div key={f.label}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: '#666', display: 'block', marginBottom: '3px' }}>{f.label}</label>
-              <select
-                value={f.value}
-                onChange={(e) => f.setter(e.target.value)}
-                style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', minWidth: '140px' }}
-              >
-                {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-          ))}
-          <div style={{ alignSelf: 'flex-end', fontSize: '13px', color: '#666' }}>
-            {filtered.length} Unternehmen
-          </div>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {filtered.map(u => {
+          const projekte = store.anfragen.filter(a => a.email === u.email || a.firmenname === u.firmenname);
+          const interessen = MOCK_INTERESSENTEN.filter(i => i.email === u.email || i.firmenname === u.firmenname);
+          const trust = berechneTrustScore({ persoenlichesGespraech: u.persoenlichesGespraech, websiteGeprueft: u.websiteGeprueft, linkedinGeprueft: u.linkedinGeprueft, empfehlungVorhanden: u.empfehlungVorhanden, eventTeilnahmen: u.events.length, erfolgreicheMatches: u.successStories, negativeHinweise: u.negativeHinweise, spamRisiko: u.spamRisiko, verifizierungsStatus: u.verifizierungsStatus });
 
-        {/* Karten */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {filtered.map(u => {
-            const trust = berechneTrustScore({
-              persoenlichesGespraech: u.persoenlichesGespraech,
-              websiteGeprueft: u.websiteGeprueft,
-              linkedinGeprueft: u.linkedinGeprueft,
-              empfehlungVorhanden: u.empfehlungVorhanden,
-              eventTeilnahmen: u.events.length,
-              erfolgreicheMatches: u.successStories,
-              negativeHinweise: u.negativeHinweise,
-              spamRisiko: u.spamRisiko,
-              verifizierungsStatus: u.verifizierungsStatus,
-            });
-
-            return (
-              <div
-                key={u.id}
-                onClick={() => setSelected(selected === u.id ? null : u.id)}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  cursor: 'pointer',
-                  border: selected === u.id ? '2px solid #003366' : '2px solid transparent',
-                  boxShadow: u.negativeHinweise || u.spamRisiko
-                    ? '0 2px 6px rgba(244,67,54,0.2)'
-                    : '0 2px 6px rgba(0,0,0,0.07)',
-                  transition: 'all 0.15s',
-                }}
-                onMouseEnter={e => { if (selected !== u.id) (e.currentTarget as HTMLDivElement).style.borderColor = '#ccc'; }}
-                onMouseLeave={e => { if (selected !== u.id) (e.currentTarget as HTMLDivElement).style.borderColor = 'transparent'; }}
-              >
-                {/* Warnung */}
-                {trust.warnung && (
-                  <div style={{ backgroundColor: '#fce4ec', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', fontSize: '12px', color: '#c62828' }}>
-                    {trust.warnung}
+          return (
+            <div key={u.id} onClick={() => { setSelected(u.id); setDetailTab('ueberblick'); }} style={{ backgroundColor: 'white', borderRadius: '10px', padding: '16px 20px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.07)', transition: 'all 0.15s' }}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)'}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 6px rgba(0,0,0,0.07)'}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '16px' }}>{getLandFlag(u.land)}</span>
+                    <span style={{ fontWeight: 700, fontSize: '15px', color: '#003366' }}>{u.firmenname}</span>
                   </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '16px' }}>{getLandFlag(u.land)}</span>
-                      <span style={{ fontWeight: 700, fontSize: '15px', color: '#003366' }}>{u.firmenname}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '6px' }}>
-                      {u.branche} · {u.standort} · {getGroesseLabel(u.groesse)}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#444', lineHeight: 1.4 }}>
-                      {u.kurzbeschreibung}
-                    </div>
-                  </div>
-
-                  {/* Rechte Seite: Score + Status */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginLeft: '16px', flexShrink: 0 }}>
-                    {/* Score-Kreis */}
-                    <TrustScoreCircle score={trust.score} level={trust.level} size={52} />
-                    {/* Status-Badges */}
-                    <span style={{
-                      padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600,
-                      color: 'white', backgroundColor: getVerifizierungsStatusColor(u.verifizierungsStatus),
-                    }}>
-                      {getVerifizierungsStatusLabel(u.verifizierungsStatus)}
-                    </span>
-                    <span style={{
-                      padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600,
-                      color: 'white', backgroundColor: getNetzwerkColor(u.netzwerkStatus),
-                    }}>
-                      {getNetzwerkLabel(u.netzwerkStatus)}
-                    </span>
-                  </div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>{u.branche} · {u.standort} · {getGroesseLabel(u.groesse || '')}</div>
                 </div>
-
-                {/* Footer */}
-                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f0f0f0', alignItems: 'center' }}>
-                  <TrustFactorDots u={u} />
-                  <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#bbb' }}>
-                    Aktiv: {u.letzteAktivitaet}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                  <TrustCircle score={trust.score} level={trust.level} size={40} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getVerifizierungsStatusColor(u.verifizierungsStatus) }}>{getVerifizierungsStatusLabel(u.verifizierungsStatus)}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getNetzwerkColor(u.netzwerkStatus) }}>{getNetzwerkLabel(u.netzwerkStatus)}</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
+              {/* Schnell-KPIs */}
+              <div style={{ display: 'flex', gap: '16px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f0f0f0', fontSize: '12px', color: '#888' }}>
+                <span>🚀 {projekte.length} Projekt(e)</span>
+                <span>👥 {interessen.length} Beteiligung(en)</span>
+                <span style={{ marginLeft: 'auto' }}>Aktiv: {u.letzteAktivitaet}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── FULLSCREEN DETAIL ────────────────────────────────────────
+
+function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifizieren, onToast }: {
+  u: any; store: any; tab: DetailTab; setTab: (t: DetailTab) => void;
+  onZurueck: () => void; onEdit: () => void; onVerifizieren: () => void; onToast: (m: string) => void;
+}) {
+  const trust = berechneTrustScore({ persoenlichesGespraech: u.persoenlichesGespraech, websiteGeprueft: u.websiteGeprueft, linkedinGeprueft: u.linkedinGeprueft, empfehlungVorhanden: u.empfehlungVorhanden, eventTeilnahmen: u.events?.length || 0, erfolgreicheMatches: u.successStories || 0, negativeHinweise: u.negativeHinweise, spamRisiko: u.spamRisiko, verifizierungsStatus: u.verifizierungsStatus });
+
+  // Eigene Projekte (als Suchender)
+  const eigeneProjekte = store.anfragen.filter((a: any) => a.email === u.email || a.firmenname === u.firmenname);
+  // Beteiligungen (als Interessent)
+  const beteiligungen = MOCK_INTERESSENTEN.filter((i: any) => i.email === u.email || i.firmenname === u.firmenname);
+  // Zuordnungen
+  const eigeneZuordnungen = eigeneProjekte.flatMap((a: any) => store.zuordnungen.filter((z: ProjektInteressent) => z.projektId === a.id));
+  // Aktivitäten
+  const meineAktivitaeten = store.aktivitaeten.filter((a: any) => a.bezug === u.firmenname || a.bezug === u.ansprechpartner);
+
+  const tabs: { id: DetailTab; label: string; count?: number }[] = [
+    { id: 'ueberblick', label: 'Überblick' },
+    { id: 'projekte', label: 'Eigene Projekte', count: eigeneProjekte.length },
+    { id: 'beteiligungen', label: 'Beteiligungen', count: beteiligungen.length },
+    { id: 'historie', label: 'Historie' },
+    { id: 'notizen', label: 'Notizen' },
+  ];
+
+  return (
+    <div>
+      {/* Breadcrumb */}
+      <button onClick={onZurueck} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#003366', fontSize: '13px', fontWeight: 600, padding: 0, marginBottom: '16px' }}>
+        ← Zurück zur Liste
+      </button>
+
+      {/* Header */}
+      <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '24px' }}>{getLandFlag(u.land)}</span>
+              <h1 style={{ margin: 0, fontSize: '24px', color: '#003366' }}>{u.firmenname}</h1>
+            </div>
+            <div style={{ fontSize: '14px', color: '#666' }}>{u.ansprechpartner} · {u.branche} · {u.standort}</div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+              <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getVerifizierungsStatusColor(u.verifizierungsStatus) }}>{getVerifizierungsStatusLabel(u.verifizierungsStatus)}</span>
+              <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getNetzwerkColor(u.netzwerkStatus) }}>{getNetzwerkLabel(u.netzwerkStatus)}</span>
+              <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: getLevelColor(trust.level), backgroundColor: getLevelBackground(trust.level) }}>Trust {trust.score} · {getLevelLabel(trust.level)}</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            <TrustCircle score={trust.score} level={trust.level} size={56} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <button onClick={onEdit} style={{ padding: '8px 14px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>✏️ Bearbeiten</button>
+              {u.verifizierungsStatus !== 'verifiziert' && (
+                <button onClick={onVerifizieren} style={{ padding: '8px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>✓ Verifizieren</button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '4px', marginTop: '20px', borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              padding: '10px 18px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+              backgroundColor: tab === t.id ? '#003366' : '#f0f0f0', color: tab === t.id ? 'white' : '#666',
+            }}>
+              {t.label}{t.count !== undefined ? ` (${t.count})` : ''}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* RECHTES DETAIL-PANEL */}
-      {selectedUnternehmen && (() => {
-        const trust = berechneTrustScore({
-          persoenlichesGespraech: selectedUnternehmen.persoenlichesGespraech,
-          websiteGeprueft: selectedUnternehmen.websiteGeprueft,
-          linkedinGeprueft: selectedUnternehmen.linkedinGeprueft,
-          empfehlungVorhanden: selectedUnternehmen.empfehlungVorhanden,
-          eventTeilnahmen: selectedUnternehmen.events.length,
-          erfolgreicheMatches: selectedUnternehmen.successStories,
-          negativeHinweise: selectedUnternehmen.negativeHinweise,
-          spamRisiko: selectedUnternehmen.spamRisiko,
-          verifizierungsStatus: selectedUnternehmen.verifizierungsStatus,
-        });
-
-        return (
-          <div style={{
-            width: '380px', flexShrink: 0, backgroundColor: 'white',
-            borderRadius: '8px', boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-            padding: '24px', alignSelf: 'flex-start', position: 'sticky', top: '20px',
-            maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
-          }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div>
-                <div style={{ fontSize: '20px', marginBottom: '4px' }}>{getLandFlag(selectedUnternehmen.land)}</div>
-                <h2 style={{ margin: 0, color: '#003366', fontSize: '17px' }}>{selectedUnternehmen.firmenname}</h2>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{selectedUnternehmen.standort}</div>
-              </div>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
+      {/* ── TAB: ÜBERBLICK ── */}
+      {tab === 'ueberblick' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <Card titel="Kontaktdaten">
+            <Row label="Email" value={<a href={`mailto:${u.email}`} style={{ color: '#003366' }}>{u.email}</a>} />
+            {u.telefon && <Row label="Telefon" value={u.telefon} />}
+            {u.website && <Row label="Website" value={u.website} />}
+            {u.linkedin && <Row label="LinkedIn" value={u.linkedin} />}
+            <Row label="Sprachen" value={u.sprachen?.join(', ') || '–'} />
+            <Row label="Größe" value={getGroesseLabel(u.groesse || '')} />
+          </Card>
+          <Card titel="Kultur & Zusammenarbeit">
+            {u.kommunikationsstil && <div style={{ display: 'inline-flex', gap: '6px', padding: '6px 12px', borderRadius: '20px', backgroundColor: '#e8f0fe', color: '#003366', fontSize: '13px', fontWeight: 600, marginBottom: '10px' }}>{getKommunikationStilIcon(u.kommunikationsstil)} {getKommunikationStilLabel(u.kommunikationsstil)}</div>}
+            {u.kulturprofil && <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: '0 0 8px 0' }}>{u.kulturprofil}</p>}
+            {u.funFactStandard && <div style={{ backgroundColor: '#fff8e1', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#555', border: '1px solid #ffe082' }}><span style={{ fontWeight: 600, color: '#f57f17' }}>FunFact:</span> "{u.funFactStandard}"</div>}
+          </Card>
+          <Card titel="Schnellübersicht">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+              {[
+                { label: 'Eigene Projekte', v: eigeneProjekte.length, c: '#003366' },
+                { label: 'Beteiligungen', v: beteiligungen.length, c: '#2196F3' },
+                { label: 'Erfolge', v: u.successStories || 0, c: '#4CAF50' },
+              ].map(k => (
+                <div key={k.label} style={{ textAlign: 'center', padding: '12px', backgroundColor: k.c + '12', borderRadius: '8px', border: `1px solid ${k.c}30` }}>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: k.c }}>{k.v}</div>
+                  <div style={{ fontSize: '10px', color: '#666' }}>{k.label}</div>
+                </div>
+              ))}
             </div>
+          </Card>
+          {u.verifizierungsNotiz && (
+            <Card titel="Verifizierungsnotiz">
+              <p style={{ fontSize: '13px', color: '#555', fontStyle: 'italic', margin: 0, lineHeight: 1.6 }}>{u.verifizierungsNotiz}</p>
+              {u.verifiziertDurch && <p style={{ fontSize: '11px', color: '#999', margin: '8px 0 0 0' }}>von {u.verifiziertDurch} · {u.verifiziertAm}</p>}
+            </Card>
+          )}
+        </div>
+      )}
 
-            {/* Warnung */}
-            {trust.warnung && (
-              <div style={{ backgroundColor: '#fce4ec', border: '1px solid #ef9a9a', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: '#c62828' }}>
-                {trust.warnung}
-              </div>
-            )}
-
-            {/* TRUST SCORE BLOCK */}
-            <div style={{
-              backgroundColor: getLevelBackground(trust.level),
-              border: `1px solid ${getLevelColor(trust.level)}40`,
-              borderRadius: '10px', padding: '16px', marginBottom: '20px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <TrustScoreCircle score={trust.score} level={trust.level} size={64} />
-                <div>
-                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Vertrauens-Score</div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: getLevelColor(trust.level) }}>
-                    {getLevelLabel(trust.level)}
+      {/* ── TAB: EIGENE PROJEKTE ── */}
+      {tab === 'projekte' && (
+        <div>
+          {eigeneProjekte.length === 0 ? (
+            <Card titel="Noch keine eigenen Projekte">
+              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Dieses Unternehmen hat noch keine Anfrage gestellt.</p>
+            </Card>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {eigeneProjekte.map((a: any) => {
+                const eigenInt = MOCK_INTERESSENTEN.filter((i: any) => i.anfrageId === a.id);
+                const projektZuordnungen = store.zuordnungen.filter((z: ProjektInteressent) => z.projektId === a.id);
+                const ps = berechneProjekt(a, eigenInt);
+                return (
+                  <div key={a.id} style={{ backgroundColor: 'white', borderRadius: '10px', padding: '18px', boxShadow: '0 2px 6px rgba(0,0,0,0.07)', borderLeft: `5px solid ${getGesundheitColor(ps.gesundheit)}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#003366', marginBottom: '4px' }}>
+                          {getGesundheitEmoji(ps.gesundheit)} {a.ziel}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>{a.anzeigenId} · {a.branche} · {getRichtungLabel(a.richtung)}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <span style={{ padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(a.status) }}>{getStatusLabel(a.status)}</span>
+                        <span style={{ padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: ps.veroeffentlichungColor }}>{ps.veroeffentlichung}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '18px', marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                      <span>Interessenten: <strong>{ps.kpi.interessenten}</strong></span>
+                      <span>Freigegeben: <strong>{ps.kpi.freigegeben}</strong></span>
+                      <span>Kontakte: <strong>{ps.kpi.kontakte}</strong></span>
+                      <span>Erfolge: <strong style={{ color: '#4CAF50' }}>{ps.kpi.erfolge}</strong></span>
+                      <span style={{ marginLeft: 'auto' }}>Erstellt: {a.createdAt}</span>
+                    </div>
+                    {/* Manuell zugeordnete Interessenten */}
+                    {projektZuordnungen.filter((z: ProjektInteressent) => z.zuordnungsart === 'manuell').length > 0 && (
+                      <div style={{ marginTop: '8px', fontSize: '11px', color: '#e65100' }}>
+                        ✋ {projektZuordnungen.filter((z: ProjektInteressent) => z.zuordnungsart === 'manuell').length} manuell zugeordnete Interessenten
+                      </div>
+                    )}
+                    {ps.hinweis && (
+                      <div style={{ marginTop: '8px', padding: '6px 10px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00' }}>
+                        💡 {ps.hinweis}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Score: {trust.score}/100</div>
-                </div>
-              </div>
-
-              {/* Score Breakdown */}
-              <div style={{ marginTop: '14px', borderTop: `1px solid ${getLevelColor(trust.level)}30`, paddingTop: '12px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: '#999', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                  Score-Faktoren
-                </div>
-                {trust.breakdown.map((b, i) => (
-                  <div key={i} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '4px 0', fontSize: '12px',
-                    opacity: b.aktiv ? 1 : 0.4,
-                  }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '10px' }}>{b.aktiv ? (b.typ === 'negativ' ? '✗' : '✓') : '○'}</span>
-                      {b.faktor}
-                    </span>
-                    <span style={{
-                      fontWeight: 600,
-                      color: b.aktiv ? (b.typ === 'negativ' ? '#f44336' : '#4CAF50') : '#ccc',
-                    }}>
-                      {b.punkte > 0 ? '+' : ''}{b.punkte}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Verifizierung */}
-            <DetailSection title="Verifizierung">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{
-                  padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
-                  color: 'white', backgroundColor: getVerifizierungsStatusColor(selectedUnternehmen.verifizierungsStatus),
-                }}>
-                  {getVerifizierungsStatusLabel(selectedUnternehmen.verifizierungsStatus)}
-                </span>
-              </div>
-              {selectedUnternehmen.verifiziertAm && <DetailRow label="Geprüft am" value={selectedUnternehmen.verifiziertAm} />}
-              {selectedUnternehmen.verifiziertDurch && <DetailRow label="Geprüft von" value={selectedUnternehmen.verifiziertDurch} />}
-              {selectedUnternehmen.verifizierungsNotiz && (
-                <div style={{ fontSize: '13px', color: '#555', fontStyle: 'italic', backgroundColor: '#fffde7', padding: '10px', borderRadius: '6px', marginTop: '8px' }}>
-                  {selectedUnternehmen.verifizierungsNotiz}
+      {/* ── TAB: BETEILIGUNGEN ── */}
+      {tab === 'beteiligungen' && (
+        <div>
+          {beteiligungen.length === 0 ? (
+            <Card titel="Keine Beteiligungen">
+              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Dieses Unternehmen hat sich noch bei keinem Projekt als Interessent gemeldet.</p>
+            </Card>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {beteiligungen.map((i: any) => (
+                <div key={i.id} style={{ backgroundColor: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 2px 6px rgba(0,0,0,0.07)', borderLeft: `4px solid ${getStatusColor(i.status)}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#003366' }}>Interesse an: {i.anfrageFirma}</div>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{i.ansprechpartner} · {i.createdAt}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {i.matchScore && <span style={{ fontSize: '12px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>}
+                      <span style={{ padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(i.status) }}>{getStatusLabel(i.status)}</span>
+                    </div>
+                  </div>
+                  {i.warumPassung && <p style={{ fontSize: '12px', color: '#444', margin: '6px 0 0 0', lineHeight: 1.5 }}>{i.warumPassung.slice(0, 120)}</p>}
                 </div>
-              )}
-            </DetailSection>
-
-            {/* Stammdaten */}
-            <DetailSection title="Stammdaten">
-              <DetailRow label="Branche" value={selectedUnternehmen.branche} />
-              <DetailRow label="Größe" value={getGroesseLabel(selectedUnternehmen.groesse)} />
-              <DetailRow label="Sprachen" value={selectedUnternehmen.sprachen.join(', ')} />
-              {selectedUnternehmen.website && (
-                <DetailRow label="Website" value={
-                  <a href={selectedUnternehmen.website} target="_blank" rel="noopener noreferrer" style={{ color: '#003366' }}>
-                    {selectedUnternehmen.website}
-                  </a>
-                } />
-              )}
-            </DetailSection>
-
-            {/* Kontakt */}
-            <DetailSection title="Kontakt">
-              <DetailRow label="Person" value={selectedUnternehmen.ansprechpartner} />
-              <DetailRow label="Email" value={
-                <a href={`mailto:${selectedUnternehmen.email}`} style={{ color: '#003366' }}>{selectedUnternehmen.email}</a>
-              } />
-              {selectedUnternehmen.telefon && <DetailRow label="Telefon" value={selectedUnternehmen.telefon} />}
-            </DetailSection>
-
-            {/* Events */}
-            {selectedUnternehmen.events.length > 0 && (
-              <DetailSection title="Events">
-                {selectedUnternehmen.events.map((e, i) => (
-                  <div key={i} style={{ padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
-                    <div style={{ fontWeight: 600 }}>{e.eventName}</div>
-                    <div style={{ color: '#666', marginTop: '2px' }}>{getEventFormatLabel(e.format)} · {e.rolle} · {e.eventDatum}</div>
-                  </div>
-                ))}
-              </DetailSection>
-            )}
-
-            {/* ── KULTUR & ZUSAMMENARBEIT ─── */}
-            {(selectedUnternehmen.kulturprofil || selectedUnternehmen.kommunikationsstil || selectedUnternehmen.funFactStandard) && (
-              <DetailSection title="Kultur & Zusammenarbeit">
-                {selectedUnternehmen.kommunikationsstil && (
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    padding: '6px 12px', borderRadius: '20px', marginBottom: '10px',
-                    backgroundColor: '#e8f0fe', color: '#003366',
-                    fontSize: '13px', fontWeight: 600,
-                  }}>
-                    <span>{getKommunikationStilIcon(selectedUnternehmen.kommunikationsstil)}</span>
-                    {getKommunikationStilLabel(selectedUnternehmen.kommunikationsstil)}
-                  </div>
-                )}
-                {selectedUnternehmen.kulturprofil && (
-                  <div style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, marginBottom: '10px' }}>
-                    {selectedUnternehmen.kulturprofil}
-                  </div>
-                )}
-                {selectedUnternehmen.arbeitsweise && (
-                  <div style={{ backgroundColor: '#f9f9f9', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#555', marginBottom: '10px' }}>
-                    <span style={{ fontWeight: 600, color: '#666', marginRight: '6px' }}>Arbeitsweise:</span>
-                    {selectedUnternehmen.arbeitsweise}
-                  </div>
-                )}
-                {selectedUnternehmen.funFactStandard && (
-                  <div style={{ backgroundColor: '#fff8e1', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#555', border: '1px solid #ffe082' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#f57f17', marginBottom: '4px' }}>FUNFACT</div>
-                    "{selectedUnternehmen.funFactStandard}"
-                  </div>
-                )}
-              </DetailSection>
-            )}
-
-            {/* Persönliche Notiz des Operators */}
-            {selectedUnternehmen.persoenlicheNotiz && (
-              <DetailSection title="Persönliche Notiz (Operator)">
-                <div style={{ backgroundColor: '#e8f5e9', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#2e7d32', border: '1px solid #a5d6a7', fontStyle: 'italic' }}>
-                  💬 {selectedUnternehmen.persoenlicheNotiz}
-                </div>
-              </DetailSection>
-            )}
-
-            {/* Interne Notiz */}
-            {selectedUnternehmen.interneNotiz && (
-              <DetailSection title="Interne Notiz">
-                <div style={{ fontSize: '13px', color: '#555', fontStyle: 'italic', backgroundColor: '#fffde7', padding: '10px', borderRadius: '6px' }}>
-                  {selectedUnternehmen.interneNotiz}
-                </div>
-              </DetailSection>
-            )}
-
-            {/* Aktionen */}
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button onClick={() => setModalOffen('edit')} style={{ padding: '10px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                ✏️ Bearbeiten
-              </button>
-              {selectedUnternehmen.verifizierungsStatus !== 'verifiziert' && (
-                <button onClick={() => verifiziere(selectedUnternehmen.id, selectedUnternehmen.firmenname)} style={{ padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                  ✓ Verifizieren
-                </button>
-              )}
-              <button onClick={() => zeigeToast(`Gespräch mit ${selectedUnternehmen.firmenname} dokumentiert`)} style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                Gespräch dokumentieren
-              </button>
-              <button onClick={() => zeigeToast(`Notiz zu ${selectedUnternehmen.firmenname} gespeichert`)} style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
-                Notiz hinzufügen
-              </button>
+              ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB: HISTORIE ── */}
+      {tab === 'historie' && (
+        <div>
+          <Card titel="Aktivitätenprotokoll">
+            {meineAktivitaeten.length === 0 ? (
+              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine protokollierten Aktivitäten für dieses Unternehmen.</p>
+            ) : (
+              meineAktivitaeten.map((a: any) => (
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
+                  <span>{a.typ === 'anlegen' ? '➕' : a.typ === 'status' ? '🔄' : '✏️'}</span>
+                  <span style={{ flex: 1, color: '#333' }}>{a.was}</span>
+                  <span style={{ fontSize: '11px', color: '#999' }}>{a.wer} · {a.zeit}</span>
+                </div>
+              ))
+            )}
+          </Card>
+          <div style={{ marginTop: '16px' }}>
+            <Card titel="Zusammenfassung">
+              <div style={{ fontSize: '13px', color: '#444', lineHeight: 1.6 }}>
+                <p style={{ margin: '0 0 6px 0' }}>📅 Erstkontakt: {u.erstkontakt}</p>
+                <p style={{ margin: '0 0 6px 0' }}>🕐 Letzte Aktivität: {u.letzteAktivitaet}</p>
+                <p style={{ margin: '0 0 6px 0' }}>🚀 Projekte erstellt: {eigeneProjekte.length}</p>
+                <p style={{ margin: '0 0 6px 0' }}>👥 Als Interessent aufgetreten: {beteiligungen.length}×</p>
+                <p style={{ margin: '0 0 0 0' }}>⭐ Erfolge: {u.successStories || 0}</p>
+              </div>
+            </Card>
           </div>
-        );
-      })()}
+        </div>
+      )}
+
+      {/* ── TAB: NOTIZEN ── */}
+      {tab === 'notizen' && (
+        <div>
+          <Card titel="Interne Notiz">
+            <textarea
+              defaultValue={u.interneNotiz || ''}
+              onBlur={e => { store.updateUnternehmen(u.id, { interneNotiz: e.target.value }); onToast('Notiz gespeichert'); }}
+              placeholder="Interne Notiz zu diesem Unternehmen..."
+              rows={4}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+            />
+          </Card>
+          {u.persoenlicheNotiz && (
+            <Card titel="Persönliche Notiz (Operator)" style={{ marginTop: '16px' }}>
+              <div style={{ backgroundColor: '#e8f5e9', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#2e7d32', fontStyle: 'italic' }}>💬 {u.persoenlicheNotiz}</div>
+            </Card>
+          )}
+          {u.gespraechsnotiz && (
+            <Card titel="Letzte Gesprächsnotiz" style={{ marginTop: '16px' }}>
+              <div style={{ backgroundColor: '#fff8e1', borderRadius: '6px', padding: '10px', fontSize: '13px', color: '#555', fontStyle: 'italic' }}>{u.gespraechsnotiz}</div>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── TRUST SCORE KREIS ───────────────────────────────────────
+// ─── HILFSKOMPONENTEN ─────────────────────────────────────────
 
-function TrustScoreCircle({ score, level, size }: { score: number; level: string; size: number }) {
+function Toast({ msg }: { msg: string }) {
+  return <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 4000, backgroundColor: '#003366', color: 'white', padding: '14px 20px', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600 }}>{msg}</div>;
+}
+
+function TrustCircle({ score, level, size }: { score: number; level: string; size: number }) {
   const color = getLevelColor(level as any);
   const bg = getLevelBackground(level as any);
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      backgroundColor: bg,
-      border: `3px solid ${color}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexDirection: 'column', flexShrink: 0,
-    }}>
-      <span style={{ fontSize: size > 55 ? '18px' : '13px', fontWeight: 700, color, lineHeight: 1 }}>{score}</span>
-      {size > 55 && <span style={{ fontSize: '9px', color: '#999', marginTop: '1px' }}>/ 100</span>}
+    <div style={{ width: size, height: size, borderRadius: '50%', backgroundColor: bg, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span style={{ fontSize: size > 50 ? '16px' : '12px', fontWeight: 700, color, lineHeight: 1 }}>{score}</span>
     </div>
   );
 }
 
-// ─── TRUST FAKTOR DOTS ───────────────────────────────────────
-
-function TrustFactorDots({ u }: { u: any }) {
-  const faktoren = [
-    { label: 'Gespräch', aktiv: u.persoenlichesGespraech, negativ: false },
-    { label: 'Website', aktiv: u.websiteGeprueft, negativ: false },
-    { label: 'LinkedIn', aktiv: u.linkedinGeprueft, negativ: false },
-    { label: 'Empfehlung', aktiv: u.empfehlungVorhanden, negativ: false },
-    { label: 'Negativ', aktiv: u.negativeHinweise, negativ: true },
-    { label: 'Spam', aktiv: u.spamRisiko, negativ: true },
-  ];
+function Card({ titel, children, style: s }: { titel: string; children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-      {faktoren.map(f => (
-        <div key={f.label} title={f.label} style={{
-          width: '8px', height: '8px', borderRadius: '50%',
-          backgroundColor: f.aktiv
-            ? (f.negativ ? '#f44336' : '#4CAF50')
-            : '#e0e0e0',
-        }} />
-      ))}
-      <span style={{ fontSize: '10px', color: '#999', marginLeft: '2px' }}>Faktoren</span>
-    </div>
-  );
-}
-
-// ─── HILFSKOMPONENTEN ────────────────────────────────────────
-
-function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: '18px' }}>
-      <h3 style={{ margin: '0 0 8px 0', fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {title}
-      </h3>
+    <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '18px', boxShadow: '0 2px 6px rgba(0,0,0,0.07)', ...s }}>
+      <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 700, color: '#003366' }}>{titel}</h3>
       {children}
     </div>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', gap: '8px', marginBottom: '5px', fontSize: '13px' }}>
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '13px' }}>
       <span style={{ color: '#999', minWidth: '80px', flexShrink: 0 }}>{label}</span>
       <span style={{ color: '#333' }}>{value}</span>
     </div>
