@@ -4,7 +4,7 @@
 // Keine neue Datenhaltung — aggregiert bestehende Module.
 // =============================================================
 
-import { type MockAnfrage, type MockInteressent } from './mockdata';
+import { type MockAnfrage, type MockInteressent, type MarktplatzStatus } from './mockdata';
 
 export interface ProjektKPI {
   interessenten: number;
@@ -60,18 +60,31 @@ export function berechneProjekt(anfrage: MockAnfrage, eigene: MockInteressent[])
     rot: alter > 14 ? `Keine Reaktion seit ${alter} Tagen` : 'Noch keine Reaktion',
   }[gesundheit];
 
-  // Veröffentlichungsstatus
-  let veroeffentlichung = 'Veröffentlicht';
-  let veroeffentlichungColor = '#4CAF50';
-  if (anfrage.status === 'eingehend') { veroeffentlichung = 'Nicht veröffentlicht'; veroeffentlichungColor = '#FF9900'; }
-  else if (anfrage.status === 'pausiert') { veroeffentlichung = 'Pausiert'; veroeffentlichungColor = '#999'; }
-  else if (anfrage.status === 'vermittelt') { veroeffentlichung = 'Abgeschlossen'; veroeffentlichungColor = '#9C27B0'; }
-  else if (anfrage.status === 'archiviert') { veroeffentlichung = 'Archiviert'; veroeffentlichungColor = '#ccc'; }
+  // Veröffentlichungsstatus aus marktplatzStatus ableiten
+  const ms: MarktplatzStatus = anfrage.marktplatzStatus || 'intern';
+  const MKTP: Record<MarktplatzStatus, [string, string]> = {
+    intern:         ['Intern',          '#9E9E9E'],
+    entwurf:        ['Entwurf',         '#FF9900'],
+    zur_pruefung:   ['Zur Prüfung',     '#2196F3'],
+    veroeffentlicht:['Veröffentlicht',  '#4CAF50'],
+    pausiert:       ['Pausiert',        '#FF9900'],
+    abgelaufen:     ['Abgelaufen',      '#f44336'],
+    archiviert:     ['Archiviert',      '#9E9E9E'],
+  };
+  const [veroeffentlichung, veroeffentlichungColor] = MKTP[ms];
 
   // Optimierungshinweis
   let hinweis: string | null = null;
-  if (anfrage.status === 'eingehend') {
-    hinweis = 'Diese Anfrage ist noch nicht veröffentlicht. Nach der Prüfung im Marktplatz freigeben.';
+  if (ms === 'intern') {
+    hinweis = 'Dieses Projekt ist noch nicht im Marktplatz. Entwurf erstellen und veröffentlichen.';
+  } else if (ms === 'entwurf') {
+    hinweis = 'Marktplatz-Entwurf vorhanden – noch nicht veröffentlicht. Prüfen und freigeben.';
+  } else if (ms === 'zur_pruefung') {
+    hinweis = 'Marktplatz-Eintrag wartet auf finale Prüfung vor der Veröffentlichung.';
+  } else if (ms === 'pausiert') {
+    hinweis = 'Eintrag ist pausiert – Entscheidung: wieder veröffentlichen, überarbeiten oder archivieren?';
+  } else if (ms === 'abgelaufen') {
+    hinweis = 'Laufzeit abgelaufen – verlängern, überarbeiten oder archivieren?';
   } else if (kpi.interessenten === 0 && alter > 14) {
     hinweis = `Die Anfrage läuft seit ${alter} Tagen und hat noch keinen Interessenten. Eine Überarbeitung des Gesuchs oder aktives Matchmaking könnte sinnvoll sein.`;
   } else if (kpi.interessenten === 1 && alter > 21) {

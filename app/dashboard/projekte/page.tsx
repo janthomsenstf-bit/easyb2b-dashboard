@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor, getRichtungLabel, getLandFlag, type MockAnfrage } from '@/lib/mockdata';
+import { MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor, getRichtungLabel, getLandFlag, type MockAnfrage, type MarktplatzStatus, type MarktplatzEintrag } from '@/lib/mockdata';
 import { useStore } from '@/lib/store';
 import { berechneProjekt, getGesundheitColor, getGesundheitEmoji, getZuordnungLabel, getZuordnungColor, type Gesundheit } from '@/lib/projekte';
 
@@ -264,23 +264,434 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
               <div style={{ marginBottom: '6px' }}>📅 Erstellt: {a.createdAt}</div>
               <div style={{ marginBottom: '6px' }}>📊 Letzte Aktivität: {interessenten[0]?.createdAt || a.createdAt}</div>
               <div style={{ padding: '8px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', marginTop: '8px' }}>
-                <strong>Nächste Aufgabe:</strong> {naechsteAufgabe(s, interessenten.length)}
+                <strong>Nächste Aufgabe:</strong> {naechsteAufgabe(s, interessenten.length, a.marktplatzStatus)}
               </div>
             </div>
           </Section>
+
+          {/* 5. Marktplatz */}
+          <MarktplatzSektion anfrage={a} />
         </div>
       </div>
     </div>
   );
 }
 
-function naechsteAufgabe(s: ReturnType<typeof berechneProjekt>, anzInteressenten: number): string {
-  if (s.veroeffentlichung === 'Nicht veröffentlicht') return 'Anfrage prüfen und im Marktplatz veröffentlichen.';
+function naechsteAufgabe(s: ReturnType<typeof berechneProjekt>, anzInteressenten: number, ms?: MarktplatzStatus): string {
+  if (!ms || ms === 'intern') return 'Marktplatz-Entwurf erstellen und Anfrage veröffentlichen.';
+  if (ms === 'entwurf') return 'Marktplatz-Entwurf fertigstellen, Vorschau prüfen und freigeben.';
+  if (ms === 'zur_pruefung') return 'Marktplatz-Eintrag final prüfen und jetzt veröffentlichen.';
+  if (ms === 'pausiert' || ms === 'abgelaufen') return 'Entscheiden: wieder veröffentlichen, überarbeiten oder archivieren?';
   if (anzInteressenten === 0) return 'Aktives Matchmaking starten oder Gesuch überarbeiten.';
   if (s.kpi.freigegeben === 0) return 'Neue Interessenten prüfen und freigeben.';
   if (s.kpi.kontakte === 0) return 'Kontakt zwischen Suchendem und freigegebenem Interessenten herstellen.';
   if (s.kpi.erfolge === 0) return 'Feedback zum laufenden Kontakt einholen.';
   return 'Projekt läuft erfolgreich — Success Story dokumentieren.';
+}
+
+// ─── MARKTPLATZ SEKTION ───────────────────────────────────────
+
+const MS_META: Record<MarktplatzStatus, { label: string; color: string; bg: string }> = {
+  intern:          { label: 'Intern',          color: '#757575', bg: '#f5f5f5' },
+  entwurf:         { label: 'Entwurf',         color: '#E65100', bg: '#fff3e0' },
+  zur_pruefung:    { label: 'Zur Prüfung',     color: '#1565C0', bg: '#e3f2fd' },
+  veroeffentlicht: { label: 'Veröffentlicht',  color: '#2e7d32', bg: '#e8f5e9' },
+  pausiert:        { label: 'Pausiert',        color: '#E65100', bg: '#fff3e0' },
+  abgelaufen:      { label: 'Abgelaufen',      color: '#c62828', bg: '#ffebee' },
+  archiviert:      { label: 'Archiviert',      color: '#546e7a', bg: '#eceff1' },
+};
+
+function MkBtn({ children, onClick, variant = 'default' }: { children: React.ReactNode; onClick: () => void; variant?: 'default' | 'primary' | 'danger' | 'ghost' }) {
+  const styles: Record<string, React.CSSProperties> = {
+    default: { backgroundColor: '#f5f5f5', color: '#333', border: '1px solid #ddd' },
+    primary: { backgroundColor: '#003366', color: 'white', border: 'none' },
+    danger:  { backgroundColor: '#ffebee', color: '#c62828', border: '1px solid #ef9a9a' },
+    ghost:   { backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366' },
+  };
+  return (
+    <button onClick={onClick} style={{ ...styles[variant], padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+      {children}
+    </button>
+  );
+}
+
+function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
+  const store = useStore();
+  const [editMode, setEditMode] = useState(false);
+  const [showVorschau, setShowVorschau] = useState(false);
+  const [showDeaktivieren, setShowDeaktivieren] = useState(false);
+  const [deaktiviereStatus, setDeaktiviereStatus] = useState<'pausiert' | 'abgelaufen' | 'archiviert'>('pausiert');
+  const [deaktiviereGrund, setDeaktiviereGrund] = useState('');
+  const [kiOutput, setKiOutput] = useState('');
+  const [kiLoading, setKiLoading] = useState('');
+  const [formData, setFormData] = useState<Partial<MarktplatzEintrag>>(anfrage.marktplatzDaten || {});
+
+  const ms: MarktplatzStatus = anfrage.marktplatzStatus || 'intern';
+  const meta = MS_META[ms];
+  const md = anfrage.marktplatzDaten;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  function addMonths(date: string, n: number): string {
+    const d = new Date(date);
+    d.setMonth(d.getMonth() + n);
+    return d.toISOString().split('T')[0];
+  }
+
+  function erstelleEntwurf() {
+    const neu: MarktplatzEintrag = {
+      titel: anfrage.ziel,
+      kurzbeschreibung: anfrage.beschreibung.slice(0, 250),
+      branche: anfrage.branche,
+      richtung: anfrage.richtung,
+      region: anfrage.standort,
+      wasSuche: anfrage.ziel,
+      warumGesucht: anfrage.beschreibung,
+      anforderungen: '',
+      persoenlicheNote: '',
+      kulturHinweis: anfrage.kulturHinweis || '',
+      funFact: anfrage.funFactOeffentlich ? (anfrage.funFactAntwortKI || anfrage.funFactAntwort || '') : '',
+      funFactFreigegeben: anfrage.funFactOeffentlich || false,
+      sichtbarkeit: (anfrage.sichtbarkeit as 'oeffentlich' | 'anonym') || 'oeffentlich',
+      laufzeitMonate: 3,
+      entwurfErstelltAm: today,
+    };
+    store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf', marktplatzDaten: neu });
+    store.logge('Marktplatz-Entwurf erstellt', anfrage.anzeigenId, 'status');
+    setFormData(neu);
+    setEditMode(true);
+  }
+
+  function speichereEntwurf() {
+    const updated: MarktplatzEintrag = { ...(md || {} as MarktplatzEintrag), ...formData, letzteBearbeitungAm: today };
+    store.updateAnfrage(anfrage.id, { marktplatzDaten: updated });
+    store.logge('Marktplatz-Entwurf bearbeitet', anfrage.anzeigenId, 'bearbeiten');
+    setEditMode(false);
+  }
+
+  function zurPruefung() {
+    speichereEntwurf();
+    store.updateAnfrage(anfrage.id, { marktplatzStatus: 'zur_pruefung' });
+    store.logge('Marktplatz-Eintrag zur Prüfung eingereicht', anfrage.anzeigenId, 'status');
+  }
+
+  function veroeffentlichen() {
+    const lm = formData.laufzeitMonate || md?.laufzeitMonate || 3;
+    store.updateAnfrage(anfrage.id, {
+      marktplatzStatus: 'veroeffentlicht',
+      veroeffentlichtAm: today,
+      ablaufDatum: addMonths(today, lm),
+      veroeffentlichtVon: 'Operator',
+    });
+    store.logge(`Marktplatz-Eintrag veröffentlicht (${lm} Monate)`, anfrage.anzeigenId, 'status');
+    setEditMode(false);
+  }
+
+  function deaktivieren() {
+    store.updateAnfrage(anfrage.id, {
+      marktplatzStatus: deaktiviereStatus,
+      deaktivierungsGrund: deaktiviereGrund || 'Kein Grund angegeben',
+    });
+    store.logge(`Marktplatz-Eintrag ${deaktiviereStatus}: ${deaktiviereGrund}`, anfrage.anzeigenId, 'status');
+    setShowDeaktivieren(false);
+    setDeaktiviereGrund('');
+  }
+
+  function wiederVeroeffentlichen() {
+    const lm = md?.laufzeitMonate || 3;
+    store.updateAnfrage(anfrage.id, {
+      marktplatzStatus: 'veroeffentlicht',
+      veroeffentlichtAm: today,
+      ablaufDatum: addMonths(today, lm),
+      deaktivierungsGrund: undefined,
+    });
+    store.logge('Marktplatz-Eintrag wieder veröffentlicht', anfrage.anzeigenId, 'status');
+  }
+
+  function kiSimuliere(tool: string) {
+    setKiLoading(tool);
+    setTimeout(() => {
+      const texte: Record<string, string> = {
+        generieren: `[KI-Entwurf] ${anfrage.firmenname} sucht ${anfrage.ziel.toLowerCase()}. ${anfrage.beschreibung.slice(0, 180)} Wenn Sie Interesse haben, melden Sie sich über den Easy-B2B-Marktplatz.`,
+        kuerzen: (formData.kurzbeschreibung || md?.kurzbeschreibung || '').slice(0, 140) + '…',
+        voicecheck: `✅ Klarheit: 8/10 · Vertrauen: 7/10 · Ansprache: 9/10\n💡 Verbesserung: Ersten Satz aktiver formulieren. „Wir suchen" statt „Es wird gesucht".`,
+        anonymisieren: (formData.kurzbeschreibung || md?.kurzbeschreibung || '').replace(new RegExp(anfrage.firmenname, 'gi'), anfrage.richtung === 'de_dk' ? 'Ein deutsches Unternehmen' : 'Ein dänisches Unternehmen'),
+      };
+      setKiOutput(texte[tool] || '');
+      setKiLoading('');
+    }, 900);
+  }
+
+  const INPUT: React.CSSProperties = { width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' };
+  const TEXTAREA: React.CSSProperties = { ...INPUT, minHeight: '70px', resize: 'vertical' };
+
+  return (
+    <Section titel="5 · Marktplatz-Veröffentlichung">
+      {/* Vorschau-Modal */}
+      {showVorschau && md && (
+        <div onClick={() => setShowVorschau(false)} style={{ position: 'fixed', inset: 0, zIndex: 4000, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '12px', maxWidth: '620px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ padding: '14px 20px', backgroundColor: '#003366', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: '13px' }}>Vorschau – So erscheint der Eintrag auf der Homepage</span>
+              <button onClick={() => setShowVorschau(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+            <div style={{ padding: '24px' }}>
+              <div style={{ border: '1px solid #e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ backgroundColor: '#f8f9fa', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#003366', letterSpacing: '0.5px' }}>EASY-B2B MARKTPLATZ</span>
+                  <span style={{ fontSize: '11px', color: '#666' }}>{anfrage.anzeigenId}</span>
+                </div>
+                <div style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>{md.richtung === 'dk_de' ? '🇩🇰 → 🇩🇪' : '🇩🇪 → 🇩🇰'}</span>
+                    <span style={{ padding: '2px 8px', backgroundColor: '#e3f2fd', color: '#1565C0', borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>{md.branche}</span>
+                    {md.sichtbarkeit === 'anonym' && <span style={{ padding: '2px 8px', backgroundColor: '#f3e5f5', color: '#6a1b9a', borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>Anonym</span>}
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#003366' }}>{md.titel}</h3>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#555', lineHeight: 1.6 }}>{md.kurzbeschreibung}</p>
+                  {md.wasSuche && <div style={{ marginBottom: '8px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Gesucht:</strong> {md.wasSuche}</div>}
+                  {md.anforderungen && <div style={{ marginBottom: '8px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Anforderungen:</strong> {md.anforderungen}</div>}
+                  {md.persoenlicheNote && <div style={{ marginBottom: '8px', padding: '8px 12px', backgroundColor: '#f8f9fa', borderLeft: '3px solid #003366', borderRadius: '0 6px 6px 0', fontSize: '13px', fontStyle: 'italic', color: '#444' }}>„{md.persoenlicheNote}"</div>}
+                  {md.funFactFreigegeben && md.funFact && (
+                    <div style={{ marginBottom: '8px', padding: '8px 12px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00' }}>
+                      <strong>Fun Fact:</strong> {md.funFact}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                    <button style={{ padding: '8px 16px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'default' }}>Interesse bekunden</button>
+                    <button style={{ padding: '8px 16px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'default' }}>Details ansehen</button>
+                  </div>
+                </div>
+              </div>
+              {md.kulturHinweis && <div style={{ marginTop: '12px', padding: '10px 14px', backgroundColor: '#f0f4ff', borderRadius: '8px', fontSize: '12px', color: '#444' }}><strong>🌍 Kulturhinweis (intern):</strong> {md.kulturHinweis}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deaktivieren-Dialog */}
+      {showDeaktivieren && (
+        <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '8px' }}>
+          <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#E65100' }}>Eintrag vom Marktplatz nehmen</h4>
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Neuer Status</label>
+            <select value={deaktiviereStatus} onChange={e => setDeaktiviereStatus(e.target.value as typeof deaktiviereStatus)} style={{ ...INPUT, width: 'auto' }}>
+              <option value="pausiert">Pausiert (vorübergehend)</option>
+              <option value="abgelaufen">Abgelaufen (Laufzeit beendet)</option>
+              <option value="archiviert">Archiviert (abgeschlossen)</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Grund (optional)</label>
+            <select value={deaktiviereGrund} onChange={e => setDeaktiviereGrund(e.target.value)} style={{ ...INPUT, marginBottom: '6px', width: '100%' }}>
+              <option value="">Bitte wählen…</option>
+              <option value="Projekt erfolgreich abgeschlossen – Partner gefunden">Projekt erfolgreich abgeschlossen</option>
+              <option value="Ansprechpartner momentan nicht erreichbar">Ansprechpartner nicht erreichbar</option>
+              <option value="Inhalt soll überarbeitet werden">Inhalt soll überarbeitet werden</option>
+              <option value="Keine Relevanz mehr">Keine Relevanz mehr</option>
+              <option value="Anfrage abgelaufen">Anfrage abgelaufen</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <MkBtn onClick={deaktivieren} variant="danger">Jetzt entfernen</MkBtn>
+            <MkBtn onClick={() => setShowDeaktivieren(false)} variant="ghost">Abbrechen</MkBtn>
+          </div>
+        </div>
+      )}
+
+      {/* Status-Badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        <span style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 700, color: meta.color, backgroundColor: meta.bg, border: `1px solid ${meta.color}40` }}>
+          ● {meta.label}
+        </span>
+        {anfrage.veroeffentlichtAm && ms === 'veroeffentlicht' && (
+          <span style={{ fontSize: '12px', color: '#666' }}>Veröffentlicht: {anfrage.veroeffentlichtAm}</span>
+        )}
+        {anfrage.ablaufDatum && ms === 'veroeffentlicht' && (
+          <span style={{ fontSize: '12px', color: '#666' }}>Läuft bis: {anfrage.ablaufDatum}</span>
+        )}
+        {anfrage.veroeffentlichtVon && ms === 'veroeffentlicht' && (
+          <span style={{ fontSize: '12px', color: '#666' }}>von {anfrage.veroeffentlichtVon}</span>
+        )}
+      </div>
+
+      {/* Deaktivierungsgrund */}
+      {anfrage.deaktivierungsGrund && ['pausiert','abgelaufen','archiviert'].includes(ms) && (
+        <div style={{ marginBottom: '12px', padding: '8px 12px', backgroundColor: '#f5f5f5', borderRadius: '6px', fontSize: '12px', color: '#555' }}>
+          <strong>Grund:</strong> {anfrage.deaktivierungsGrund}
+        </div>
+      )}
+
+      {/* STATE: intern – kein Eintrag */}
+      {ms === 'intern' && (
+        <div style={{ padding: '20px', border: '2px dashed #e0e0e0', borderRadius: '8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
+          <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
+            Dieses Projekt ist noch nicht im öffentlichen Marktplatz sichtbar.<br />
+            Erstelle jetzt einen Entwurf aus den vorhandenen Projektdaten.
+          </p>
+          <MkBtn onClick={erstelleEntwurf} variant="primary">+ Marktplatz-Entwurf erstellen</MkBtn>
+        </div>
+      )}
+
+      {/* STATE: entwurf / zur_pruefung – Bearbeitungsansicht */}
+      {(ms === 'entwurf' || ms === 'zur_pruefung') && (
+        <div>
+          {/* Zusammenfassung wenn nicht im Edit-Modus */}
+          {!editMode && md && (
+            <div style={{ marginBottom: '14px', padding: '12px 14px', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
+              <div style={{ fontWeight: 600, color: '#003366', marginBottom: '4px' }}>{md.titel}</div>
+              <div style={{ color: '#555', lineHeight: 1.5 }}>{md.kurzbeschreibung?.slice(0, 150)}{(md.kurzbeschreibung?.length || 0) > 150 ? '…' : ''}</div>
+              <div style={{ marginTop: '8px', display: 'flex', gap: '12px', fontSize: '11px', color: '#888' }}>
+                <span>👁 {md.sichtbarkeit === 'oeffentlich' ? 'Öffentlich' : 'Anonym'}</span>
+                <span>⏱ {md.laufzeitMonate} Monate Laufzeit</span>
+                {md.entwurfErstelltAm && <span>📝 Entwurf: {md.entwurfErstelltAm}</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Edit-Formular */}
+          {editMode && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>TITEL (öffentlich)</label>
+                  <input style={INPUT} value={formData.titel || ''} onChange={e => setFormData(p => ({ ...p, titel: e.target.value }))} placeholder="Kurzer, prägnanter Titel…" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>KURZBESCHREIBUNG</label>
+                  <textarea style={TEXTAREA} value={formData.kurzbeschreibung || ''} onChange={e => setFormData(p => ({ ...p, kurzbeschreibung: e.target.value }))} placeholder="Wer seid ihr und was sucht ihr? (max. 250 Zeichen)" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>WAS WIRD GESUCHT?</label>
+                    <input style={INPUT} value={formData.wasSuche || ''} onChange={e => setFormData(p => ({ ...p, wasSuche: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>REGION</label>
+                    <input style={INPUT} value={formData.region || ''} onChange={e => setFormData(p => ({ ...p, region: e.target.value }))} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>WARUM GESUCHT?</label>
+                  <textarea style={TEXTAREA} value={formData.warumGesucht || ''} onChange={e => setFormData(p => ({ ...p, warumGesucht: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>ANFORDERUNGEN AN PARTNER</label>
+                  <textarea style={{ ...TEXTAREA, minHeight: '55px' }} value={formData.anforderungen || ''} onChange={e => setFormData(p => ({ ...p, anforderungen: e.target.value }))} placeholder="Optional: Was sollte ein Partner mitbringen?" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>PERSÖNLICHE NOTE (optional)</label>
+                  <textarea style={{ ...TEXTAREA, minHeight: '55px' }} value={formData.persoenlicheNote || ''} onChange={e => setFormData(p => ({ ...p, persoenlicheNote: e.target.value }))} placeholder="Menschliches Detail, das vertraut macht…" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>SICHTBARKEIT</label>
+                    <select style={INPUT} value={formData.sichtbarkeit || 'oeffentlich'} onChange={e => setFormData(p => ({ ...p, sichtbarkeit: e.target.value as 'oeffentlich' | 'anonym' }))}>
+                      <option value="oeffentlich">Öffentlich (mit Namen)</option>
+                      <option value="anonym">Anonym</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>LAUFZEIT</label>
+                    <select style={INPUT} value={formData.laufzeitMonate || 3} onChange={e => setFormData(p => ({ ...p, laufzeitMonate: Number(e.target.value) }))}>
+                      <option value={1}>1 Monat</option>
+                      <option value={2}>2 Monate</option>
+                      <option value={3}>3 Monate</option>
+                      <option value={6}>6 Monate</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#555', cursor: 'pointer', paddingBottom: '8px' }}>
+                      <input type="checkbox" checked={formData.funFactFreigegeben || false} onChange={e => setFormData(p => ({ ...p, funFactFreigegeben: e.target.checked }))} />
+                      FunFact freigeben
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* KI-Tools */}
+              <div style={{ marginTop: '14px', padding: '12px 14px', backgroundColor: '#f0f4ff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#003366', marginBottom: '8px', letterSpacing: '0.5px' }}>🤖 KI-UNTERSTÜTZUNG (Entwurf)</div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'generieren', label: '✨ Text generieren' },
+                    { key: 'kuerzen', label: '✂️ Text kürzen' },
+                    { key: 'voicecheck', label: '🎙 Voice Check' },
+                    { key: 'anonymisieren', label: '👤 Anonymisieren' },
+                  ].map(t => (
+                    <button key={t.key} onClick={() => kiSimuliere(t.key)} disabled={kiLoading !== ''} style={{ padding: '5px 12px', backgroundColor: kiLoading === t.key ? '#e3f2fd' : 'white', border: '1px solid #90caf9', borderRadius: '6px', fontSize: '11px', cursor: kiLoading !== '' ? 'wait' : 'pointer', color: '#1565C0', fontWeight: 600 }}>
+                      {kiLoading === t.key ? '⏳ …' : t.label}
+                    </button>
+                  ))}
+                </div>
+                {kiOutput && (
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #90caf9', fontSize: '12px', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px', fontWeight: 600 }}>KI-ERGEBNIS (Entwurf – bitte prüfen):</div>
+                    {kiOutput}
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                      <button onClick={() => { setFormData(p => ({ ...p, kurzbeschreibung: kiOutput })); setKiOutput(''); }} style={{ padding: '3px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32' }}>Übernehmen</button>
+                      <button onClick={() => setKiOutput('')} style={{ padding: '3px 10px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', color: '#666' }}>Verwerfen</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Aktions-Buttons */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {!editMode ? (
+              <>
+                <MkBtn onClick={() => { setFormData(md || {}); setEditMode(true); }} variant="ghost">✏️ Bearbeiten</MkBtn>
+                {md && <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Vorschau</MkBtn>}
+                {ms === 'entwurf' && <MkBtn onClick={zurPruefung} variant="default">→ Zur Prüfung</MkBtn>}
+                {(ms === 'entwurf' || ms === 'zur_pruefung') && <MkBtn onClick={veroeffentlichen} variant="primary">🚀 Jetzt veröffentlichen</MkBtn>}
+              </>
+            ) : (
+              <>
+                <MkBtn onClick={speichereEntwurf} variant="primary">💾 Speichern</MkBtn>
+                <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Vorschau</MkBtn>
+                <MkBtn onClick={() => setEditMode(false)} variant="ghost">Abbrechen</MkBtn>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* STATE: veroeffentlicht */}
+      {ms === 'veroeffentlicht' && (
+        <div>
+          {md && (
+            <div style={{ marginBottom: '14px', padding: '14px', backgroundColor: '#e8f5e9', borderRadius: '8px', border: '1px solid #a5d6a7' }}>
+              <div style={{ fontWeight: 700, color: '#1b5e20', marginBottom: '4px', fontSize: '14px' }}>{md.titel}</div>
+              <div style={{ fontSize: '12px', color: '#2e7d32', marginBottom: '8px' }}>{md.kurzbeschreibung?.slice(0, 150)}{(md.kurzbeschreibung?.length || 0) > 150 ? '…' : ''}</div>
+              <div style={{ display: 'flex', gap: '14px', fontSize: '11px', color: '#388e3c' }}>
+                <span>👁 {md.sichtbarkeit === 'oeffentlich' ? 'Öffentlich sichtbar' : 'Anonym sichtbar'}</span>
+                <span>⏱ Laufzeit: {md.laufzeitMonate} Monate</span>
+                {md.funFactFreigegeben && <span>✨ FunFact freigegeben</span>}
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <MkBtn onClick={() => { setFormData(md || {}); setEditMode(false); store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf' }); }} variant="ghost">✏️ Inhalt bearbeiten</MkBtn>
+            {md && <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Vorschau</MkBtn>}
+            <MkBtn onClick={() => setShowDeaktivieren(true)} variant="danger">⏹ Vom Marktplatz nehmen</MkBtn>
+          </div>
+        </div>
+      )}
+
+      {/* STATE: pausiert / abgelaufen / archiviert */}
+      {['pausiert', 'abgelaufen', 'archiviert'].includes(ms) && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {ms !== 'archiviert' && <MkBtn onClick={wiederVeroeffentlichen} variant="primary">🔄 Wieder veröffentlichen</MkBtn>}
+          {ms === 'archiviert' && <MkBtn onClick={() => { store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf' }); store.logge('Marktplatz-Eintrag reaktiviert', anfrage.anzeigenId, 'status'); }} variant="ghost">↩ Reaktivieren (als Entwurf)</MkBtn>}
+          {ms !== 'archiviert' && <MkBtn onClick={() => { store.updateAnfrage(anfrage.id, { marktplatzStatus: 'archiviert' }); store.logge('Marktplatz-Eintrag archiviert', anfrage.anzeigenId, 'status'); }} variant="danger">🗄 Archivieren</MkBtn>}
+          {md && <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Letzter Entwurf</MkBtn>}
+        </div>
+      )}
+    </Section>
+  );
 }
 
 // ─── HILFSKOMPONENTEN ─────────────────────────────────────────

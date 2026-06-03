@@ -795,6 +795,36 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
   },
 ];
 
+// ─── MARKTPLATZ ──────────────────────────────────────────────
+
+export type MarktplatzStatus =
+  | 'intern'
+  | 'entwurf'
+  | 'zur_pruefung'
+  | 'veroeffentlicht'
+  | 'pausiert'
+  | 'abgelaufen'
+  | 'archiviert';
+
+export interface MarktplatzEintrag {
+  titel: string;
+  kurzbeschreibung: string;
+  branche: string;
+  richtung: 'de_dk' | 'dk_de';
+  region: string;
+  wasSuche: string;
+  warumGesucht: string;
+  anforderungen?: string;
+  persoenlicheNote?: string;
+  kulturHinweis?: string;
+  funFact?: string;
+  funFactFreigegeben: boolean;
+  sichtbarkeit: 'oeffentlich' | 'anonym';
+  laufzeitMonate: number;
+  entwurfErstelltAm?: string;
+  letzteBearbeitungAm?: string;
+}
+
 export interface MockAnfrage {
   id: string;
   anzeigenId: string;
@@ -820,6 +850,13 @@ export interface MockAnfrage {
   telefon?: string;
   interessentenCount: number;
   createdAt: string;
+  // Marktplatz-Veröffentlichung
+  marktplatzStatus?: MarktplatzStatus;
+  marktplatzDaten?: MarktplatzEintrag;
+  veroeffentlichtAm?: string;
+  ablaufDatum?: string;
+  veroeffentlichtVon?: string;
+  deaktivierungsGrund?: string;
 }
 
 export interface MockInteressent {
@@ -910,6 +947,28 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Dänischer Kommunikationsstil: direkt, informell, herzlich. Kein langer Smalltalk nötig.',
     gespraechseinstieg: 'Frag nach der Familientradition im Unternehmen – Nordic Fish ist seit Generationen in Familienhand.',
     funFactOeffentlich: true,
+    marktplatzStatus: 'veroeffentlicht',
+    veroeffentlichtAm: '2025-05-15',
+    ablaufDatum: '2025-08-15',
+    veroeffentlichtVon: 'Jan Thomsen',
+    marktplatzDaten: {
+      titel: 'Deutschen Vertriebspartner für Premium-Fischprodukte gesucht',
+      kurzbeschreibung: 'Dänischer Fischverarbeiter mit 40 Jahren Erfahrung sucht deutschen Vertriebspartner für Premium-Fischprodukte (Lachs, Kabeljau, Hering) im norddeutschen Einzelhandel.',
+      branche: 'Lebensmittel & Fischerei',
+      richtung: 'dk_de',
+      region: 'Norddeutschland',
+      wasSuche: 'Vertriebspartner für Einzelhandel (EDEKA, REWE, Feinkost)',
+      warumGesucht: 'Wir sind ein dänischer Fischverarbeiter und möchten den deutschen Einzelhandel erschließen. Qualität vor Masse – nur Premium.',
+      anforderungen: 'Bestehende Einzelhandels-Kontakte, eigene Kühlkette, mindestens 5 Jahre Branchenerfahrung.',
+      persoenlicheNote: 'Wir suchen einen Partner, der unsere Werte teilt – Qualität, Nachhaltigkeit und ein ehrliches Miteinander.',
+      kulturHinweis: 'Dänischer Kommunikationsstil: direkt, informell, herzlich. Kein langer Smalltalk nötig.',
+      funFact: 'Am liebsten würden wir eine erfolgreiche Kooperation ganz unkompliziert feiern – mit frischem Fisch, einem guten dänischen Bier und einem ehrlichen Gespräch auf Augenhöhe.',
+      funFactFreigegeben: true,
+      sichtbarkeit: 'oeffentlich',
+      laufzeitMonate: 3,
+      entwurfErstelltAm: '2025-05-14',
+      letzteBearbeitungAm: '2025-05-15',
+    },
   },
   {
     id: 'anf-002',
@@ -935,6 +994,28 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Strukturiert, pünktlich, erwartet klare Unterlagen. Typisch deutsch, aber ohne Bürokratie.',
     gespraechseinstieg: 'Thomas ist ein Macher – fang direkt mit konkreten Zahlen und Kapazitäten an.',
     funFactOeffentlich: true,
+    marktplatzStatus: 'veroeffentlicht',
+    veroeffentlichtAm: '2025-05-21',
+    ablaufDatum: '2025-08-21',
+    veroeffentlichtVon: 'Jan Thomsen',
+    marktplatzDaten: {
+      titel: 'Kooperationspartner für Windkraft-Komponenten gesucht',
+      kurzbeschreibung: 'Mittelständischer Maschinenbauer sucht dänischen Kooperationspartner für gemeinsame Entwicklung von Windkraft-Komponenten (CNC-Fertigung, Stahlverarbeitung).',
+      branche: 'Maschinenbau & Industrie',
+      richtung: 'de_dk',
+      region: 'Norddeutschland / Dänemark',
+      wasSuche: 'Dänischer Entwicklungspartner im Bereich Windkraft',
+      warumGesucht: 'Wir bringen CNC-Fertigung und Stahlverarbeitung mit. Gesucht: Partner, der die dänische Windkraft-Expertise einbringt.',
+      anforderungen: 'Erfahrung in der Windenergiebranche, Zertifizierungen bevorzugt, Englisch Pflicht.',
+      persoenlicheNote: 'Wir sind direkt und erwarten das auch. Keine langen E-Mail-Ketten – wir reden lieber einmal kurz am Telefon.',
+      kulturHinweis: 'Strukturiert, pünktlich, erwartet klare Unterlagen. Typisch deutsch, aber ohne Bürokratie.',
+      funFact: 'Typisch Müller Maschinenbau: Wir reden lieber einmal kurz am Telefon als zehnmal hin und her zu mailen.',
+      funFactFreigegeben: true,
+      sichtbarkeit: 'oeffentlich',
+      laufzeitMonate: 3,
+      entwurfErstelltAm: '2025-05-20',
+      letzteBearbeitungAm: '2025-05-21',
+    },
   },
   {
     id: 'anf-003',
@@ -953,6 +1034,25 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     email: 'mette@danskdesign.dk',
     interessentenCount: 2,
     createdAt: '2025-05-10',
+    marktplatzStatus: 'veroeffentlicht',
+    veroeffentlichtAm: '2025-05-10',
+    ablaufDatum: '2025-08-10',
+    veroeffentlichtVon: 'Jan Thomsen',
+    marktplatzDaten: {
+      titel: 'Vertriebspartner für den deutschen Möbelmarkt gesucht',
+      kurzbeschreibung: 'Dänisches Designstudio mit preisgekrönten Möbelkollektionen sucht deutschen Distributor oder Einzelhandelspartner. Nachhaltig produziert, skandinavischer Stil.',
+      branche: 'Möbel & Design',
+      richtung: 'dk_de',
+      region: 'Deutschland (bundesweit)',
+      wasSuche: 'Distributor oder Einzelhandelspartner in Deutschland',
+      warumGesucht: 'Unsere Möbelkollektion ist in Skandinavien bereits etabliert. Wir suchen einen Partner, der unsere Marke in Deutschland aufbaut.',
+      anforderungen: 'Nachhaltigkeitsorientierung, Design-Affinität, bestehende Kontakte zum deutschen Möbelhandel.',
+      sichtbarkeit: 'oeffentlich',
+      funFactFreigegeben: false,
+      laufzeitMonate: 3,
+      entwurfErstelltAm: '2025-05-09',
+      letzteBearbeitungAm: '2025-05-10',
+    },
   },
   {
     id: 'anf-004',
@@ -972,6 +1072,21 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 4841 789 012',
     interessentenCount: 0,
     createdAt: '2025-05-28',
+    marktplatzStatus: 'entwurf',
+    marktplatzDaten: {
+      titel: 'Dänische Zulieferer für Offshore-Windpark-Komponenten',
+      kurzbeschreibung: 'Deutsches Energieunternehmen sucht dänische Zulieferer für Offshore-Windpark-Komponenten: Kabelverlegung, Unterwasser-Fundamente, Wartungsdienstleistungen.',
+      branche: 'Erneuerbare Energien',
+      richtung: 'de_dk',
+      region: 'Nordsee / Offshore',
+      wasSuche: 'Dänische Zulieferer für Offshore-Windpark-Komponenten',
+      warumGesucht: 'Wir bauen Offshore-Windparks und suchen erfahrene dänische Zulieferer mit nachgewiesener Offshore-Erfahrung.',
+      anforderungen: 'Offshore-Zertifizierungen, Referenzprojekte, Kapazität für Rahmenvertrag.',
+      sichtbarkeit: 'anonym',
+      funFactFreigegeben: false,
+      laufzeitMonate: 3,
+      entwurfErstelltAm: '2025-05-28',
+    },
   },
   {
     id: 'anf-005',
@@ -996,6 +1111,28 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Sehr persönlicher, künstlerischer Ansatz. Nicht als rein kommerziellen Partner angehen.',
     gespraechseinstieg: 'Frag nach der Insel Bornholm – Pia liebt es, darüber zu erzählen.',
     funFactOeffentlich: true,
+    marktplatzStatus: 'veroeffentlicht',
+    veroeffentlichtAm: '2025-05-02',
+    ablaufDatum: '2025-08-02',
+    veroeffentlichtVon: 'Jan Thomsen',
+    marktplatzDaten: {
+      titel: 'Deutsche Einzelhändler für handgefertigte Bornholm-Keramik',
+      kurzbeschreibung: 'Handgefertigte Keramik aus Bornholm sucht Einzelhändler, Concept Stores oder Online-Shops in Deutschland, die skandinavisches Handwerk schätzen.',
+      branche: 'Kunsthandwerk & Keramik',
+      richtung: 'dk_de',
+      region: 'Deutschland (bundesweit)',
+      wasSuche: 'Einzelhändler, Concept Stores oder Online-Shops',
+      warumGesucht: 'Jedes Stück ist ein Unikat – handgefertigt mit Liebe. Wir suchen Partner, die diese Philosophie teilen.',
+      anforderungen: 'Liebe zum Detail, Interesse an skandinavischem Handwerk, faire Partnerschaft auf Augenhöhe.',
+      persoenlicheNote: 'Wenn ein Kunde ein Stück in die Hand nimmt und lächelt, ist das besser als jeder Vertrag.',
+      kulturHinweis: 'Sehr persönlicher, künstlerischer Ansatz. Nicht als rein kommerziellen Partner angehen.',
+      funFact: 'Für Pia ist Keramik mehr als ein Produkt – es ist ein Gespräch ohne Worte. Wenn ein Kunde aus Deutschland ein Stück in die Hand nimmt und lächelt, ist das besser als jeder Vertrag.',
+      funFactFreigegeben: true,
+      sichtbarkeit: 'oeffentlich',
+      laufzeitMonate: 3,
+      entwurfErstelltAm: '2025-05-01',
+      letzteBearbeitungAm: '2025-05-02',
+    },
   },
   {
     id: 'anf-006',
@@ -1015,6 +1152,11 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 4621 456 789',
     interessentenCount: 2,
     createdAt: '2025-04-15',
+    marktplatzStatus: 'archiviert',
+    veroeffentlichtAm: '2025-04-15',
+    ablaufDatum: '2025-07-15',
+    veroeffentlichtVon: 'Jan Thomsen',
+    deaktivierungsGrund: 'Projekt erfolgreich abgeschlossen – Partner gefunden',
   },
   {
     id: 'anf-007',
@@ -1033,6 +1175,22 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     email: 'mikkel@greentech-aarhus.dk',
     interessentenCount: 1,
     createdAt: '2025-05-22',
+    marktplatzStatus: 'zur_pruefung',
+    marktplatzDaten: {
+      titel: 'Deutsche Industriekunden für Wasseraufbereitungs-Pilotprojekte',
+      kurzbeschreibung: 'CleanTech-Startup aus Aarhus mit innovativer Wasseraufbereitungstechnologie sucht deutsche Industriekunden für Pilotprojekte.',
+      branche: 'Umwelttechnologie',
+      richtung: 'dk_de',
+      region: 'Deutschland (bundesweit)',
+      wasSuche: 'Deutsche Industriekunden für Pilotprojekte',
+      warumGesucht: 'Unsere Technologie ist bereit für den Markt. Wir suchen Industriepartner, die mit uns in die Erprobung gehen.',
+      anforderungen: 'Industriebetrieb mit eigenem Wasserverbrauch, Offenheit für neue Technologien, Pilotbereitschaft.',
+      sichtbarkeit: 'oeffentlich',
+      funFactFreigegeben: false,
+      laufzeitMonate: 3,
+      entwurfErstelltAm: '2025-05-22',
+      letzteBearbeitungAm: '2025-05-26',
+    },
   },
   {
     id: 'anf-008',
@@ -1052,6 +1210,9 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 431 987 654',
     interessentenCount: 0,
     createdAt: '2025-04-28',
+    marktplatzStatus: 'pausiert',
+    veroeffentlichtAm: '2025-04-29',
+    deaktivierungsGrund: 'Ansprechpartner momentan nicht erreichbar – vorübergehend pausiert',
   },
 ];
 
