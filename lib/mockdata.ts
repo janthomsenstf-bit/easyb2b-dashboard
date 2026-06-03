@@ -933,6 +933,266 @@ export function getLandFlag(land: string): string {
   return flags[land] || '🌍';
 }
 
+// ─── EVENTS ──────────────────────────────────────────────────
+
+export interface MockEvent_Full {
+  id: string;
+  titel: string;
+  untertitel?: string;
+  beschreibung: string;
+  typ: string;
+  datum: string;
+  uhrzeit: string;
+  ort: string;
+  land: string;
+  veranstalter: string;
+  status: string;
+  maxTeilnehmer: number;
+  sprache: string;
+  ziele: string[];
+  teilnehmer: MockEventTeilnehmer[];
+  feedback: MockEventFeedback[];
+  matches: MockEventMatch[];
+}
+
+export interface MockEventTeilnehmer {
+  id: string;
+  firmenname: string;
+  ansprechpartner: string;
+  email: string;
+  land: string;
+  status: string;
+  warteliste: boolean;
+  rolle?: string;
+  erschienen: boolean;
+}
+
+export interface MockEventFeedback {
+  id: string;
+  firmenname: string;
+  bewertung: number;
+  wiederTeilnehmen: boolean;
+  neueKontakteGeknuepft: boolean;
+  kooperationEntstanden: boolean;
+  kommentar?: string;
+  verbesserungsvorschlag?: string;
+}
+
+export interface MockEventMatch {
+  id: string;
+  firma1Name: string;
+  firma2Name: string;
+  vermitteltDurch?: string;
+  notiz?: string;
+  folgekontakt: boolean;
+  kooperation: boolean;
+  kooperationsArt?: string;
+}
+
+export const MOCK_EVENTS: MockEvent_Full[] = [
+  {
+    id: 'evt-001',
+    titel: 'Pitch & Meet Flensburg',
+    untertitel: 'Deutsch-dänische Unternehmen stellen sich vor',
+    beschreibung: 'Das erste Pitch & Meet in der Grenzregion. Unternehmen aus Deutschland und Dänemark präsentieren ihre Kooperationssuche live vor Publikum. Danach: Connect in Car mit Mercedes-Format.',
+    typ: 'pitch_and_meet',
+    datum: '2025-06-15',
+    uhrzeit: '15:30 – 20:00 Uhr',
+    ort: 'IHK Flensburg, Heinrichstraße 28',
+    land: 'deutschland',
+    veranstalter: 'Easy-B2B & BVMW Schleswig-Holstein',
+    status: 'veroeffentlicht',
+    maxTeilnehmer: 40,
+    sprache: 'bilingual',
+    ziele: ['matchmaking', 'netzwerk', 'kulturverstaendnis'],
+    teilnehmer: [
+      { id: 'tp-001', firmenname: 'Müller Maschinenbau GmbH', ansprechpartner: 'Thomas Müller', email: 'mueller@maschinenbau-fl.de', land: 'deutschland', status: 'bestaetigt', warteliste: false, rolle: 'Pitcher', erschienen: false },
+      { id: 'tp-002', firmenname: 'GreenTech Aarhus', ansprechpartner: 'Mikkel Jensen', email: 'mikkel@greentech-aarhus.dk', land: 'daenemark', status: 'bestaetigt', warteliste: false, rolle: 'Pitcher', erschienen: false },
+      { id: 'tp-003', firmenname: 'Stadtwerke Lübeck', ansprechpartner: 'Dr. Peter Krause', email: 'krause@sw-luebeck.de', land: 'deutschland', status: 'bestaetigt', warteliste: false, rolle: 'Gast', erschienen: false },
+      { id: 'tp-004', firmenname: 'Nordic Fish A/S', ansprechpartner: 'Lars Henriksen', email: 'lars@nordicfish.dk', land: 'daenemark', status: 'bestaetigt', warteliste: false, rolle: 'Gast', erschienen: false },
+      { id: 'tp-005', firmenname: 'Kieler Brauerei', ansprechpartner: 'Hannah Schmidt', email: 'hannah@kieler-brauerei.de', land: 'deutschland', status: 'angemeldet', warteliste: false, rolle: 'Gast', erschienen: false },
+      { id: 'tp-006', firmenname: 'Scandi Import ApS', ansprechpartner: 'Katrine Berg', email: 'berg@scandi-import.dk', land: 'daenemark', status: 'angemeldet', warteliste: false, rolle: 'Gast', erschienen: false },
+      { id: 'tp-007', firmenname: 'Nordsee Logistik GmbH', ansprechpartner: 'Klaus Werner', email: 'werner@nordseelogistik.de', land: 'deutschland', status: 'warteliste', warteliste: true, erschienen: false },
+    ],
+    feedback: [],
+    matches: [],
+  },
+  {
+    id: 'evt-002',
+    titel: 'Nordic No-Bullshit Breakfast',
+    untertitel: 'Frühstück ohne Agenda – Netzwerken ohne Druck',
+    beschreibung: 'Kein Pitch, keine Präsentationen. Einfach Frühstück, echte Gespräche und deutsch-dänische Begegnungen. Für Menschen, die Netzwerken ohne Theater mögen.',
+    typ: 'breakfast_networking',
+    datum: '2025-06-28',
+    uhrzeit: '08:00 – 10:00 Uhr',
+    ort: 'Café Nordlicht, Kolding, Dänemark',
+    land: 'daenemark',
+    veranstalter: 'Easy-B2B',
+    status: 'geplant',
+    maxTeilnehmer: 20,
+    sprache: 'bilingual',
+    ziele: ['netzwerk', 'kulturverstaendnis', 'inspiration'],
+    teilnehmer: [
+      { id: 'tp-008', firmenname: 'Dansk Design Studio ApS', ansprechpartner: 'Mette Andersen', email: 'mette@danskdesign.dk', land: 'daenemark', status: 'bestaetigt', warteliste: false, erschienen: false },
+      { id: 'tp-009', firmenname: 'Nordic Living Store Hamburg', ansprechpartner: 'Anne Paulsen', email: 'paulsen@nordicliving-hh.de', land: 'deutschland', status: 'bestaetigt', warteliste: false, erschienen: false },
+      { id: 'tp-010', firmenname: 'DSV Transport Kolding', ansprechpartner: 'Henrik Larsen', email: 'larsen@dsv-kolding.dk', land: 'daenemark', status: 'angemeldet', warteliste: false, erschienen: false },
+    ],
+    feedback: [],
+    matches: [],
+  },
+  {
+    id: 'evt-003',
+    titel: 'Failure Night Schleswig',
+    untertitel: 'Scheitern als Lernchance – Ehrlichkeit statt Hochglanz',
+    beschreibung: 'Unternehmer aus Deutschland und Dänemark erzählen von ihren größten Fehlern im grenzüberschreitenden Geschäft. Kein Blamieren – nur ehrlicher Austausch und Lernen voneinander.',
+    typ: 'failure_night',
+    datum: '2025-05-08',
+    uhrzeit: '18:00 – 21:00 Uhr',
+    ort: 'Schleswiger Dom Gesellschaft, Schleswig',
+    land: 'deutschland',
+    veranstalter: 'Easy-B2B',
+    status: 'durchgefuehrt',
+    maxTeilnehmer: 30,
+    sprache: 'bilingual',
+    ziele: ['wissenstransfer', 'kulturverstaendnis', 'netzwerk'],
+    teilnehmer: [
+      { id: 'tp-011', firmenname: 'Schleswig Logistik GmbH', ansprechpartner: 'Jens Petersen', email: 'petersen@schleswig-logistik.de', land: 'deutschland', status: 'erschienen', warteliste: false, erschienen: true },
+      { id: 'tp-012', firmenname: 'DSV Transport Kolding', ansprechpartner: 'Henrik Larsen', email: 'larsen@dsv-kolding.dk', land: 'daenemark', status: 'erschienen', warteliste: false, erschienen: true },
+      { id: 'tp-013', firmenname: 'Kieler Brauerei', ansprechpartner: 'Hannah Schmidt', email: 'hannah@kieler-brauerei.de', land: 'deutschland', status: 'erschienen', warteliste: false, erschienen: true },
+      { id: 'tp-014', firmenname: 'Bornholm Keramik', ansprechpartner: 'Pia Sørensen', email: 'pia@bornholm-keramik.dk', land: 'daenemark', status: 'erschienen', warteliste: false, erschienen: true },
+      { id: 'tp-015', firmenname: 'GreenTech Aarhus', ansprechpartner: 'Mikkel Jensen', email: 'mikkel@greentech-aarhus.dk', land: 'daenemark', status: 'abgesagt', warteliste: false, erschienen: false },
+    ],
+    feedback: [
+      { id: 'fb-001', firmenname: 'Schleswig Logistik GmbH', bewertung: 5, wiederTeilnehmen: true, neueKontakteGeknuepft: true, kooperationEntstanden: true, kommentar: 'Endlich mal kein Hochglanz-Event. Sehr ehrlich, sehr wertvoll. Habe Henrik kennengelernt – wir planen jetzt eine Kooperation.' },
+      { id: 'fb-002', firmenname: 'DSV Transport Kolding', bewertung: 5, wiederTeilnehmen: true, neueKontakteGeknuepft: true, kooperationEntstanden: true, kommentar: 'Jens von Schleswig Logistik ist jetzt unser Partner für die Nordroute. Das Event hat das möglich gemacht.' },
+      { id: 'fb-003', firmenname: 'Kieler Brauerei', bewertung: 4, wiederTeilnehmen: true, neueKontakteGeknuepft: false, kooperationEntstanden: false, kommentar: 'Gute Atmosphäre. Hätte gern mehr dänische Teilnehmer gesehen.', verbesserungsvorschlag: 'Nächstes Mal auch in Dänemark veranstalten.' },
+      { id: 'fb-004', firmenname: 'Bornholm Keramik', bewertung: 4, wiederTeilnehmen: true, neueKontakteGeknuepft: true, kooperationEntstanden: false, kommentar: 'Schön zu hören, dass andere auch Fehler machen. Bin mutiger geworden.' },
+    ],
+    matches: [
+      { id: 'em-001', firma1Name: 'Schleswig Logistik GmbH', firma2Name: 'DSV Transport Kolding', vermitteltDurch: 'Jan Thomsen', notiz: 'Beide haben beim Gespräch über Grenzlogistik sofort eine Verbindung gespürt.', folgekontakt: true, kooperation: true, kooperationsArt: 'Logistik-Partnerschaft Nordroute' },
+    ],
+  },
+  {
+    id: 'evt-004',
+    titel: 'Blind Matchmaking Hamburg',
+    untertitel: 'Wer passt zu wem? Ohne Namen, nur Beschreibung.',
+    beschreibung: 'Unternehmen werden anonym beschrieben. Die Teilnehmer raten, wer zu wem passt. Am Ende wird aufgelöst. Ein spielerischer Einstieg ins Matchmaking.',
+    typ: 'blind_matchmaking',
+    datum: '2025-07-10',
+    uhrzeit: '17:00 – 20:00 Uhr',
+    ort: 'Handelskammer Hamburg',
+    land: 'deutschland',
+    veranstalter: 'Easy-B2B & Handelskammer Hamburg',
+    status: 'geplant',
+    maxTeilnehmer: 24,
+    sprache: 'bilingual',
+    ziele: ['matchmaking', 'netzwerk', 'inspiration'],
+    teilnehmer: [],
+    feedback: [],
+    matches: [],
+  },
+  {
+    id: 'evt-005',
+    titel: 'Walk & Talk Grenzregion',
+    untertitel: 'Netzwerken in Bewegung – entlang der deutsch-dänischen Grenze',
+    beschreibung: 'Gemeinsames Gehen, Gespräche und Begegnungen entlang der historischen Grenzregion. Eine Mischung aus Natur, Geschichte und Business-Netzwerken.',
+    typ: 'walk_and_talk',
+    datum: '2025-08-02',
+    uhrzeit: '10:00 – 14:00 Uhr',
+    ort: 'Grenzübergang Padborg, Start Bahnhof',
+    land: 'daenemark',
+    veranstalter: 'Easy-B2B',
+    status: 'geplant',
+    maxTeilnehmer: 16,
+    sprache: 'bilingual',
+    ziele: ['netzwerk', 'kulturverstaendnis'],
+    teilnehmer: [],
+    feedback: [],
+    matches: [],
+  },
+];
+
+export function getEventTypLabel(typ: string): string {
+  const labels: Record<string, string> = {
+    pitch_and_meet: 'Pitch & Meet',
+    blind_matchmaking: 'Blind Matchmaking',
+    breakfast_networking: 'No-Bullshit Breakfast',
+    failure_night: 'Failure Night',
+    reverse_networking: 'Reverse Networking',
+    problem_solving: 'Bring ein Problem',
+    walk_and_talk: 'Walk & Talk',
+    betriebsbesichtigung: 'Betriebsbesichtigung',
+    branchentag: 'Branchentag',
+    connect_in_car: 'Connect in Car',
+    online_webinar: 'Online Webinar',
+    sonstiges: 'Sonstiges',
+  };
+  return labels[typ] || typ;
+}
+
+export function getEventTypIcon(typ: string): string {
+  const icons: Record<string, string> = {
+    pitch_and_meet: '🎤',
+    blind_matchmaking: '🎭',
+    breakfast_networking: '☕',
+    failure_night: '💥',
+    reverse_networking: '🔄',
+    problem_solving: '💡',
+    walk_and_talk: '🚶',
+    betriebsbesichtigung: '🏭',
+    branchentag: '📅',
+    connect_in_car: '🚗',
+    online_webinar: '💻',
+    sonstiges: '📌',
+  };
+  return icons[typ] || '📌';
+}
+
+export function getEventStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    geplant: 'Geplant',
+    veroeffentlicht: 'Veröffentlicht',
+    ausgebucht: 'Ausgebucht',
+    durchgefuehrt: 'Durchgeführt',
+    abgesagt: 'Abgesagt',
+  };
+  return labels[status] || status;
+}
+
+export function getEventStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    geplant: '#2196F3',
+    veroeffentlicht: '#4CAF50',
+    ausgebucht: '#FF9900',
+    durchgefuehrt: '#9C27B0',
+    abgesagt: '#f44336',
+  };
+  return colors[status] || '#999';
+}
+
+export function getEventZielLabel(ziel: string): string {
+  const labels: Record<string, string> = {
+    matchmaking: 'Matchmaking',
+    wissenstransfer: 'Wissenstransfer',
+    markteintritt: 'Markteintritt',
+    netzwerk: 'Netzwerk',
+    kulturverstaendnis: 'Kulturverständnis',
+    inspiration: 'Inspiration',
+  };
+  return labels[ziel] || ziel;
+}
+
+export function getTeilnehmerStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    angemeldet: '#2196F3',
+    bestaetigt: '#4CAF50',
+    erschienen: '#9C27B0',
+    abgesagt: '#f44336',
+    warteliste: '#FF9900',
+  };
+  return colors[status] || '#999';
+}
+
 export function getEventFormatLabel(format: string): string {
   const labels: Record<string, string> = {
     pitch_and_meet: 'Pitch & Meet',

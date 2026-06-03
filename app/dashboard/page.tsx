@@ -3,6 +3,7 @@
 import {
   MOCK_ANFRAGEN,
   MOCK_INTERESSENTEN,
+  MOCK_EVENTS,
   getStatusLabel,
   getStatusColor,
   getRichtungLabel,
@@ -15,6 +16,8 @@ export default function DashboardPage() {
   const totalInteressenten = MOCK_INTERESSENTEN.length;
   const neueInteressenten = MOCK_INTERESSENTEN.filter(i => i.status === 'neu').length;
   const erfolgreich = MOCK_INTERESSENTEN.filter(i => i.status === 'erfolgreich').length;
+  const naechsteEvents = MOCK_EVENTS.filter(e => e.status === 'geplant' || e.status === 'veroeffentlicht').length;
+  const eventKooperationen = MOCK_EVENTS.reduce((s, e) => s + e.matches.filter(m => m.kooperation).length, 0);
 
   const recentAnfragen = [...MOCK_ANFRAGEN].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -38,6 +41,8 @@ export default function DashboardPage() {
         <StatCard label="Interessenten" value={totalInteressenten} color="#2196F3" />
         <StatCard label="Neue Interessenten" value={neueInteressenten} color="#9C27B0" />
         <StatCard label="Erfolgreiche Matches" value={erfolgreich} color="#4CAF50" />
+        <StatCard label="Nächste Events" value={naechsteEvents} color="#E91E63" />
+        <StatCard label="Kooperationen aus Events" value={eventKooperationen} color="#009688" />
       </div>
 
       {/* Alerts */}

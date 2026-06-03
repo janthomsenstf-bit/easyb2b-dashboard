@@ -64,10 +64,12 @@ model Unternehmen {
   spamRisiko             Boolean           @default(false)
 
   // Beziehungen
-  anfragen          Anfrage[]
+  anfragen            Anfrage[]
   interessentenRollen Interessent[]
-  successStories    SuccessStory[]
-  eventTeilnahmen   EventTeilnahme[]
+  successStories      SuccessStory[]
+  eventTeilnahmen     EventTeilnahme[]       // altes Modell, bleibt
+  eventTeilnehmer     EventTeilnehmer[]      @relation("EventTeilnehmerU")
+  eventFeedbacks      EventFeedback[]        @relation("EventFeedbackU")
 
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -117,6 +119,163 @@ enum KommunikationStil {
   zurueckhaltend
   digital_bevorzugt
   persoenlich_bevorzugt
+}
+
+// ─── EVENTS ──────────────────────────────────────────────────────
+
+model Event {
+  id                String            @id @default(cuid())
+
+  // Grunddaten
+  titel             String
+  untertitel        String?
+  beschreibung      String
+  typ               EventTypNeu
+  datum             DateTime
+  uhrzeit           String?           // z.B. "16:00 – 20:00 Uhr"
+  ort               String?
+  land              Land
+  veranstalter      String            @default("Easy-B2B")
+
+  // Status & Kapazität
+  status            EventStatus       @default(geplant)
+  maxTeilnehmer     Int?
+  sprache           EventSprache      @default(bilingual)
+
+  // Ziele (als String-Array, flexibel)
+  ziele             EventZiel[]
+
+  // Beziehungen
+  teilnehmer        EventTeilnehmer[]
+  feedback          EventFeedback[]
+  eventMatches      EventMatch[]
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model EventTeilnehmer {
+  id              String              @id @default(cuid())
+  event           Event               @relation(fields: [eventId], references: [id])
+  eventId         String
+
+  // Optional: Verknüpfung mit Unternehmen
+  unternehmen     Unternehmen?        @relation("EventTeilnehmerU", fields: [unternehmenId], references: [id])
+  unternehmenId   String?
+
+  // Fallback-Felder (falls kein Unternehmen-Datensatz)
+  firmenname      String
+  ansprechpartner String
+  email           String
+  telefon         String?
+
+  // Teilnahme-Details
+  status          TeilnehmerStatus    @default(angemeldet)
+  warteliste      Boolean             @default(false)
+  rolle           String?             // "Pitcher", "Gast", "Moderator"
+  land            Land?
+  notiz           String?
+  angemeldetAm    DateTime            @default(now())
+
+  // Nach dem Event
+  erschienen      Boolean             @default(false)
+  feedbackGegeben Boolean             @default(false)
+
+  createdAt       DateTime            @default(now())
+}
+
+model EventFeedback {
+  id                    String      @id @default(cuid())
+  event                 Event       @relation(fields: [eventId], references: [id])
+  eventId               String
+
+  unternehmen           Unternehmen? @relation("EventFeedbackU", fields: [unternehmenId], references: [id])
+  unternehmenId         String?
+  firmenname            String      // Fallback
+
+  // Bewertung
+  bewertung             Int         // 1–5
+  wiederTeilnehmen      Boolean
+  neueKontakteGeknuepft Boolean
+  kooperationEntstanden Boolean
+
+  // Qualitativ
+  kommentar             String?
+  verbesserungsvorschlag String?
+
+  createdAt             DateTime    @default(now())
+}
+
+model EventMatch {
+  id              String      @id @default(cuid())
+  event           Event       @relation(fields: [eventId], references: [id])
+  eventId         String
+
+  // Die beiden Unternehmen
+  firma1Name      String
+  firma1Id        String?
+  firma2Name      String
+  firma2Id        String?
+
+  // Vermittlung
+  vermitteltDurch String?     // Operator-Name
+  notiz           String?
+
+  // Nachverfolgung
+  folgekontakt    Boolean     @default(false)
+  kooperation     Boolean     @default(false)
+  kooperationsArt String?     // z.B. "Vertriebspartnerschaft"
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum EventTypNeu {
+  pitch_and_meet
+  blind_matchmaking
+  breakfast_networking
+  failure_night
+  reverse_networking
+  problem_solving
+  walk_and_talk
+  betriebsbesichtigung
+  branchentag
+  connect_in_car
+  online_webinar
+  sonstiges
+}
+
+enum EventStatus {
+  geplant
+  veroeffentlicht
+  ausgebucht
+  durchgefuehrt
+  abgesagt
+}
+
+enum EventSprache {
+  deutsch
+  daenisch
+  englisch
+  bilingual
+  trilingual
+}
+
+enum EventZiel {
+  matchmaking
+  wissenstransfer
+  markteintritt
+  netzwerk
+  kulturverstaendnis
+  inspiration
+}
+
+enum TeilnehmerStatus {
+  angemeldet
+  bestaetigt
+  erschienen
+  abgesagt
+  warteliste
 }
 
 // ─── SUCCESS STORIES ─────────────────────────────────────────────
