@@ -5,6 +5,7 @@ import {
   MOCK_INTERESSENTEN,
   MOCK_EVENTS,
   MOCK_SUCCESS_STORIES,
+  MOCK_NETZWERKKONTAKTE,
   getStatusLabel,
   getStatusColor,
   getRichtungLabel,
@@ -21,6 +22,8 @@ export default function DashboardPage() {
   const eventKooperationen = MOCK_EVENTS.reduce((s, e) => s + e.matches.filter(m => m.kooperation).length, 0);
   const successStoriesGesamt = MOCK_SUCCESS_STORIES.length;
   const storiesFreigegeben = MOCK_SUCCESS_STORIES.filter(s => s.freigabe === 'freigegeben').length;
+  const netzwerkKontakte = MOCK_NETZWERKKONTAKTE.length;
+  const alleEmpfehlungen = MOCK_NETZWERKKONTAKTE.reduce((s, k) => s + k.empfehlungen.filter(e => e.erfolgreich).length, 0);
 
   const recentAnfragen = [...MOCK_ANFRAGEN].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -48,6 +51,8 @@ export default function DashboardPage() {
         <StatCard label="Kooperationen aus Events" value={eventKooperationen} color="#009688" />
         <StatCard label="⭐ Success Stories" value={successStoriesGesamt} color="#FF9900" />
         <StatCard label="Stories öffentlich" value={storiesFreigegeben} color="#4CAF50" />
+        <StatCard label="🕸 Netzwerkkontakte" value={netzwerkKontakte} color="#9C27B0" />
+        <StatCard label="Erfolgreiche Empf." value={alleEmpfehlungen} color="#4CAF50" />
       </div>
 
       {/* Alerts */}

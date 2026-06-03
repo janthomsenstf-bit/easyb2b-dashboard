@@ -3,6 +3,215 @@
 // Später durch echte Prisma-Queries ersetzen
 // =============================================================
 
+// ─── NETZWERKKONTAKTE ────────────────────────────────────────
+
+export interface MockKontaktHistorie {
+  id: string;
+  typ: string;
+  datum: string;
+  notiz: string;
+  ergebnis?: string;
+  naechsteAktion?: string;
+  naechsteAktionAm?: string;
+  erledigt: boolean;
+  eingetragenVon?: string;
+}
+
+export interface MockEmpfehlung {
+  id: string;
+  empfohleneName: string;
+  datum: string;
+  kontext?: string;
+  status: string;
+  ergebnis?: string;
+  erfolgreich: boolean;
+}
+
+export interface MockNetzwerkkontakt {
+  id: string;
+  name: string;
+  organisation?: string;
+  position?: string;
+  kategorie: string;
+  land: string;
+  region?: string;
+  branche?: string;
+  email?: string;
+  telefon?: string;
+  linkedin?: string;
+  website?: string;
+  quelle?: string;
+  erstkontakt: string;
+  letzterKontakt: string;
+  aktivitaetsStatus: string;
+  interneNotiz?: string;
+  netzwerkWert: number;
+  empfehlungen: MockEmpfehlung[];
+  historie: MockKontaktHistorie[];
+}
+
+export const MOCK_NETZWERKKONTAKTE: MockNetzwerkkontakt[] = [
+  {
+    id: 'nk-001',
+    name: 'Ulrike Brenner',
+    organisation: 'IHK Schleswig-Holstein',
+    position: 'Bereichsleiterin Internationales',
+    kategorie: 'kammer',
+    land: 'deutschland',
+    region: 'Schleswig-Holstein',
+    branche: 'Wirtschaftsförderung',
+    email: 'brenner@ihk-sh.de',
+    telefon: '+49 431 5194 200',
+    linkedin: 'ulrike-brenner-ihk',
+    quelle: 'BVMW-Netzwerktreffen Kiel 2024',
+    erstkontakt: '2024-09-15',
+    letzterKontakt: '2025-05-20',
+    aktivitaetsStatus: 'aktiv',
+    interneNotiz: 'Sehr starke Vernetzung in Schleswig-Holstein. Öffnet Türen zu Unternehmen in der Region. Monatlicher Austausch geplant.',
+    netzwerkWert: 88,
+    empfehlungen: [
+      { id: 'emp-001', empfohleneName: 'Müller Maschinenbau GmbH', datum: '2025-01-15', kontext: 'Ulrike hat Thomas Müller als Mitglied erwähnt, das dänische Kontakte sucht.', status: 'erfolgreich', ergebnis: 'Anfrage bei Easy-B2B eingereicht. Aktiver Teilnehmer.', erfolgreich: true },
+      { id: 'emp-002', empfohleneName: 'Kieler Brauerei', datum: '2025-03-10', kontext: 'Hannah Schmidt, IHK-Mitglied, hat Interesse an dänischem Markt geäußert.', status: 'angenommen', ergebnis: 'Anfrage eingereicht, noch kein Match.', erfolgreich: false },
+      { id: 'emp-003', empfohleneName: 'Nordwind Energie AG', datum: '2025-05-05', kontext: 'Dr. Weber hat über IHK-Veranstaltung von Easy-B2B erfahren.', status: 'in_pruefung', erfolgreich: false },
+    ],
+    historie: [
+      { id: 'h-001', typ: 'meeting', datum: '2025-05-20', notiz: 'Persönliches Treffen in Kiel. Ulrike interessiert sich für Kooperation bei Matchmaking-Events.', ergebnis: 'Will Easy-B2B beim nächsten IHK-Netzwerktag vorstellen.', naechsteAktion: 'Präsentation vorbereiten', naechsteAktionAm: '2025-06-01', erledigt: false, eingetragenVon: 'Jan Thomsen' },
+      { id: 'h-002', typ: 'telefonat', datum: '2025-03-12', notiz: 'Kurzes Telefonat. Ulrike hat drei weitere Unternehmen aus dem IHK-Netzwerk, die dänische Kontakte suchen.', naechsteAktion: 'Namen per E-Mail schicken lassen', erledigt: true, eingetragenVon: 'Jan Thomsen' },
+      { id: 'h-003', typ: 'event', datum: '2025-02-08', notiz: 'Failure Night Schleswig – Ulrike war als Gast dabei. Sehr positives Feedback zur Atmosphäre.', erledigt: true, eingetragenVon: 'Jan Thomsen' },
+      { id: 'h-004', typ: 'email', datum: '2024-11-20', notiz: 'Erstes formelles E-Mail nach Kennenlernen auf BVMW-Treffen. Kurzvorstellung von Easy-B2B geschickt.', erledigt: true },
+    ],
+  },
+  {
+    id: 'nk-002',
+    name: 'Anders Christoffersen',
+    organisation: 'Syddansk Erhvervsfremme (SDE)',
+    position: 'Projektleder Grenzsregion',
+    kategorie: 'wirtschaftsfoerderung',
+    land: 'daenemark',
+    region: 'Süddänemark',
+    branche: 'Wirtschaftsförderung',
+    email: 'anders@sde.dk',
+    telefon: '+45 76 62 22 00',
+    linkedin: 'anders-christoffersen-sde',
+    website: 'https://www.sde.dk',
+    quelle: 'Interreg-Veranstaltung Kolding 2024',
+    erstkontakt: '2024-11-08',
+    letzterKontakt: '2025-05-25',
+    aktivitaetsStatus: 'aktiv',
+    interneNotiz: 'Schlüsselkontakt für die dänische Seite. Anders hat direkten Zugang zu hunderten dänischen KMUs in Süddänemark. Vertrauensverhältnis gut aufgebaut.',
+    netzwerkWert: 95,
+    empfehlungen: [
+      { id: 'emp-004', empfohleneName: 'Nordic Fish A/S', datum: '2024-12-01', kontext: 'Lars Henriksen aus Anders\' Netzwerk, sucht deutschen Vertrieb.', status: 'erfolgreich', ergebnis: 'Aktive Anfrage bei Easy-B2B, 3 Interessenten.', erfolgreich: true },
+      { id: 'emp-005', empfohleneName: 'Dansk Design Studio ApS', datum: '2025-01-20', kontext: 'Mette Andersen, Teil des SDE-Netzwerks, hat BVMW-Kontakt gewünscht.', status: 'erfolgreich', ergebnis: 'Aktiv bei Easy-B2B, hoher Vertrauensscore.', erfolgreich: true },
+      { id: 'emp-006', empfohleneName: 'GreenTech Aarhus', datum: '2025-04-15', kontext: 'Startup aus SDE-Förderprogramm, interessiert an deutschem Markt.', status: 'angenommen', ergebnis: 'Anfrage eingereicht, Pitch & Meet angemeldet.', erfolgreich: false },
+    ],
+    historie: [
+      { id: 'h-005', typ: 'meeting', datum: '2025-05-25', notiz: 'Strategisches Treffen in Kolding. Diskussion über gemeinsame Vermittlungsstruktur DE–DK. Anders möchte Easy-B2B als offiziellen Partner von SDE positionieren.', ergebnis: 'Entwurf für MoU (Memorandum of Understanding) soll vorbereitet werden.', naechsteAktion: 'MoU-Entwurf ausarbeiten', naechsteAktionAm: '2025-06-15', erledigt: false, eingetragenVon: 'Jan Thomsen' },
+      { id: 'h-006', typ: 'event', datum: '2025-05-08', notiz: 'Failure Night in Schleswig. Anders war dabei, sehr begeistert vom Format.', erledigt: true },
+      { id: 'h-007', typ: 'telefonat', datum: '2025-03-05', notiz: 'Austausch über drei potenzielle Unternehmen aus dem SDE-Portfolio.', ergebnis: 'Zwei davon haben Kontakt aufgenommen.', erledigt: true },
+    ],
+  },
+  {
+    id: 'nk-003',
+    name: 'Martin Große-Boymann',
+    organisation: 'BVMW Bundesverband',
+    position: 'Regionsgeschäftsführer Nord',
+    kategorie: 'verband',
+    land: 'deutschland',
+    region: 'Norddeutschland',
+    branche: 'Unternehmensnetzwerk',
+    email: 'grosse-boymann@bvmw.de',
+    telefon: '+49 40 2263 6800',
+    linkedin: 'martin-grosse-boymann',
+    quelle: 'Pitch & Meet Vorbereitung 2025',
+    erstkontakt: '2025-02-01',
+    letzterKontakt: '2025-05-28',
+    aktivitaetsStatus: 'aktiv',
+    interneNotiz: 'Strategische Partnerschaft. BVMW steht hinter Pitch & Meet. Martin ist der Hauptansprechpartner und öffnet das BVMW-Netzwerk (40.000+ Unternehmen) für Easy-B2B.',
+    netzwerkWert: 92,
+    empfehlungen: [
+      { id: 'emp-007', empfohleneName: 'Schleswig Logistik GmbH', datum: '2025-02-15', kontext: 'BVMW-Mitglied mit Interesse an grenzüberschreitender Logistik.', status: 'erfolgreich', ergebnis: 'Erfolgreiche Vermittlung mit DSV Kolding.', erfolgreich: true },
+      { id: 'emp-008', empfohleneName: 'Stadtwerke Lübeck', datum: '2025-04-01', kontext: 'BVMW-nahe Kommune. Interesse an GreenTech aus Dänemark.', status: 'kontaktiert', erfolgreich: false },
+    ],
+    historie: [
+      { id: 'h-008', typ: 'meeting', datum: '2025-05-28', notiz: 'Vorbereitung Pitch & Meet Flensburg gemeinsam. BVMW übernimmt Gästeeinladungen und Pressemitteilung.', naechsteAktion: 'Pressemitteilung abstimmen', naechsteAktionAm: '2025-06-05', erledigt: false, eingetragenVon: 'Jan Thomsen' },
+      { id: 'h-009', typ: 'telefonat', datum: '2025-04-18', notiz: 'Abstimmung Teilnehmerliste für Pitch & Meet.', erledigt: true },
+      { id: 'h-010', typ: 'email', datum: '2025-02-20', notiz: 'Formelle Kooperationsanfrage bestätigt. BVMW-Logo für Veranstaltungsflyer freigegeben.', erledigt: true },
+    ],
+  },
+  {
+    id: 'nk-004',
+    name: 'Karin Lundqvist',
+    organisation: 'Handelskammer Danmark',
+    position: 'Beziehungsmanagerin Deutschland',
+    kategorie: 'kammer',
+    land: 'daenemark',
+    region: 'Kopenhagen',
+    branche: 'Wirtschaft & Handel',
+    email: 'kl@handelskammer.dk',
+    telefon: '+45 33 77 33 77',
+    quelle: 'Empfehlung durch Anders Christoffersen',
+    erstkontakt: '2025-03-20',
+    letzterKontakt: '2025-05-10',
+    aktivitaetsStatus: 'aktiv',
+    interneNotiz: 'Durch Anders kennengelernt. Gute Kontakte zu dänischen Unternehmen mit Deutschland-Interesse. Noch am Anfang der Beziehung.',
+    netzwerkWert: 42,
+    empfehlungen: [
+      { id: 'emp-009', empfohleneName: 'Bornholm Keramik', datum: '2025-04-10', kontext: 'Pia Sørensen ist Mitglied der Handelskammer, sucht deutschen Markt.', status: 'angenommen', erfolgreich: false },
+    ],
+    historie: [
+      { id: 'h-011', typ: 'telefonat', datum: '2025-05-10', notiz: 'Kennenlerngespräch. Karin interessiert sich für das Modell. Möchte Easy-B2B bei internem Netzwerktag vorstellen.', naechsteAktion: 'Kurzpräsentation schicken (EN)', naechsteAktionAm: '2025-06-01', erledigt: false },
+      { id: 'h-012', typ: 'email', datum: '2025-03-22', notiz: 'Erstkontakt per E-Mail. Easy-B2B vorgestellt, positives Echo.', erledigt: true },
+    ],
+  },
+  {
+    id: 'nk-005',
+    name: 'Thomas Brandt',
+    organisation: 'Freier Netzwerker',
+    position: 'Unternehmensberater & Connector',
+    kategorie: 'berater',
+    land: 'deutschland',
+    region: 'Hamburg',
+    branche: 'Beratung & Strategie',
+    email: 'thomas.brandt@strategiebuero.de',
+    telefon: '+49 40 999 888 777',
+    linkedin: 'thomasbrandt-hh',
+    quelle: 'Failure Night Schleswig (Teilnehmer)',
+    erstkontakt: '2025-05-08',
+    letzterKontakt: '2025-05-14',
+    aktivitaetsStatus: 'aktiv',
+    interneNotiz: 'Hat sich nach der Failure Night gemeldet. Breites Netzwerk in Hamburg. Kennt viele Mittelständler, die an Dänemark interessiert sind.',
+    netzwerkWert: 22,
+    empfehlungen: [],
+    historie: [
+      { id: 'h-013', typ: 'event', datum: '2025-05-08', notiz: 'Failure Night Schleswig. Thomas hat sich nach dem Event spontan vorgestellt.', erledigt: true },
+      { id: 'h-014', typ: 'nachricht', datum: '2025-05-14', notiz: 'LinkedIn-Nachricht: Fragt nach Möglichkeit zur Kooperation. Hat 3-4 Unternehmen in Hamburg, die DE-DK-Partner suchen.', naechsteAktion: 'Telefonat vereinbaren', naechsteAktionAm: '2025-06-05', erledigt: false },
+    ],
+  },
+  {
+    id: 'nk-006',
+    name: 'Hanne Vestergaard',
+    organisation: 'Region Syddanmark',
+    position: 'Erhvervskoordinator',
+    kategorie: 'kommune',
+    land: 'daenemark',
+    region: 'Region Süddänemark',
+    branche: 'Öffentlicher Sektor',
+    email: 'hanne.vestergaard@regionsyddanmark.dk',
+    quelle: 'Interreg A-Programm Kontakt',
+    erstkontakt: '2024-08-01',
+    letzterKontakt: '2025-01-15',
+    aktivitaetsStatus: 'passiv',
+    interneNotiz: 'Wichtige Kontaktin in der Region. Koordiniert Interreg-Fördergelder. Weniger persönlich, aber strategisch wertvoll. Aktuell wenig Aktivität, sollte reaktiviert werden.',
+    netzwerkWert: 35,
+    empfehlungen: [],
+    historie: [
+      { id: 'h-015', typ: 'meeting', datum: '2025-01-15', notiz: 'Meeting in Odense. Diskussion über Interreg-Förderung für Easy-B2B-Aktivitäten.', ergebnis: 'Fördermöglichkeit identifiziert. Antrag bis Q3 2025 möglich.', naechsteAktion: 'Förderantrag skizzieren', naechsteAktionAm: '2025-07-01', erledigt: false },
+      { id: 'h-016', typ: 'email', datum: '2024-10-10', notiz: 'Erstes Kennenlernen über Interreg-Programmveranstaltung.', erledigt: true },
+    ],
+  },
+];
+
 // ─── SUCCESS STORIES ─────────────────────────────────────────
 
 export interface MockSuccessStory {

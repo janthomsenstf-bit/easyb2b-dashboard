@@ -70,6 +70,7 @@ model Unternehmen {
   eventTeilnahmen     EventTeilnahme[]       // altes Modell, bleibt
   eventTeilnehmer     EventTeilnehmer[]      @relation("EventTeilnehmerU")
   eventFeedbacks      EventFeedback[]        @relation("EventFeedbackU")
+  empfohlenDurch      Empfehlung[]           @relation("EmpfehlungUnternehmen")
 
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -632,4 +633,126 @@ enum EmailTyp {
   reminder_tag10
   stalled_alarm
   ablauf_warnung
+}
+
+// ─── NETZWERK & KONTAKTE ──────────────────────────────────────
+
+model Netzwerkkontakt {
+  id                  String              @id @default(cuid())
+
+  // Person / Organisation
+  name                String
+  organisation        String?
+  position            String?             // z.B. "Geschäftsführer", "Netzwerkmanager"
+  kategorie           KontaktKategorie
+  land                Land
+  region              String?             // z.B. "Schleswig-Holstein", "Süddänemark"
+  branche             String?
+
+  // Kontaktdaten
+  email               String?
+  telefon             String?
+  linkedin            String?
+  website             String?
+
+  // Netzwerkdaten
+  quelle              String?             // Wie gefunden (Event, Empfehlung, etc.)
+  erstkontakt         DateTime?
+  letzterKontakt      DateTime?
+  aktivitaetsStatus   AktivitaetsStatus   @default(aktiv)
+  interneNotiz        String?
+
+  // Netzwerkwert (intern, nie öffentlich)
+  netzwerkWert        Int                 @default(0)  // 0–100
+
+  // Beziehungen
+  empfehlungen        Empfehlung[]        @relation("EmpfehlerKontakt")
+  kontaktHistorie     KontaktHistorie[]
+
+  // Optional: Verknüpfung zu einem Unternehmen im System
+  unternehmenId       String?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model Empfehlung {
+  id                  String              @id @default(cuid())
+
+  // Wer empfiehlt?
+  empfehler           Netzwerkkontakt     @relation("EmpfehlerKontakt", fields: [empfehlerId], references: [id])
+  empfehlerId         String
+
+  // Was/Wen wird empfohlen?
+  empfohlenesUnternehmen Unternehmen?     @relation("EmpfehlungUnternehmen", fields: [unternehmenId], references: [id])
+  unternehmenId       String?
+  empfohleneName      String              // Name des empfohlenen (Fallback)
+
+  // Details
+  datum               DateTime            @default(now())
+  kontext             String?             // Warum die Empfehlung?
+  status              EmpfehlungsStatus   @default(offen)
+  ergebnis            String?             // Was ist daraus geworden?
+  erfolgreich         Boolean             @default(false)
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model KontaktHistorie {
+  id                  String              @id @default(cuid())
+
+  kontakt             Netzwerkkontakt     @relation(fields: [kontaktId], references: [id])
+  kontaktId           String
+
+  typ                 HistorieTyp
+  datum               DateTime
+  notiz               String
+  ergebnis            String?
+  naechsteAktion      String?
+  naechsteAktionAm    DateTime?
+  erledigt            Boolean             @default(false)
+  eingetragenVon      String?             // Operator-Name
+
+  createdAt           DateTime            @default(now())
+}
+
+enum KontaktKategorie {
+  unternehmer
+  verband
+  kammer
+  wirtschaftsfoerderung
+  kommune
+  dienstleister
+  berater
+  investor
+  journalist
+  politik
+  sonstiges
+}
+
+enum AktivitaetsStatus {
+  aktiv
+  passiv
+  ruhend
+  inaktiv
+}
+
+enum EmpfehlungsStatus {
+  offen
+  kontaktiert
+  in_pruefung
+  angenommen
+  abgelehnt
+  erfolgreich
+}
+
+enum HistorieTyp {
+  telefonat
+  meeting
+  email
+  event
+  nachricht
+  wiedervorlage
+  notiz
 }
