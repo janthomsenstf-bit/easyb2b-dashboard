@@ -6,14 +6,37 @@ import { berechneTrustScore, getLevelColor, getLevelLabel, getLevelBackground } 
 
 export default function InteressentenPage() {
   const [filterStatus, setFilterStatus] = useState('alle');
+  const [interessenten, setInteressenten] = useState(MOCK_INTERESSENTEN);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const filtered = MOCK_INTERESSENTEN.filter(i => {
+  const zeigeToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const aendereStatus = (id: string, neuerStatus: string, meldung: string) => {
+    setInteressenten(prev => prev.map(i => i.id === id ? { ...i, status: neuerStatus } : i));
+    zeigeToast(meldung);
+  };
+
+  const filtered = interessenten.filter(i => {
     if (filterStatus !== 'alle' && i.status !== filterStatus) return false;
     return true;
   });
 
   return (
     <div>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>
+          {toast}
+        </div>
+      )}
+
       <h1 style={{ marginTop: 0, marginBottom: '24px', color: '#003366', fontSize: '24px' }}>
         Interessenten Verwaltung
       </h1>
@@ -32,6 +55,7 @@ export default function InteressentenPage() {
             <option value="freigegeben">Freigegeben</option>
             <option value="kontakt_laeuft">Kontakt läuft</option>
             <option value="erfolgreich">Erfolgreich</option>
+            <option value="abgelehnt">Abgelehnt</option>
             <option value="spam">Spam</option>
           </select>
         </div>
@@ -139,23 +163,31 @@ export default function InteressentenPage() {
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
               {i.status === 'neu' && (
                 <>
-                  <button style={{ padding: '6px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                  <button onClick={() => aendereStatus(i.id, 'freigegeben', `${i.firmenname} freigegeben ✓`)} style={{ padding: '6px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                     Freigeben
                   </button>
-                  <button style={{ padding: '6px 14px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                  <button onClick={() => aendereStatus(i.id, 'abgelehnt', `${i.firmenname} abgelehnt`)} style={{ padding: '6px 14px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                     Ablehnen
                   </button>
                 </>
               )}
               {i.status === 'freigegeben' && (
-                <button style={{ padding: '6px 14px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                <button onClick={() => aendereStatus(i.id, 'kontakt_laeuft', `Kontakt zu ${i.firmenname} hergestellt`)} style={{ padding: '6px 14px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                   Kontakt herstellen
                 </button>
               )}
               {i.status === 'kontakt_laeuft' && (
-                <button style={{ padding: '6px 14px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                  Feedback einholen
-                </button>
+                <>
+                  <button onClick={() => aendereStatus(i.id, 'erfolgreich', `${i.firmenname}: Kooperation erfolgreich!`)} style={{ padding: '6px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                    Feedback: Erfolg
+                  </button>
+                  <button onClick={() => aendereStatus(i.id, 'neu', `Feedback eingeholt von ${i.firmenname}`)} style={{ padding: '6px 14px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                    Feedback einholen
+                  </button>
+                </>
+              )}
+              {i.status === 'abgelehnt' && (
+                <span style={{ fontSize: '13px', color: '#f44336', fontWeight: 600 }}>Abgelehnt</span>
               )}
               {i.status === 'erfolgreich' && (
                 <span style={{ fontSize: '13px', color: '#4CAF50', fontWeight: 600 }}>Kooperation erfolgreich gestartet</span>

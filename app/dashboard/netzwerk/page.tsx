@@ -20,6 +20,12 @@ export default function NetzwerkPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tabDetail, setTabDetail] = useState<TabDetail>('profil');
   const [suchbegriff, setSuchbegriff] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+
+  const zeigeToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
 
   const filtered = MOCK_NETZWERKKONTAKTE.filter(k => {
     if (filterKat !== 'alle' && k.kategorie !== filterKat) return false;
@@ -36,6 +42,13 @@ export default function NetzwerkPage() {
 
   return (
     <div>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
@@ -114,6 +127,7 @@ export default function NetzwerkPage() {
               activeTab={tabDetail}
               setActiveTab={setTabDetail}
               onClose={() => setSelectedId(null)}
+              onAction={zeigeToast}
             />
           )}
         </div>
@@ -216,11 +230,12 @@ function KontaktKarte({ kontakt, selected, onClick }: {
 
 // ─── KONTAKT-DETAIL-PANEL ─────────────────────────────────────
 
-function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose }: {
+function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onAction }: {
   kontakt: MockNetzwerkkontakt;
   activeTab: TabDetail;
   setActiveTab: (t: TabDetail) => void;
   onClose: () => void;
+  onAction: (msg: string) => void;
 }) {
   const tabs: { id: TabDetail; label: string }[] = [
     { id: 'profil', label: 'Profil' },
@@ -334,10 +349,10 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose }: {
 
             {/* Aktionen */}
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+              <button onClick={() => onAction(`Kontakt mit ${kontakt.name} dokumentiert`)} style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                 + Kontakt dokumentieren
               </button>
-              <button style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+              <button onClick={() => onAction(`Empfehlung von ${kontakt.name} erfasst`)} style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                 Empfehlung erfassen
               </button>
             </div>

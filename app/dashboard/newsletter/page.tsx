@@ -107,6 +107,9 @@ function NewsletterEditor() {
   const [kiLaedt, setKiLaedt] = useState(false);
   const [voiceHinweise, setVoiceHinweise] = useState<string[] | null>(null);
   const [anfragenFilter, setAnfragenFilter] = useState<'alle' | 'de_dk' | 'dk_de'>('alle');
+  const [toast, setToast] = useState<string | null>(null);
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+  const empfaenger = MOCK_ABONNENTEN.filter(a => a.status === 'aktiv' && (zielgruppen.length === 0 || a.interessen.some(i => zielgruppen.includes(i)))).length;
 
   const handleKiGenerieren = async () => {
     setKiLaedt(true);
@@ -144,6 +147,13 @@ function NewsletterEditor() {
 
   return (
     <div style={{ display: 'flex', gap: '24px' }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       {/* Editor links */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* KI-Aktionen */}
@@ -216,9 +226,9 @@ function NewsletterEditor() {
         {/* Aktionen */}
         {bloecke.length > 0 && (
           <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-            <button style={{ padding: '12px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>📤 Sofort versenden</button>
-            <button style={{ padding: '12px 20px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>📅 Versand planen</button>
-            <button style={{ padding: '12px 20px', backgroundColor: 'transparent', color: '#666', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}>💾 Als Entwurf speichern</button>
+            <button onClick={() => zeigeToast(`Newsletter an ${empfaenger} Empfänger versendet ✓`)} style={{ padding: '12px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>📤 Sofort versenden</button>
+            <button onClick={() => zeigeToast('Versand geplant — du wirst vor dem Absenden erinnert')} style={{ padding: '12px 20px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>📅 Versand planen</button>
+            <button onClick={() => zeigeToast('Als Entwurf gespeichert')} style={{ padding: '12px 20px', backgroundColor: 'transparent', color: '#666', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}>💾 Als Entwurf speichern</button>
           </div>
         )}
       </div>

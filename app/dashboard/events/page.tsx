@@ -229,6 +229,9 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
   const deDE = event.teilnehmer.filter(t => t.land === 'deutschland').length;
   const deDK = event.teilnehmer.filter(t => t.land === 'daenemark').length;
 
+  const [toast, setToast] = useState<string | null>(null);
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
   return (
     <div style={{
       width: '400px', flexShrink: 0, backgroundColor: 'white',
@@ -236,6 +239,13 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
       alignSelf: 'flex-start', position: 'sticky', top: '20px',
       maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
     }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       {/* Header */}
       <div style={{ padding: '20px 20px 0 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -288,10 +298,10 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
               ))}
             </div>
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+              <button onClick={() => zeigeToast('Einladungslink kopiert — bereit zum Teilen')} style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                 Teilnehmer einladen
               </button>
-              <button style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+              <button onClick={() => zeigeToast(`"${event.titel}" zum Bearbeiten geöffnet`)} style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                 Event bearbeiten
               </button>
             </div>
@@ -413,7 +423,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
               ))
             )}
             {event.status === 'durchgefuehrt' && (
-              <button style={{ width: '100%', padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, marginTop: '8px' }}>
+              <button onClick={() => zeigeToast('Neuer Match-Eintrag angelegt')} style={{ width: '100%', padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, marginTop: '8px' }}>
                 + Match dokumentieren
               </button>
             )}

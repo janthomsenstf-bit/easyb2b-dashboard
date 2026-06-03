@@ -27,8 +27,20 @@ export default function UnternehmenPage() {
   const [filterNetzwerk, setFilterNetzwerk] = useState('alle');
   const [filterVerifiziert, setFilterVerifiziert] = useState('alle');
   const [selected, setSelected] = useState<string | null>(null);
+  const [unternehmen, setUnternehmen] = useState(MOCK_UNTERNEHMEN);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const filtered = MOCK_UNTERNEHMEN.filter(u => {
+  const zeigeToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const verifiziere = (id: string, name: string) => {
+    setUnternehmen(prev => prev.map(u => u.id === id ? { ...u, verifizierungsStatus: 'verifiziert', verifiziertAm: 'gerade eben', verifiziertDurch: 'Operator' } : u));
+    zeigeToast(`${name} verifiziert ✓`);
+  };
+
+  const filtered = unternehmen.filter(u => {
     if (filterLand !== 'alle' && u.land !== filterLand) return false;
     if (filterNetzwerk !== 'alle' && u.netzwerkStatus !== filterNetzwerk) return false;
     if (filterVerifiziert !== 'alle' && u.verifizierungsStatus !== filterVerifiziert) return false;
@@ -36,16 +48,23 @@ export default function UnternehmenPage() {
   });
 
   const selectedUnternehmen = selected
-    ? MOCK_UNTERNEHMEN.find(u => u.id === selected)
+    ? unternehmen.find(u => u.id === selected)
     : null;
 
-  const totalDE = MOCK_UNTERNEHMEN.filter(u => u.land === 'deutschland').length;
-  const totalDK = MOCK_UNTERNEHMEN.filter(u => u.land === 'daenemark').length;
-  const totalVerifiziert = MOCK_UNTERNEHMEN.filter(u => u.verifizierungsStatus === 'verifiziert').length;
-  const totalPartner = MOCK_UNTERNEHMEN.filter(u => u.netzwerkStatus === 'partner').length;
+  const totalDE = unternehmen.filter(u => u.land === 'deutschland').length;
+  const totalDK = unternehmen.filter(u => u.land === 'daenemark').length;
+  const totalVerifiziert = unternehmen.filter(u => u.verifizierungsStatus === 'verifiziert').length;
+  const totalPartner = unternehmen.filter(u => u.netzwerkStatus === 'partner').length;
 
   return (
     <div style={{ display: 'flex', gap: '24px' }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       {/* LINKE SPALTE */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ marginTop: 0, marginBottom: '24px', color: '#003366', fontSize: '24px' }}>
@@ -386,15 +405,15 @@ export default function UnternehmenPage() {
 
             {/* Aktionen */}
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {selectedUnternehmen.verifizierungsStatus === 'in_pruefung' && (
-                <button style={{ padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+              {selectedUnternehmen.verifizierungsStatus !== 'verifiziert' && (
+                <button onClick={() => verifiziere(selectedUnternehmen.id, selectedUnternehmen.firmenname)} style={{ padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                   ✓ Verifizieren
                 </button>
               )}
-              <button style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+              <button onClick={() => zeigeToast(`Gespräch mit ${selectedUnternehmen.firmenname} dokumentiert`)} style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                 Gespräch dokumentieren
               </button>
-              <button style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+              <button onClick={() => zeigeToast(`Notiz zu ${selectedUnternehmen.firmenname} gespeichert`)} style={{ padding: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                 Notiz hinzufügen
               </button>
             </div>

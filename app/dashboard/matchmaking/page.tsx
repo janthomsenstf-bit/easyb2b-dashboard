@@ -1,12 +1,35 @@
 'use client';
 
+import { useState } from 'react';
 import { MOCK_MATCHES, MOCK_ANFRAGEN, getStatusColor } from '@/lib/mockdata';
 
 export default function MatchmakingPage() {
   const anfrageOhneInteressenten = MOCK_ANFRAGEN.filter(a => a.interessentenCount === 0 && a.status !== 'pausiert');
+  const [matches, setMatches] = useState(MOCK_MATCHES.map((m, i) => ({ ...m, _id: `match-${i}`, _status: 'offen' as string })));
+  const [toast, setToast] = useState<string | null>(null);
+
+  const zeigeToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const setzeMatchStatus = (id: string, status: string, msg: string) => {
+    setMatches(prev => prev.map(m => m._id === id ? { ...m, _status: status } : m));
+    zeigeToast(msg);
+  };
+
+  const offeneMatches = matches.filter(m => m._status === 'offen');
 
   return (
     <div>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
+
       <h1 style={{ marginTop: 0, marginBottom: '24px', color: '#003366', fontSize: '24px' }}>
         Matchmaking
       </h1>
@@ -47,16 +70,22 @@ export default function MatchmakingPage() {
 
       {/* Match-Vorschläge */}
       <h2 style={{ color: '#003366', fontSize: '18px', marginBottom: '16px' }}>
-        Match-Vorschläge ({MOCK_MATCHES.length})
+        Match-Vorschläge ({offeneMatches.length})
       </h2>
       <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px' }}>
         Basierend auf Branche, Sprache und Kooperationsart:
       </p>
 
+      {offeneMatches.length === 0 && (
+        <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '40px', textAlign: 'center', color: '#4CAF50', fontWeight: 600 }}>
+          ✓ Alle Match-Vorschläge bearbeitet
+        </div>
+      )}
+
       <div style={{ display: 'grid', gap: '16px' }}>
-        {MOCK_MATCHES.map((m, idx) => (
+        {offeneMatches.map((m) => (
           <div
-            key={idx}
+            key={m._id}
             style={{
               backgroundColor: 'white',
               borderRadius: '8px',
@@ -98,18 +127,22 @@ export default function MatchmakingPage() {
 
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button style={{
-                padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white',
-                border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}>
+              <button
+                onClick={() => setzeMatchStatus(m._id, 'gestartet', `Match gestartet: ${m.anfrageFirma} ↔ ${m.interessentFirma}`)}
+                style={{
+                  padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white',
+                  border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}>
                 Match starten
               </button>
-              <button style={{
-                padding: '8px 16px', backgroundColor: 'transparent', color: '#666',
-                border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', fontSize: '13px',
-                whiteSpace: 'nowrap',
-              }}>
+              <button
+                onClick={() => setzeMatchStatus(m._id, 'abgelehnt', `Match abgelehnt: ${m.interessentFirma}`)}
+                style={{
+                  padding: '8px 16px', backgroundColor: 'transparent', color: '#666',
+                  border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                }}>
                 Ablehnen
               </button>
             </div>

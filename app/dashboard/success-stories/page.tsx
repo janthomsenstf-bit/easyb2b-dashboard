@@ -209,6 +209,8 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
   kiContent: any;
 }) {
   const [selectedKiFormat, setSelectedKiFormat] = useState<'homepage' | 'linkedin' | 'newsletter'>('homepage');
+  const [toast, setToast] = useState<string | null>(null);
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const tabs: { id: TabDetail; label: string }[] = [
     { id: 'inhalt', label: 'Story' },
@@ -229,6 +231,13 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
       alignSelf: 'flex-start', position: 'sticky', top: '20px',
       maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
     }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       <div style={{ padding: '20px 20px 0 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div style={{ flex: 1 }}>
@@ -350,13 +359,13 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
 
             {/* Status ändern */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button style={{ padding: '10px', backgroundColor: story.freigabe !== 'anonymisiert' ? '#FF9900' : '#e0e0e0', color: story.freigabe !== 'anonymisiert' ? 'white' : '#999', border: 'none', borderRadius: '6px', cursor: story.freigabe !== 'anonymisiert' ? 'pointer' : 'default', fontSize: '13px', fontWeight: 600 }}>
+              <button onClick={() => zeigeToast('Story als anonymisiert veröffentlicht')} style={{ padding: '10px', backgroundColor: story.freigabe !== 'anonymisiert' ? '#FF9900' : '#e0e0e0', color: story.freigabe !== 'anonymisiert' ? 'white' : '#999', border: 'none', borderRadius: '6px', cursor: story.freigabe !== 'anonymisiert' ? 'pointer' : 'default', fontSize: '13px', fontWeight: 600 }}>
                 👤 Als anonymisiert veröffentlichen
               </button>
-              <button style={{ padding: '10px', backgroundColor: story.freigabe !== 'freigegeben' ? '#4CAF50' : '#e0e0e0', color: story.freigabe !== 'freigegeben' ? 'white' : '#999', border: 'none', borderRadius: '6px', cursor: story.freigabe !== 'freigegeben' ? 'pointer' : 'default', fontSize: '13px', fontWeight: 600 }}>
+              <button onClick={() => zeigeToast('Story mit Freigabe veröffentlicht ✓')} style={{ padding: '10px', backgroundColor: story.freigabe !== 'freigegeben' ? '#4CAF50' : '#e0e0e0', color: story.freigabe !== 'freigegeben' ? 'white' : '#999', border: 'none', borderRadius: '6px', cursor: story.freigabe !== 'freigegeben' ? 'pointer' : 'default', fontSize: '13px', fontWeight: 600 }}>
                 🌐 Mit Freigabe veröffentlichen
               </button>
-              <button style={{ padding: '10px', backgroundColor: 'transparent', color: '#666', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+              <button onClick={() => zeigeToast('Story auf intern zurückgesetzt')} style={{ padding: '10px', backgroundColor: 'transparent', color: '#666', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                 🔒 Zurück auf intern setzen
               </button>
             </div>
@@ -406,7 +415,7 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
                   </div>
                 )}
 
-                <button style={{ width: '100%', padding: '10px', marginTop: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+                <button onClick={() => { navigator.clipboard?.writeText(mergedKi[selectedKiFormat] || ''); zeigeToast('In Zwischenablage kopiert 📋'); }} style={{ width: '100%', padding: '10px', marginTop: '10px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                   📋 In Zwischenablage kopieren
                 </button>
               </>

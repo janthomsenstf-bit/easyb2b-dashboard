@@ -160,12 +160,21 @@ function MomentKarte({ m, selected, onClick }: { m: MockKulturMoment; selected: 
 }
 
 function MomentDetail({ m, onClose }: { m: MockKulturMoment; onClose: () => void }) {
+  const [toast, setToast] = useState<string | null>(null);
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   return (
     <div style={{
       width: '400px', flexShrink: 0, backgroundColor: 'white', borderRadius: '10px',
       boxShadow: '0 2px 16px rgba(0,0,0,0.12)', alignSelf: 'flex-start', position: 'sticky', top: '20px',
       maxHeight: 'calc(100vh - 80px)', overflowY: 'auto', padding: '24px',
     }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
         <div>
           <div style={{ fontSize: '22px', marginBottom: '4px' }}>{getKategorieIcon(m.kategorie)} {getLandFlagKultur(m.land)}</div>
@@ -192,10 +201,10 @@ function MomentDetail({ m, onClose }: { m: MockKulturMoment; onClose: () => void
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Verwenden für</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
           {['🌐 Homepage', '📧 Newsletter', '💼 LinkedIn', '🎤 Event'].map(z => (
-            <button key={z} style={{ padding: '8px', backgroundColor: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#444' }}>{z}</button>
+            <button key={z} onClick={() => zeigeToast(`Für ${z.split(' ')[1]} übernommen`)} style={{ padding: '8px', backgroundColor: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#444' }}>{z}</button>
           ))}
         </div>
-        <button style={{ width: '100%', marginTop: '8px', padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+        <button onClick={() => { navigator.clipboard?.writeText(`${m.titel}\n\n${m.lernmoment}`); zeigeToast('Text kopiert 📋'); }} style={{ width: '100%', marginTop: '8px', padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
           📋 Text kopieren
         </button>
       </div>
@@ -237,12 +246,21 @@ function GeschichteKarte({ g, selected, onClick }: { g: MockGrenzgeschichte; sel
 }
 
 function GeschichteDetail({ g, onClose }: { g: MockGrenzgeschichte; onClose: () => void }) {
+  const [toast, setToast] = useState<string | null>(null);
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   return (
     <div style={{
       width: '400px', flexShrink: 0, backgroundColor: 'white', borderRadius: '10px',
       boxShadow: '0 2px 16px rgba(0,0,0,0.12)', alignSelf: 'flex-start', position: 'sticky', top: '20px',
       maxHeight: 'calc(100vh - 80px)', overflowY: 'auto', padding: '24px',
     }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
         <div>
           <div style={{ fontSize: '22px', marginBottom: '4px' }}>{getGeschichteTypIcon(g.typ)}</div>
@@ -271,7 +289,7 @@ function GeschichteDetail({ g, onClose }: { g: MockGrenzgeschichte; onClose: () 
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Verwenden für</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
           {['📧 Newsletter', '💼 LinkedIn', '🌐 Website', '🎤 Event'].map(z => (
-            <button key={z} style={{ padding: '8px', backgroundColor: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#444' }}>{z}</button>
+            <button key={z} onClick={() => zeigeToast(`Für ${z.split(' ')[1]} übernommen`)} style={{ padding: '8px', backgroundColor: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#444' }}>{z}</button>
           ))}
         </div>
       </div>
