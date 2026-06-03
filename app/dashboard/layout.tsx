@@ -40,6 +40,7 @@ export default function DashboardLayout({
     { label: 'Netzwerk', href: '/dashboard/netzwerk', icon: '🕸' },
     { label: 'KI-Zentrale', href: '/dashboard/ki-zentrale', icon: '🤖' },
     { label: 'Kultur & Wissen', href: '/dashboard/kultur-wissen', icon: '📚' },
+    { label: 'Newsletter', href: '/dashboard/newsletter', icon: '📰' },
   ];
 
   return (

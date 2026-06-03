@@ -851,3 +851,86 @@ enum GeschichteTyp {
   ueberraschung
   erkenntnis
 }
+
+// ─── NEWSLETTER & KAMPAGNEN ───────────────────────────────────
+
+model Newsletter {
+  id              String            @id @default(cuid())
+
+  titel           String
+  betreff         String
+  vorschautext    String?
+  sprache         NewsletterSprache @default(deutsch)
+  status          NewsletterStatus  @default(entwurf)
+
+  // Blöcke (als JSON gespeichert, flexibel)
+  bloecke         Json              @default("[]")
+
+  // Versand
+  geplantFuer     DateTime?
+  versendetAm     DateTime?
+  empfaengerCount Int               @default(0)
+
+  // Zielgruppe (Interessengruppen-Filter)
+  zielgruppen     String[]
+
+  // Statistik
+  oeffnungsrate   Float?
+  klickrate       Float?
+  oeffnungen      Int               @default(0)
+  klicks          Int               @default(0)
+
+  // Verknüpfte Inhalte (IDs)
+  anfrageIds      String[]
+  eventIds        String[]
+  storyIds        String[]
+  kulturIds       String[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model Abonnent {
+  id              String            @id @default(cuid())
+
+  name            String
+  unternehmen     String?
+  email           String            @unique
+  land            Land?
+  branche         String?
+  sprache         NewsletterSprache @default(deutsch)
+
+  // Interessengruppen (für Targeting)
+  interessen      String[]
+
+  status          AbonnentStatus    @default(aktiv)
+  quelle          String?           // Woher kam die Anmeldung?
+  abonniert       DateTime          @default(now())
+
+  // Engagement
+  geoeffnetCount  Int               @default(0)
+  geklicktCount   Int               @default(0)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+enum NewsletterStatus {
+  entwurf
+  freigegeben
+  geplant
+  versendet
+}
+
+enum NewsletterSprache {
+  deutsch
+  daenisch
+  englisch
+  bilingual
+}
+
+enum AbonnentStatus {
+  aktiv
+  pausiert
+  abgemeldet
+}
