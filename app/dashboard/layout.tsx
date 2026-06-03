@@ -39,6 +39,7 @@ export default function DashboardLayout({
     { label: 'Success Stories', href: '/dashboard/success-stories', icon: '⭐' },
     { label: 'Netzwerk', href: '/dashboard/netzwerk', icon: '🕸' },
     { label: 'KI-Zentrale', href: '/dashboard/ki-zentrale', icon: '🤖' },
+    { label: 'Kultur & Wissen', href: '/dashboard/kultur-wissen', icon: '📚' },
   ];
 
   return (

@@ -756,3 +756,98 @@ enum HistorieTyp {
   wiedervorlage
   notiz
 }
+// ─── KULTUR & WISSEN ──────────────────────────────────────────
+
+model KulturMoment {
+  id              String          @id @default(cuid())
+
+  // Grunddaten
+  titel           String
+  kategorie       KulturKategorie
+  land            KulturLand
+  originalSprache String?         // Originalzitat (z.B. dänisch)
+  status          WissenStatus    @default(entwurf)
+
+  // Inhalt
+  ausgangssituation String?
+  aussage           String?       // Was wurde gesagt?
+  interpretation    String?       // Wie wird es (falsch) verstanden?
+  bedeutung         String?       // Was ist tatsächlich gemeint?
+  lernmoment        String        // Die zentrale Erkenntnis
+
+  // Ton & Sichtbarkeit
+  ton             KulturTon       @default(neutral)
+  oeffentlich     Boolean         @default(false)
+
+  // Nutzungs-Tracking
+  verwendetCount  Int             @default(0)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Grenzgeschichte {
+  id              String          @id @default(cuid())
+
+  titel           String
+  typ             GeschichteTyp
+  kategorie       KulturKategorie
+  status          WissenStatus    @default(entwurf)
+
+  // Inhalt
+  situation       String
+  verlauf         String?
+  erkenntnis      String
+  oeffentlich     Boolean         @default(false)
+
+  // Beteiligte (anonymisierbar)
+  beteiligteFirma1 String?
+  beteiligteFirma2 String?
+  anonymisiert     Boolean        @default(true)
+
+  // Verwendung
+  verwendetCount  Int             @default(0)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+enum KulturKategorie {
+  kommunikation
+  meetings
+  hierarchien
+  entscheidungen
+  humor
+  vertrieb
+  kooperation
+  verhandlungen
+  sprache
+  sonstiges
+}
+
+enum KulturLand {
+  deutschland
+  daenemark
+  beide
+}
+
+enum WissenStatus {
+  entwurf
+  geprueft
+  veroeffentlicht
+  archiviert
+}
+
+enum KulturTon {
+  humorvoll
+  ernst
+  neutral
+  ueberraschend
+}
+
+enum GeschichteTyp {
+  missverstaendnis
+  erfolgsgeschichte
+  ueberraschung
+  erkenntnis
+}

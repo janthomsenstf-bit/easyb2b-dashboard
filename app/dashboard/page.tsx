@@ -10,6 +10,7 @@ import {
   getStatusColor,
   getRichtungLabel,
 } from '@/lib/mockdata';
+import { MOCK_KULTUR_MOMENTE, MOCK_GRENZGESCHICHTEN } from '@/lib/kultur';
 
 export default function DashboardPage() {
   const totalAnfragen = MOCK_ANFRAGEN.length;
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const storiesFreigegeben = MOCK_SUCCESS_STORIES.filter(s => s.freigabe === 'freigegeben').length;
   const netzwerkKontakte = MOCK_NETZWERKKONTAKTE.length;
   const alleEmpfehlungen = MOCK_NETZWERKKONTAKTE.reduce((s, k) => s + k.empfehlungen.filter(e => e.erfolgreich).length, 0);
+  const wissensEintraege = MOCK_KULTUR_MOMENTE.length + MOCK_GRENZGESCHICHTEN.length;
 
   const recentAnfragen = [...MOCK_ANFRAGEN].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -53,6 +55,7 @@ export default function DashboardPage() {
         <StatCard label="Stories öffentlich" value={storiesFreigegeben} color="#4CAF50" />
         <StatCard label="🕸 Netzwerkkontakte" value={netzwerkKontakte} color="#9C27B0" />
         <StatCard label="Erfolgreiche Empf." value={alleEmpfehlungen} color="#4CAF50" />
+        <StatCard label="📚 Wissens-Einträge" value={wissensEintraege} color="#00BCD4" />
       </div>
 
       {/* Alerts */}
