@@ -38,6 +38,7 @@ export default function DashboardLayout({
     { label: 'Events', href: '/dashboard/events', icon: '🎤' },
     { label: 'Success Stories', href: '/dashboard/success-stories', icon: '⭐' },
     { label: 'Netzwerk', href: '/dashboard/netzwerk', icon: '🕸' },
+    { label: 'KI-Zentrale', href: '/dashboard/ki-zentrale', icon: '🤖' },
   ];
 
   return (
