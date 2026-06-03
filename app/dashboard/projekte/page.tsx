@@ -136,6 +136,8 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
   onClose: () => void;
 }) {
   const store = useStore();
+  const [introStatus, setIntroStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
+
   // Zuordnungen dieses Projekts (automatisch + manuell), aufgelöst auf Interessenten
   const zuordnungen = store.zuordnungen
     .filter(z => z.projektId === a.id)
@@ -144,6 +146,35 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
   const interessenten = zuordnungen.map(x => x.i);
   const matchVorschlaege = MOCK_MATCHES.filter(m => m.anfrageId === a.id);
   const aktiveMatches = interessenten.filter(i => ['kontakt_laeuft', 'erfolgreich', 'feedback_ausstehend'].includes(i.status));
+
+  async function sendeIntroMail(interessentId: string, i: typeof MOCK_INTERESSENTEN[number]) {
+    setIntroStatus(prev => ({ ...prev, [interessentId]: 'sending' }));
+    try {
+      const res = await fetch('/api/email/intro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          suchendeEmail: a.email,
+          suchenderName: a.ansprechpartner,
+          anfrageFirma: a.firmenname,
+          anfrageAnzeigenId: a.anzeigenId,
+          anfrageTelefon: a.telefon || '',
+          interessentEmail: i.email,
+          interessentName: i.ansprechpartner,
+          interessentFirma: i.firmenname,
+          interessentTelefon: i.telefon || '',
+        }),
+      });
+      if (res.ok) {
+        setIntroStatus(prev => ({ ...prev, [interessentId]: 'sent' }));
+        store.logge(`Intro-Mail gesendet an ${i.firmenname} + ${a.firmenname}`, a.anzeigenId, 'status');
+      } else {
+        setIntroStatus(prev => ({ ...prev, [interessentId]: 'error' }));
+      }
+    } catch {
+      setIntroStatus(prev => ({ ...prev, [interessentId]: 'error' }));
+    }
+  }
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 3000, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '30px 20px', overflowY: 'auto' }}>
@@ -211,26 +242,43 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
             {zuordnungen.length === 0 ? (
               <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Aber es gibt Match-Vorschläge (siehe unten).'}</p>
             ) : (
-              zuordnungen.map(({ z, i }) => (
-                <div key={z.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div>
-                      <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
-                      <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
-                      <span style={{ marginLeft: '8px', padding: '1px 7px', borderRadius: '8px', fontSize: '9px', fontWeight: 700, backgroundColor: z.zuordnungsart === 'manuell' ? '#FF990020' : '#99999920', color: z.zuordnungsart === 'manuell' ? '#e65100' : '#777' }}>
-                        {z.zuordnungsart === 'manuell' ? '✋ manuell' : '⚙ auto'}
-                      </span>
+              zuordnungen.map(({ z, i }) => {
+                const istatus = introStatus[i.id] || 'idle';
+                const kannIntroSenden = ['freigegeben', 'kontakt_hergestellt'].includes(z.status);
+                return (
+                  <div key={z.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
+                        <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
+                        <span style={{ marginLeft: '8px', padding: '1px 7px', borderRadius: '8px', fontSize: '9px', fontWeight: 700, backgroundColor: z.zuordnungsart === 'manuell' ? '#FF990020' : '#99999920', color: z.zuordnungsart === 'manuell' ? '#e65100' : '#777' }}>
+                          {z.zuordnungsart === 'manuell' ? '✋ manuell' : '⚙ auto'}
+                        </span>
+                      </div>
+                      {z.zuordnungsart === 'manuell' && z.grund && (
+                        <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>„{z.grund}" · {z.erstelltVon}, {z.erstelltAm}</div>
+                      )}
+                      {/* Intro-Mail Button — nur bei freigegebenen Interessenten */}
+                      {kannIntroSenden && (
+                        <div style={{ marginTop: '6px' }}>
+                          {istatus === 'idle' && (
+                            <button onClick={() => sendeIntroMail(i.id, i)} style={{ padding: '4px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '5px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32', fontWeight: 600 }}>
+                              ✉️ Intro-Mail senden
+                            </button>
+                          )}
+                          {istatus === 'sending' && <span style={{ fontSize: '11px', color: '#999' }}>⏳ Wird gesendet…</span>}
+                          {istatus === 'sent' && <span style={{ fontSize: '11px', color: '#4CAF50', fontWeight: 600 }}>✅ Intro-Mail gesendet an beide Parteien</span>}
+                          {istatus === 'error' && <span style={{ fontSize: '11px', color: '#f44336' }}>❌ Fehler — RESEND_API_KEY prüfen</span>}
+                        </div>
+                      )}
                     </div>
-                    {z.zuordnungsart === 'manuell' && z.grund && (
-                      <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>„{z.grund}" · {z.erstelltVon}, {z.erstelltAm}</div>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      {i.matchScore && <span style={{ fontSize: '12px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>}
+                      <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getZuordnungColor(z.status) }}>{getZuordnungLabel(z.status)}</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    {i.matchScore && <span style={{ fontSize: '12px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>}
-                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getZuordnungColor(z.status) }}>{getZuordnungLabel(z.status)}</span>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
             <a href="/dashboard/interessenten" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Interessenten verwalten</a>
           </Section>
