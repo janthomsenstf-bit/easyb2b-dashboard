@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MOCK_NETZWERKKONTAKTE, getLandFlag, type MockNetzwerkkontakt } from '@/lib/mockdata';
+import { getLandFlag, type MockNetzwerkkontakt } from '@/lib/mockdata';
 import {
   getKontaktKategorieLabel, getKontaktKategorieIcon, getKontaktKategorieColor,
   getAktivitaetsLabel, getAktivitaetsColor,
@@ -9,11 +9,35 @@ import {
   getEmpfehlungsStatusLabel, getEmpfehlungsStatusColor,
   getNetzwerkWertLabel, getNetzwerkWertColor,
 } from '@/lib/netzwerk';
+import { useStore, neueEntityId } from '@/lib/store';
+import EntityModal, { type FeldDef } from '@/components/EntityModal';
 
 type TabMain = 'kontakte' | 'empfehlungen' | 'analytics';
 type TabDetail = 'profil' | 'historie' | 'empfehlungen';
 
+const KONTAKT_FELDER: FeldDef[] = [
+  { key: 'name', label: 'Name', pflicht: true, spalte: 1 },
+  { key: 'organisation', label: 'Organisation', spalte: 2 },
+  { key: 'position', label: 'Position', spalte: 1 },
+  { key: 'kategorie', label: 'Kategorie', typ: 'select', spalte: 2, optionen: [
+    { value: 'unternehmer', label: 'Unternehmer/in' }, { value: 'verband', label: 'Verband' }, { value: 'kammer', label: 'Kammer/IHK' },
+    { value: 'wirtschaftsfoerderung', label: 'Wirtschaftsförderung' }, { value: 'kommune', label: 'Kommune' },
+    { value: 'berater', label: 'Berater/in' }, { value: 'investor', label: 'Investor/in' }, { value: 'sonstiges', label: 'Sonstiges' },
+  ] },
+  { key: 'land', label: 'Land', typ: 'select', spalte: 1, optionen: [
+    { value: 'deutschland', label: '🇩🇪 Deutschland' }, { value: 'daenemark', label: '🇩🇰 Dänemark' },
+  ] },
+  { key: 'region', label: 'Region', spalte: 2 },
+  { key: 'email', label: 'E-Mail', typ: 'email', spalte: 1 },
+  { key: 'telefon', label: 'Telefon', typ: 'tel', spalte: 2 },
+  { key: 'linkedin', label: 'LinkedIn', spalte: 1 },
+  { key: 'branche', label: 'Branche', spalte: 2 },
+  { key: 'quelle', label: 'Kennengelernt über' },
+  { key: 'interneNotiz', label: 'Interne Notiz', typ: 'textarea' },
+];
+
 export default function NetzwerkPage() {
+  const store = useStore();
   const [tabMain, setTabMain] = useState<TabMain>('kontakte');
   const [filterKat, setFilterKat] = useState('alle');
   const [filterStatus, setFilterStatus] = useState('alle');
@@ -21,22 +45,47 @@ export default function NetzwerkPage() {
   const [tabDetail, setTabDetail] = useState<TabDetail>('profil');
   const [suchbegriff, setSuchbegriff] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [modalOffen, setModalOffen] = useState<'neu' | 'edit' | null>(null);
 
   const zeigeToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   };
 
-  const filtered = MOCK_NETZWERKKONTAKTE.filter(k => {
+  const kontakte = store.kontakte;
+
+  const filtered = kontakte.filter(k => {
     if (filterKat !== 'alle' && k.kategorie !== filterKat) return false;
     if (filterStatus !== 'alle' && k.aktivitaetsStatus !== filterStatus) return false;
     if (suchbegriff && !`${k.name} ${k.organisation} ${k.region}`.toLowerCase().includes(suchbegriff.toLowerCase())) return false;
     return true;
   });
 
-  const selected = selectedId ? MOCK_NETZWERKKONTAKTE.find(k => k.id === selectedId) : null;
+  const selected = selectedId ? kontakte.find(k => k.id === selectedId) : null;
 
-  const alleEmpfehlungen = MOCK_NETZWERKKONTAKTE.flatMap(k =>
+  const speichereKontakt = (werte: Record<string, any>) => {
+    if (modalOffen === 'neu') {
+      const neu = {
+        id: neueEntityId('nk'),
+        name: werte.name, organisation: werte.organisation, position: werte.position,
+        kategorie: werte.kategorie || 'sonstiges', land: werte.land || 'deutschland', region: werte.region,
+        branche: werte.branche, email: werte.email, telefon: werte.telefon, linkedin: werte.linkedin,
+        quelle: werte.quelle, erstkontakt: 'gerade eben', letzterKontakt: 'gerade eben',
+        aktivitaetsStatus: 'aktiv', interneNotiz: werte.interneNotiz, netzwerkWert: 10,
+        empfehlungen: [], historie: [],
+      } as any;
+      store.addKontakt(neu);
+      store.logge(`Netzwerkkontakt angelegt: ${werte.name}`, werte.name, 'anlegen');
+      zeigeToast(`${werte.name} angelegt ✓`);
+    } else if (selectedId) {
+      store.updateKontakt(selectedId, werte);
+      store.logge(`Kontakt bearbeitet: ${werte.name}`, werte.name, 'bearbeiten');
+      zeigeToast(`${werte.name} aktualisiert ✓`);
+    }
+    setModalOffen(null);
+  };
+
+  const alleEmpfehlungen = kontakte.flatMap(k =>
     k.empfehlungen.map(e => ({ ...e, kontaktName: k.name, kontaktOrg: k.organisation }))
   );
 
@@ -49,6 +98,15 @@ export default function NetzwerkPage() {
           borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
         }}>{toast}</div>
       )}
+      {modalOffen && (
+        <EntityModal
+          titel={modalOffen === 'neu' ? 'Neuen Netzwerkkontakt anlegen' : 'Kontakt bearbeiten'}
+          felder={KONTAKT_FELDER}
+          initial={modalOffen === 'edit' && selected ? selected as any : {}}
+          onSpeichern={speichereKontakt}
+          onSchliessen={() => setModalOffen(null)}
+        />
+      )}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
@@ -57,7 +115,10 @@ export default function NetzwerkPage() {
             Das Gedächtnis des deutsch-dänischen Easy-B2B-Netzwerks
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => { setSelectedId(null); setModalOffen('neu'); }} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '12px', backgroundColor: '#FF9900', color: 'white' }}>
+            + Neuer Kontakt
+          </button>
           {(['kontakte', 'empfehlungen', 'analytics'] as TabMain[]).map(t => (
             <button key={t} onClick={() => setTabMain(t)} style={{
               padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer',
@@ -128,6 +189,7 @@ export default function NetzwerkPage() {
               setActiveTab={setTabDetail}
               onClose={() => setSelectedId(null)}
               onAction={zeigeToast}
+              onEdit={() => setModalOffen('edit')}
             />
           )}
         </div>
@@ -140,7 +202,7 @@ export default function NetzwerkPage() {
 
       {/* ── ANALYTICS ──────────────────────────────────── */}
       {tabMain === 'analytics' && (
-        <NetzwerkAnalytics kontakte={MOCK_NETZWERKKONTAKTE} />
+        <NetzwerkAnalytics kontakte={kontakte} />
       )}
     </div>
   );
@@ -230,12 +292,13 @@ function KontaktKarte({ kontakt, selected, onClick }: {
 
 // ─── KONTAKT-DETAIL-PANEL ─────────────────────────────────────
 
-function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onAction }: {
+function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onAction, onEdit }: {
   kontakt: MockNetzwerkkontakt;
   activeTab: TabDetail;
   setActiveTab: (t: TabDetail) => void;
   onClose: () => void;
   onAction: (msg: string) => void;
+  onEdit: () => void;
 }) {
   const tabs: { id: TabDetail; label: string }[] = [
     { id: 'profil', label: 'Profil' },
@@ -349,6 +412,9 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
 
             {/* Aktionen */}
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button onClick={onEdit} style={{ padding: '10px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                ✏️ Bearbeiten
+              </button>
               <button onClick={() => onAction(`Kontakt mit ${kontakt.name} dokumentiert`)} style={{ padding: '10px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                 + Kontakt dokumentieren
               </button>

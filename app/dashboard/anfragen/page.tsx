@@ -1,23 +1,58 @@
 'use client';
 
 import { useState } from 'react';
-import { MOCK_ANFRAGEN, getStatusLabel, getStatusColor, getRichtungLabel } from '@/lib/mockdata';
+import { getStatusLabel, getStatusColor, getRichtungLabel } from '@/lib/mockdata';
 import { verbessereAntwortMock, generiereGespraechseinstieg } from '@/lib/funfact';
+import { useStore } from '@/lib/store';
+import EntityModal, { type FeldDef } from '@/components/EntityModal';
+
+const ANFRAGE_FELDER: FeldDef[] = [
+  { key: 'firmenname', label: 'Firmenname', pflicht: true, spalte: 1 },
+  { key: 'standort', label: 'Standort', spalte: 2 },
+  { key: 'branche', label: 'Branche', spalte: 1 },
+  { key: 'status', label: 'Status', typ: 'select', spalte: 2, optionen: [
+    { value: 'eingehend', label: 'Eingehend' }, { value: 'aktiv', label: 'Aktiv' },
+    { value: 'interessent_vorhanden', label: 'Interessent vorhanden' }, { value: 'kontakt_laeuft', label: 'Kontakt läuft' },
+    { value: 'vermittelt', label: 'Vermittelt' }, { value: 'pausiert', label: 'Pausiert' },
+  ] },
+  { key: 'ziel', label: 'Ziel', pflicht: true },
+  { key: 'beschreibung', label: 'Beschreibung', typ: 'textarea' },
+  { key: 'ansprechpartner', label: 'Ansprechpartner', spalte: 1 },
+  { key: 'email', label: 'E-Mail', typ: 'email', spalte: 2 },
+  { key: 'telefon', label: 'Telefon', typ: 'tel', spalte: 1 },
+  { key: 'sichtbarkeit', label: 'Sichtbarkeit', typ: 'select', spalte: 2, optionen: [
+    { value: 'oeffentlich', label: 'Öffentlich' }, { value: 'anonym', label: 'Anonym' }, { value: 'intern', label: 'Intern' },
+  ] },
+];
 
 export default function AnfragenPage() {
+  const store = useStore();
   const [filterStatus, setFilterStatus] = useState('alle');
   const [filterRichtung, setFilterRichtung] = useState('alle');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [kiLaedt, setKiLaedt] = useState<string | null>(null);
   const [kiErgebnisse, setKiErgebnisse] = useState<Record<string, string>>({});
+  const [editOffen, setEditOffen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const filtered = MOCK_ANFRAGEN.filter(a => {
+  const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  const filtered = store.anfragen.filter(a => {
     if (filterStatus !== 'alle' && a.status !== filterStatus) return false;
     if (filterRichtung !== 'alle' && a.richtung !== filterRichtung) return false;
     return true;
   });
 
-  const selectedAnfrage = detailId ? MOCK_ANFRAGEN.find(a => a.id === detailId) : null;
+  const selectedAnfrage = detailId ? store.anfragen.find(a => a.id === detailId) : null;
+
+  const speichereAnfrage = (werte: Record<string, any>) => {
+    if (detailId) {
+      store.updateAnfrage(detailId, werte);
+      store.logge(`Anfrage bearbeitet: ${werte.firmenname}`, werte.anzeigenId || werte.firmenname, 'bearbeiten');
+      zeigeToast(`Anfrage aktualisiert ✓`);
+    }
+    setEditOffen(false);
+  };
 
   const handleKiVerbessern = async (anfrageId: string, frage: string, antwort: string, firma: string) => {
     setKiLaedt(anfrageId);
@@ -30,6 +65,22 @@ export default function AnfragenPage() {
 
   return (
     <div style={{ display: 'flex', gap: '24px' }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+          backgroundColor: '#003366', color: 'white', padding: '14px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
+        }}>{toast}</div>
+      )}
+      {editOffen && selectedAnfrage && (
+        <EntityModal
+          titel="Anfrage bearbeiten"
+          felder={ANFRAGE_FELDER}
+          initial={selectedAnfrage as any}
+          onSpeichern={speichereAnfrage}
+          onSchliessen={() => setEditOffen(false)}
+        />
+      )}
       {/* LINKE SPALTE: Tabelle */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h1 style={{ marginTop: 0, marginBottom: '24px', color: '#003366', fontSize: '24px' }}>
@@ -156,13 +207,18 @@ export default function AnfragenPage() {
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
           </div>
 
-          {/* Status */}
-          <span style={{
-            padding: '4px 12px', borderRadius: '12px', fontSize: '12px',
-            fontWeight: 600, color: 'white', backgroundColor: getStatusColor(selectedAnfrage.status),
-          }}>
-            {getStatusLabel(selectedAnfrage.status)}
-          </span>
+          {/* Status + Bearbeiten */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{
+              padding: '4px 12px', borderRadius: '12px', fontSize: '12px',
+              fontWeight: 600, color: 'white', backgroundColor: getStatusColor(selectedAnfrage.status),
+            }}>
+              {getStatusLabel(selectedAnfrage.status)}
+            </span>
+            <button onClick={() => setEditOffen(true)} style={{ padding: '6px 14px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+              ✏️ Bearbeiten
+            </button>
+          </div>
 
           {/* Beschreibung */}
           <div style={{ marginTop: '16px', paddingBottom: '16px', borderBottom: '1px solid #f0f0f0' }}>

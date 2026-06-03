@@ -4,6 +4,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { DashboardStoreProvider } from '@/lib/store';
+import GlobaleSuche from '@/components/GlobaleSuche';
 
 export default function DashboardLayout({
   children,
@@ -44,6 +46,7 @@ export default function DashboardLayout({
   ];
 
   return (
+    <DashboardStoreProvider>
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
       {/* Sidebar */}
       <aside
@@ -139,9 +142,24 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
-        {children}
-      </main>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {/* Top-Bar mit globaler Suche */}
+        <header style={{
+          display: 'flex', alignItems: 'center', gap: '16px',
+          padding: '12px 20px', backgroundColor: 'white', borderBottom: '1px solid #e0e0e0',
+          position: 'sticky', top: 0, zIndex: 100,
+        }}>
+          <GlobaleSuche />
+          <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#999' }}>
+            {session.user?.email}
+          </div>
+        </header>
+
+        <main style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
+          {children}
+        </main>
+      </div>
     </div>
+    </DashboardStoreProvider>
   );
 }

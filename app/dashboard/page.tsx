@@ -11,8 +11,10 @@ import {
   getRichtungLabel,
 } from '@/lib/mockdata';
 import { MOCK_KULTUR_MOMENTE, MOCK_GRENZGESCHICHTEN } from '@/lib/kultur';
+import { useStore } from '@/lib/store';
 
 export default function DashboardPage() {
+  const { aktivitaeten } = useStore();
   const totalAnfragen = MOCK_ANFRAGEN.length;
   const activeAnfragen = MOCK_ANFRAGEN.filter(a => a.status === 'aktiv').length;
   const eingehend = MOCK_ANFRAGEN.filter(a => a.status === 'eingehend').length;
@@ -129,6 +131,28 @@ export default function DashboardPage() {
             Alle Interessenten anzeigen
           </a>
         </div>
+      </div>
+
+      {/* Aktivitätenprotokoll */}
+      <div style={{ marginTop: '24px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+        <h2 style={{ marginTop: 0, color: '#003366', fontSize: '18px', marginBottom: '16px' }}>
+          Aktivitätenprotokoll
+        </h2>
+        {aktivitaeten.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
+            Noch keine Aktivitäten in dieser Session. Bearbeite ein Unternehmen, lege einen Kontakt an oder ändere einen Status — alles erscheint hier.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {aktivitaeten.map(a => (
+              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', backgroundColor: '#f9f9f9', borderRadius: '6px', fontSize: '13px' }}>
+                <span style={{ fontSize: '16px' }}>{a.typ === 'anlegen' ? '➕' : a.typ === 'status' ? '🔄' : '✏️'}</span>
+                <span style={{ flex: 1, color: '#333' }}>{a.was}</span>
+                <span style={{ fontSize: '11px', color: '#999' }}>{a.wer} · {a.zeit}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

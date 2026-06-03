@@ -21,14 +21,37 @@ import {
   getVerifizierungsStatusLabel,
   getVerifizierungsStatusColor,
 } from '@/lib/trustscore';
+import { useStore, neueEntityId } from '@/lib/store';
+import EntityModal, { type FeldDef } from '@/components/EntityModal';
+
+const UNTERNEHMEN_FELDER: FeldDef[] = [
+  { key: 'firmenname', label: 'Firmenname', pflicht: true },
+  { key: 'land', label: 'Land', typ: 'select', spalte: 1, optionen: [
+    { value: 'deutschland', label: '🇩🇪 Deutschland' }, { value: 'daenemark', label: '🇩🇰 Dänemark' }, { value: 'andere', label: 'Andere' },
+  ] },
+  { key: 'standort', label: 'Standort', spalte: 2 },
+  { key: 'branche', label: 'Branche', spalte: 1 },
+  { key: 'groesse', label: 'Größe', typ: 'select', spalte: 2, optionen: [
+    { value: 'solo', label: 'Solo (1)' }, { value: 'klein', label: 'Klein (2–10)' }, { value: 'mittel', label: 'Mittel (11–50)' }, { value: 'gross', label: 'Groß (51–250)' }, { value: 'konzern', label: 'Konzern (250+)' },
+  ] },
+  { key: 'ansprechpartner', label: 'Ansprechpartner', pflicht: true, spalte: 1 },
+  { key: 'email', label: 'E-Mail', typ: 'email', pflicht: true, spalte: 2 },
+  { key: 'telefon', label: 'Telefon', typ: 'tel', spalte: 1 },
+  { key: 'website', label: 'Website', typ: 'url', spalte: 2 },
+  { key: 'linkedin', label: 'LinkedIn', spalte: 1 },
+  { key: 'kurzbeschreibung', label: 'Kurzbeschreibung', typ: 'textarea' },
+  { key: 'interneNotiz', label: 'Interne Notiz', typ: 'textarea' },
+];
 
 export default function UnternehmenPage() {
+  const store = useStore();
   const [filterLand, setFilterLand] = useState('alle');
   const [filterNetzwerk, setFilterNetzwerk] = useState('alle');
   const [filterVerifiziert, setFilterVerifiziert] = useState('alle');
   const [selected, setSelected] = useState<string | null>(null);
-  const [unternehmen, setUnternehmen] = useState(MOCK_UNTERNEHMEN);
   const [toast, setToast] = useState<string | null>(null);
+  const [modalOffen, setModalOffen] = useState<'neu' | 'edit' | null>(null);
+  const unternehmen = store.unternehmen;
 
   const zeigeToast = (msg: string) => {
     setToast(msg);
@@ -36,8 +59,34 @@ export default function UnternehmenPage() {
   };
 
   const verifiziere = (id: string, name: string) => {
-    setUnternehmen(prev => prev.map(u => u.id === id ? { ...u, verifizierungsStatus: 'verifiziert', verifiziertAm: 'gerade eben', verifiziertDurch: 'Operator' } : u));
+    store.updateUnternehmen(id, { verifizierungsStatus: 'verifiziert', verifiziertAm: 'gerade eben', verifiziertDurch: 'Operator' });
+    store.logge(`${name} verifiziert`, name, 'status');
     zeigeToast(`${name} verifiziert ✓`);
+  };
+
+  const speichereUnternehmen = (werte: Record<string, any>) => {
+    if (modalOffen === 'neu') {
+      const neu = {
+        id: neueEntityId('unt'),
+        firmenname: werte.firmenname, land: werte.land || 'deutschland', standort: werte.standort || '',
+        website: werte.website, linkedin: werte.linkedin, branche: werte.branche || '', groesse: werte.groesse || 'klein',
+        ansprechpartner: werte.ansprechpartner, email: werte.email, telefon: werte.telefon,
+        sprachen: [], kurzbeschreibung: werte.kurzbeschreibung || '',
+        verifizierungsStatus: 'ungeprueft', vertrauensScore: 0, vertrauensLevel: 'niedrig' as const,
+        persoenlichesGespraech: false, websiteGeprueft: false, linkedinGeprueft: false,
+        empfehlungVorhanden: false, negativeHinweise: false, spamRisiko: false,
+        netzwerkStatus: 'interessiert', erstkontakt: 'gerade eben', letzteAktivitaet: 'gerade eben',
+        interneNotiz: werte.interneNotiz, anfrageCount: 0, interessentCount: 0, successStories: 0, events: [],
+      } as any;
+      store.addUnternehmen(neu);
+      store.logge(`Unternehmen angelegt: ${werte.firmenname}`, werte.firmenname, 'anlegen');
+      zeigeToast(`${werte.firmenname} angelegt ✓`);
+    } else if (selected) {
+      store.updateUnternehmen(selected, werte);
+      store.logge(`Unternehmen bearbeitet: ${werte.firmenname}`, werte.firmenname, 'bearbeiten');
+      zeigeToast(`${werte.firmenname} aktualisiert ✓`);
+    }
+    setModalOffen(null);
   };
 
   const filtered = unternehmen.filter(u => {
@@ -65,16 +114,30 @@ export default function UnternehmenPage() {
           borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600,
         }}>{toast}</div>
       )}
+      {/* Modal */}
+      {modalOffen && (
+        <EntityModal
+          titel={modalOffen === 'neu' ? 'Neues Unternehmen anlegen' : 'Unternehmen bearbeiten'}
+          felder={UNTERNEHMEN_FELDER}
+          initial={modalOffen === 'edit' && selectedUnternehmen ? selectedUnternehmen as any : {}}
+          onSpeichern={speichereUnternehmen}
+          onSchliessen={() => setModalOffen(null)}
+        />
+      )}
+
       {/* LINKE SPALTE */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <h1 style={{ marginTop: 0, marginBottom: '24px', color: '#003366', fontSize: '24px' }}>
-          Unternehmen
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h1 style={{ margin: 0, color: '#003366', fontSize: '24px' }}>Unternehmen</h1>
+          <button onClick={() => { setSelected(null); setModalOffen('neu'); }} style={{ padding: '10px 18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+            + Neues Unternehmen
+          </button>
+        </div>
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '24px' }}>
           {[
-            { label: 'Gesamt', value: MOCK_UNTERNEHMEN.length, color: '#003366' },
+            { label: 'Gesamt', value: unternehmen.length, color: '#003366' },
             { label: '🇩🇪 Deutschland', value: totalDE, color: '#2196F3' },
             { label: '🇩🇰 Dänemark', value: totalDK, color: '#E91E63' },
             { label: '✅ Verifiziert', value: totalVerifiziert, color: '#4CAF50' },
@@ -405,6 +468,9 @@ export default function UnternehmenPage() {
 
             {/* Aktionen */}
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button onClick={() => setModalOffen('edit')} style={{ padding: '10px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+                ✏️ Bearbeiten
+              </button>
               {selectedUnternehmen.verifizierungsStatus !== 'verifiziert' && (
                 <button onClick={() => verifiziere(selectedUnternehmen.id, selectedUnternehmen.firmenname)} style={{ padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                   ✓ Verifizieren
