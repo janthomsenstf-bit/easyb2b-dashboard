@@ -834,6 +834,42 @@ export interface MockInteressent {
   matchScore?: number;
   createdAt: string;
   notiz?: string;
+
+  // Erweiterte Stammdaten (aus Formular)
+  position?: string;
+  website?: string;
+  linkedin?: string;
+  land?: string;
+  region?: string;
+  sprachen?: string[];
+  bevorzugteSprache?: string;
+
+  // Formular-Antworten (Bezug zur Anfrage)
+  warumInteresse?: string;
+  warumPassung?: string;
+  beitrag?: string;
+  erfahrung?: string;
+  referenzen?: string;
+  zusammenarbeit?: string;
+  interesseLevel?: string;   // kennenlernen | gespraech | pilot | umsetzung
+  reaktionszeit?: string;
+  einschraenkungen?: string;
+  persoenlicheNote?: string;
+  funFact?: string;
+
+  // Interne Prüfung (Operator)
+  ersteindruck?: string;     // sehr_gut | gut | neutral | kritisch
+  passung?: string;          // hoch | mittel | niedrig
+  seriositaet?: string;      // geprueft | ungeprueft | kritisch
+  gespraechGefuehrt?: boolean;
+  websiteGeprueft?: boolean;
+  linkedinGeprueft?: boolean;
+  referenzenVorhanden?: boolean;
+  gespraechsnotiz?: string;
+
+  // Matching-Bezug
+  matchGruende?: string[];
+  matchRisiken?: string[];
 }
 
 export interface MockMatch {
@@ -1034,6 +1070,31 @@ export const MOCK_INTERESSENTEN: MockInteressent[] = [
     matchScore: 87,
     createdAt: '2025-05-18',
     notiz: 'Großer Fisch-Distributor in Norddeutschland, sehr interessiert.',
+    position: 'Einkaufsleiter',
+    website: 'https://frischemarkt-hh.de',
+    land: 'deutschland',
+    region: 'Hamburg',
+    sprachen: ['deutsch', 'englisch'],
+    bevorzugteSprache: 'deutsch',
+    warumInteresse: 'Wir suchen seit längerem einen verlässlichen Premium-Fischlieferanten aus Skandinavien für unser gehobenes Sortiment.',
+    warumPassung: 'Wir beliefern über 40 Restaurants und Feinkostläden in Norddeutschland und haben eine eigene Kühlkette bis Hamburg.',
+    beitrag: 'Etablierte Vertriebsstruktur, eigene Logistik, direkter Zugang zu Gastronomie und Einzelhandel.',
+    erfahrung: 'Seit 25 Jahren im Fischhandel. Bereits Erfahrung mit norwegischen und isländischen Lieferanten.',
+    referenzen: 'Block House, EDEKA Nord, diverse Sternerestaurants.',
+    zusammenarbeit: 'Exklusiver Vertrieb für Hamburg/Schleswig-Holstein, später ggf. Ausweitung.',
+    interesseLevel: 'gespraech',
+    reaktionszeit: 'Innerhalb 1 Woche',
+    persoenlicheNote: 'Wir sind ein Familienunternehmen in dritter Generation — Qualität geht bei uns vor Marge.',
+    ersteindruck: 'sehr_gut',
+    passung: 'hoch',
+    seriositaet: 'geprueft',
+    gespraechGefuehrt: true,
+    websiteGeprueft: true,
+    linkedinGeprueft: false,
+    referenzenVorhanden: true,
+    gespraechsnotiz: 'Telefonat 20.05.: Klaus sehr engagiert, kennt den Markt genau. Will schnell starten. Kühlkette ist das starke Argument.',
+    matchGruende: ['Etablierte Vertriebsstruktur in der Zielregion', 'Eigene Kühlkette löst Nordic Fishs Logistik-Sorge', 'Premium-Positionierung passt zum Produkt'],
+    matchRisiken: ['Großer Player — könnte kleinen dänischen Lieferanten dominieren'],
   },
   {
     id: 'int-002',
@@ -1067,10 +1128,37 @@ export const MOCK_INTERESSENTEN: MockInteressent[] = [
     ansprechpartner: 'Søren Nielsen',
     email: 'nielsen@vestas-comp.dk',
     telefon: '+45 87 65 43 21',
-    status: 'freigegeben',
+    status: 'kontakt_laeuft',
     matchScore: 92,
     createdAt: '2025-05-22',
     notiz: 'Perfekter Match. Vestas-Zulieferer sucht deutsche CNC-Partner.',
+    position: 'Head of Procurement',
+    website: 'https://vestas-comp.dk',
+    linkedin: 'soren-nielsen-vestas',
+    land: 'daenemark',
+    region: 'Aarhus',
+    sprachen: ['daenisch', 'englisch', 'deutsch'],
+    bevorzugteSprache: 'englisch',
+    warumInteresse: 'Wir brauchen einen zuverlässigen CNC-Fertigungspartner in Norddeutschland für Windkraft-Stahlkomponenten.',
+    warumPassung: 'Wir sind etablierter Vestas-Zulieferer und kennen die Qualitätsanforderungen der Branche genau.',
+    beitrag: 'Konstante Großaufträge, technisches Know-how, langfristige Abnahmegarantie.',
+    erfahrung: '15 Jahre in der Windkraft-Lieferkette, ISO-zertifiziert.',
+    referenzen: 'Vestas, Siemens Gamesa (auf Anfrage).',
+    zusammenarbeit: 'Rahmenvertrag mit festen Abnahmemengen über 3 Jahre.',
+    interesseLevel: 'umsetzung',
+    reaktionszeit: 'Sofort',
+    einschraenkungen: 'Benötigt ISO 9001 Zertifizierung beim Partner.',
+    persoenlicheNote: 'Wir denken langfristig — uns ist Verlässlichkeit wichtiger als der günstigste Preis.',
+    ersteindruck: 'sehr_gut',
+    passung: 'hoch',
+    seriositaet: 'geprueft',
+    gespraechGefuehrt: true,
+    websiteGeprueft: true,
+    linkedinGeprueft: true,
+    referenzenVorhanden: true,
+    gespraechsnotiz: 'Video-Call 22.05.: Sehr professionell. Søren spricht gut Deutsch. ISO-Anforderung muss mit Müller geklärt werden — die haben das aber.',
+    matchGruende: ['Beide in Windkraft-Lieferkette', 'Komplementär: DK sucht Fertigung, DE bietet CNC', 'Langfristige Abnahmegarantie senkt Müllers Risiko'],
+    matchRisiken: ['ISO 9001 muss beim Partner vorhanden sein', 'Großkonzern-Tempo vs. Mittelstand'],
   },
   {
     id: 'int-005',
@@ -1257,6 +1345,9 @@ export function getStatusLabel(status: string): string {
     unqualifiziert: 'Unqualifiziert',
     abgelehnt: 'Abgelehnt',
     vorgeschlagen: 'Vorgeschlagen',
+    in_pruefung: 'In Prüfung',
+    rueckfrage: 'Rückfrage erforderlich',
+    nicht_passend: 'Nicht passend',
   };
   return labels[status] || status;
 }
@@ -1280,6 +1371,9 @@ export function getStatusColor(status: string): string {
     unqualifiziert: '#999',
     abgelehnt: '#f44336',
     vorgeschlagen: '#2196F3',
+    in_pruefung: '#FF9900',
+    rueckfrage: '#FF5722',
+    nicht_passend: '#999',
   };
   return colors[status] || '#999';
 }
