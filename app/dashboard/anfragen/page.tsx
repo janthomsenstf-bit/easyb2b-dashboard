@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getStatusLabel, getStatusColor, getRichtungLabel } from '@/lib/mockdata';
+import { getStatusLabel, getStatusColor, getRichtungLabel, MOCK_INTERESSENTEN } from '@/lib/mockdata';
 import { verbessereAntwortMock, generiereGespraechseinstieg } from '@/lib/funfact';
 import { useStore } from '@/lib/store';
 import EntityModal, { type FeldDef } from '@/components/EntityModal';
@@ -224,6 +224,55 @@ export default function AnfragenPage() {
           <div style={{ marginTop: '16px', paddingBottom: '16px', borderBottom: '1px solid #f0f0f0' }}>
             <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: 0 }}>{selectedAnfrage.beschreibung}</p>
           </div>
+
+          {/* ── INTERESSENTEN für diese Anfrage ─── */}
+          {(() => {
+            const interessenten = MOCK_INTERESSENTEN.filter(i => i.anfrageId === selectedAnfrage.id);
+            return (
+              <div style={{ marginTop: '20px' }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, color: '#003366', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Interessenten ({interessenten.length})
+                </h3>
+                {interessenten.length === 0 ? (
+                  <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Interessenten für diese Anfrage.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {interessenten.map(i => (
+                      <div key={i.id} style={{
+                        padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px',
+                        borderLeft: `3px solid ${getStatusColor(i.status)}`,
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: '#003366' }}>{i.firmenname}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {i.matchScore && (
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>
+                            )}
+                            <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(i.status) }}>
+                              {getStatusLabel(i.status)}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>{i.ansprechpartner}</div>
+                        <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                          <a href={`mailto:${i.email}`} style={{ color: '#003366' }}>{i.email}</a>
+                          {i.telefon && <span style={{ color: '#999' }}> · {i.telefon}</span>}
+                        </div>
+                        {i.notiz && (
+                          <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic', marginTop: '6px', padding: '6px 8px', backgroundColor: '#fffde7', borderRadius: '4px' }}>
+                            {i.notiz}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <a href="/dashboard/interessenten" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', marginTop: '4px' }}>
+                      → Im Interessenten-Modul verwalten
+                    </a>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── FUNFACT & PERSÖNLICHE NOTE ─── */}
           {selectedAnfrage.funFactFrage && (
