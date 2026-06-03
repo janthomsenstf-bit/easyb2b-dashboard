@@ -4,6 +4,7 @@ import {
   MOCK_ANFRAGEN,
   MOCK_INTERESSENTEN,
   MOCK_EVENTS,
+  MOCK_SUCCESS_STORIES,
   getStatusLabel,
   getStatusColor,
   getRichtungLabel,
@@ -18,6 +19,8 @@ export default function DashboardPage() {
   const erfolgreich = MOCK_INTERESSENTEN.filter(i => i.status === 'erfolgreich').length;
   const naechsteEvents = MOCK_EVENTS.filter(e => e.status === 'geplant' || e.status === 'veroeffentlicht').length;
   const eventKooperationen = MOCK_EVENTS.reduce((s, e) => s + e.matches.filter(m => m.kooperation).length, 0);
+  const successStoriesGesamt = MOCK_SUCCESS_STORIES.length;
+  const storiesFreigegeben = MOCK_SUCCESS_STORIES.filter(s => s.freigabe === 'freigegeben').length;
 
   const recentAnfragen = [...MOCK_ANFRAGEN].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -43,6 +46,8 @@ export default function DashboardPage() {
         <StatCard label="Erfolgreiche Matches" value={erfolgreich} color="#4CAF50" />
         <StatCard label="Nächste Events" value={naechsteEvents} color="#E91E63" />
         <StatCard label="Kooperationen aus Events" value={eventKooperationen} color="#009688" />
+        <StatCard label="⭐ Success Stories" value={successStoriesGesamt} color="#FF9900" />
+        <StatCard label="Stories öffentlich" value={storiesFreigegeben} color="#4CAF50" />
       </div>
 
       {/* Alerts */}

@@ -3,6 +3,214 @@
 // Später durch echte Prisma-Queries ersetzen
 // =============================================================
 
+// ─── SUCCESS STORIES ─────────────────────────────────────────
+
+export interface MockSuccessStory {
+  id: string;
+  titel: string;
+  kurzbeschreibung: string;
+  freigabe: 'intern' | 'anonymisiert' | 'freigegeben';
+  anonymisiert: boolean;
+  // Narrative Felder
+  ausgangssituation: string;
+  herausforderung?: string;
+  gesuch: string;
+  vermittlungsweg: string;
+  ergebnis: string;
+  erkenntnisse?: string;
+  // Anon-Versionen
+  titelAnon?: string;
+  ergebnisAnon?: string;
+  // KI-Content
+  kiHomepage?: string;
+  kiLinkedIn?: string;
+  kiNewsletter?: string;
+  // Kategorisierung
+  branche: string;
+  land: string;
+  entstehungsweg: string;
+  ergebnisTypen: string[];
+  // Firmen
+  firma1Name: string;
+  firma2Name: string;
+  // Verknüpfung
+  anfrageId?: string;
+  eventId?: string;
+  createdAt: string;
+}
+
+export const MOCK_SUCCESS_STORIES: MockSuccessStory[] = [
+  {
+    id: 'ss-001',
+    titel: 'Dänischer Premium-Gin findet Hamburger Gastronomie',
+    kurzbeschreibung: 'Ein dänischer Gin-Hersteller wollte den deutschen Markt erschließen. Über Easy-B2B entstanden erste Gastronomiekontakte in Hamburg.',
+    freigabe: 'freigegeben',
+    anonymisiert: false,
+    ausgangssituation: 'Ein kleiner dänischer Gin-Hersteller aus Kopenhagen hatte ein außergewöhnliches Produkt – botanisch, handgemacht, mit nordischer Identität. Der deutsche Markt war das Ziel, aber die Kontakte fehlten vollständig.',
+    herausforderung: 'Keine Vertriebsstruktur in Deutschland, keine Sprachkenntnisse auf Kundenseite, kulturelle Unterschiede beim Verkaufsansatz (Dänen verkaufen durch Produkt, Deutsche erwarten Beratung und Zertifikate).',
+    gesuch: 'Gastronomie-Partner, Importeur oder Distributeur in Hamburg und Norddeutschland',
+    vermittlungsweg: 'Über die Easy-B2B-Anfrage wurde der Hersteller mit einem Hamburger Getränke-Importeur bekannt gemacht, der bereits skandinavische Produkte führte. Persönliches Gespräch wurde von Jan Thomsen vorbereitet.',
+    ergebnis: 'Drei Hamburger Restaurants nehmen den Gin als Signature-Drink auf. Der Importeur hat exklusive Vertriebsrechte für Hamburg und Schleswig-Holstein übernommen.',
+    erkenntnisse: 'Kleine dänische Hersteller unterschätzen oft den Aufwand des deutschen Markteintritts. Ein lokaler Partner, der die Kultur kennt, ist wichtiger als das beste Produkt.',
+    titelAnon: 'Dänischer Premium-Spirituosen-Hersteller erschließt Hamburger Gastronomie',
+    ergebnisAnon: 'Drei Gastronomiebetriebe nehmen das Produkt als Signature-Drink auf. Ein regionaler Importeur übernimmt exklusive Vertriebsrechte für Norddeutschland.',
+    kiHomepage: 'Manchmal braucht ein außergewöhnliches Produkt nur den richtigen Türöffner. Ein dänischer Gin-Hersteller suchte den Weg in die Hamburger Gastronomie – und fand ihn über Easy-B2B. Heute steht sein Gin auf den Karten mehrerer Hamburger Restaurants.',
+    kiLinkedIn: `🤝 Ein Produkt, das für sich spricht – aber trotzdem jemanden braucht, der die Tür öffnet.
+
+Ein dänischer Premium-Gin-Hersteller wollte in Hamburg Fuß fassen. Das Produkt war überzeugend. Aber ohne lokale Kontakte und Marktkenntnisse kommt man in der Gastronomie nicht weit.
+
+Über Easy-B2B entstand der Kontakt zu einem Hamburger Importeur, der bereits skandinavische Getränke kannte – und verstand, wie man sie in Deutschland verkauft.
+
+Ergebnis: Drei Restaurants, exklusiver Vertrieb, ein echter Marktstart.
+
+Das ist deutsch-dänisches Matchmaking. Persönlich. Konkret. Erfolgreich.
+
+#EasyB2B #DeutschDänisch #Matchmaking #FoodAndBeverage`,
+    kiNewsletter: 'Diese Woche möchten wir eine Geschichte teilen, die zeigt, wie schnell aus einem Gespräch etwas Reales werden kann. Ein dänischer Gin-Hersteller und ein Hamburger Importeur: unterschiedliche Kulturen, ein gemeinsames Ziel. Heute steht der Gin auf Hamburger Speisekarten. Manchmal braucht es nicht mehr als den richtigen Moment und den richtigen Anknüpfungspunkt.',
+    branche: 'Lebensmittel & Getränke',
+    land: 'daenemark',
+    entstehungsweg: 'matchmaking',
+    ergebnisTypen: ['vertriebspartner', 'markteintritt'],
+    firma1Name: 'Copenhagen Gin Collective',
+    firma2Name: 'Nordgetränke Hamburg GmbH',
+    anfrageId: 'anf-008',
+    createdAt: '2025-04-20',
+  },
+  {
+    id: 'ss-002',
+    titel: 'Dänisches Eis in deutschen Bäckereien',
+    kurzbeschreibung: 'Ein dänischer Eislieferant fand über Easy-B2B eine Bäckereikette in Schleswig-Holstein als Vertriebspartner.',
+    freigabe: 'anonymisiert',
+    anonymisiert: true,
+    ausgangssituation: 'Ein dänisches Speiseeis-Unternehmen mit langjähriger Tradition suchte deutsche Partner, die ihr Eis als Premium-Produkt positionieren könnten. Supermärkte waren nicht das Ziel – Bäckereien und Cafés schon.',
+    herausforderung: 'Die Kühlkette ist bei der Zusammenarbeit mit Bäckereien ein kritischer Faktor. Außerdem mussten deutschsprachige Etiketten und Allergenkennzeichnungen angepasst werden.',
+    gesuch: 'Bäckereikette oder Konditorei in Norddeutschland mit Premium-Positionierung',
+    vermittlungsweg: 'Über die Easy-B2B-Anfrage wurden drei passende Bäckereiunternehmen kontaktiert. Eine Schleswig-Holsteinische Kette mit 12 Filialen zeigte sofortiges Interesse. Das Kennenlernen fand auf einem Easy-B2B-Branchentag statt.',
+    ergebnis: 'Pilotprojekt mit 4 Filialen gestartet, monatliche Lieferungen laufen seit März 2025.',
+    erkenntnisse: 'Persönliche Begegnung beim Branchentag hat den Deal beschleunigt. Reine Onlinekommunikation hätte es nicht geschafft.',
+    titelAnon: 'Dänischer Speiseeis-Hersteller erschließt norddeutsche Bäckereien',
+    ergebnisAnon: 'Pilotprojekt mit einer Bäckereikette gestartet. Monatliche Lieferungen laufen erfolgreich.',
+    kiHomepage: 'Manchmal ist der Weg in den deutschen Markt kürzer als gedacht. Ein dänischer Speiseeishersteller und eine norddeutsche Bäckereikette – beide mit Anspruch auf Qualität – fanden sich über Easy-B2B. Was als Pilotprojekt begann, ist heute ein regelmäßiger Lieferrhythmus.',
+    branche: 'Lebensmittel & Handwerk',
+    land: 'daenemark',
+    entstehungsweg: 'event',
+    ergebnisTypen: ['vertriebspartner', 'markteintritt'],
+    firma1Name: '[Dänischer Eishersteller]',
+    firma2Name: '[Schleswig-Holsteinische Bäckereikette]',
+    createdAt: '2025-03-15',
+  },
+  {
+    id: 'ss-003',
+    titel: 'Fugensand für öffentliche Auftraggeber in Deutschland',
+    kurzbeschreibung: 'Ein dänischer Hersteller von Spezialbaustoffen fand über Easy-B2B den Weg zu deutschen kommunalen Auftraggebern.',
+    freigabe: 'freigegeben',
+    anonymisiert: false,
+    ausgangssituation: 'Ein dänischer Hersteller von ökologischem Fugensand für Pflasterflächen wollte den deutschen kommunalen Markt erschließen. Das Produkt erfüllte alle EU-Normen, aber der Vertrieb an öffentliche Auftraggeber in Deutschland erfordert spezifisches Marktwissen.',
+    herausforderung: 'Ausschreibungsverfahren in Deutschland unterscheiden sich erheblich von dänischen. Kommunen bevorzugen lokale oder etablierte Lieferanten. Zertifizierungen mussten geprüft und anerkannt werden.',
+    gesuch: 'Vertriebspartner mit Erfahrung im kommunalen Ausschreibungsmarkt in Deutschland',
+    vermittlungsweg: 'Easy-B2B vermittelte den Kontakt zu einem Tiefbau-Vertriebsunternehmen in Schleswig, das bereits kommunale Referenzen hatte und den Hersteller in Ausschreibungen einbinden konnte.',
+    ergebnis: 'Zwei gewonnene kommunale Ausschreibungen in Flensburg und Husum. Rahmenvertrag für 2025/2026 in Planung.',
+    erkenntnisse: 'Öffentliche Auftraggeber in Deutschland können nur über Insider-Kontakte und Rahmenverträge effizient erschlossen werden. Ein lokaler Vermittler ist unverzichtbar.',
+    titelAnon: 'Dänischer Baustoff-Hersteller gewinnt kommunale Aufträge in Deutschland',
+    ergebnisAnon: 'Zwei kommunale Ausschreibungen gewonnen. Rahmenvertrag in Vorbereitung.',
+    kiHomepage: 'Der Weg in den kommunalen Markt ist in Deutschland steinig – buchstäblich. Ein dänischer Fugensand-Hersteller wollte seine ökologischen Produkte deutschen Städten anbieten. Über Easy-B2B fand er den richtigen Partner mit den richtigen Kontakten. Ergebnis: zwei gewonnene Ausschreibungen in Schleswig-Holstein.',
+    kiLinkedIn: `🏗️ Öffentliche Aufträge in Deutschland gewinnen – ohne Ortskenntnisse fast unmöglich.
+
+Ein dänischer Baustoff-Hersteller hatte ein Produkt, das alle Normen erfüllte. Was fehlte: der richtige Partner für den deutschen Ausschreibungsmarkt.
+
+Easy-B2B hat das geändert. Der Kontakt zu einem schleswig-holsteinischen Tiefbau-Vertriebsunternehmen öffnete Türen, die sonst verschlossen geblieben wären.
+
+Heute: zwei gewonnene kommunale Ausschreibungen. Rahmenvertrag in Vorbereitung.
+
+Das ist grenzüberschreitende Zusammenarbeit, die funktioniert.
+
+#EasyB2B #PublicProcurement #DeutschDänisch #GreenBuilding`,
+    kiNewsletter: 'Kommunale Aufträge in Deutschland sind für ausländische Unternehmen eine besondere Herausforderung. Umso mehr freuen wir uns, dass wir einen dänischen Hersteller mit dem richtigen deutschen Partner zusammenbringen konnten. Das Ergebnis: zwei Ausschreibungen gewonnen, ein Rahmenvertrag in Sicht. Genau diese Art von nachhaltiger Vermittlung ist unser Ziel.',
+    branche: 'Bauwesen & Kommunal',
+    land: 'daenemark',
+    entstehungsweg: 'matchmaking',
+    ergebnisTypen: ['vertriebspartner', 'markteintritt', 'projekt'],
+    firma1Name: 'Nordic Ground Materials ApS',
+    firma2Name: 'Schleswig Tiefbau-Vertrieb GmbH',
+    createdAt: '2025-02-28',
+  },
+  {
+    id: 'ss-004',
+    titel: 'Deutsch-dänische Logistik-Partnerschaft auf der Nordroute',
+    kurzbeschreibung: 'Schleswig Logistik GmbH und DSV Kolding entwickelten nach der Failure Night eine dauerhafte Kooperation für die Hamburg–Kopenhagen-Route.',
+    freigabe: 'freigegeben',
+    anonymisiert: false,
+    ausgangssituation: 'Schleswig Logistik hatte täglich freie Kapazitäten auf der Nordroute. DSV Kolding suchte verlässliche deutsche Teilladungs-Partner. Beide wussten voneinander – aber es hatte nie einen konkreten Anlass gegeben, ins Gespräch zu kommen.',
+    herausforderung: 'Logistikkooperationen erfordern sehr genaue Absprachen zu Haftung, Versicherung und Abrechnung. Außerdem brauchte es persönliches Vertrauen, bevor operative Details besprochen werden konnten.',
+    gesuch: 'Jens Petersen: "Wir haben keinen Partner gesucht. Aber als wir Henrik kennenlernten, war sofort klar: Das ist der Richtige."',
+    vermittlungsweg: 'Auf der Failure Night in Schleswig. Beide erzählten von gescheiterten Kooperationsversuchen. Das war der Gesprächseinstieg. Jan Thomsen stellte sie danach formell vor.',
+    ergebnis: 'Seit März 2025 laufen tägliche Teilladungen auf der Hamburg–Kopenhagen-Route. Kosteneinsparung für beide Seiten: ca. 18%. Gemeinsamer Rahmenvertrag für 2025 abgeschlossen.',
+    erkenntnisse: 'Das beste Netzwerken passiert, wenn man nicht netzwerkt. Ein Event, das Ehrlichkeit fordert, schafft mehr Vertrauen als 10 Business-Präsentationen.',
+    titelAnon: 'Zwei Logistik-Partner finden sich auf einem Easy-B2B-Event',
+    ergebnisAnon: 'Kooperation mit 18% Kosteneinsparung für beide Seiten. Rahmenvertrag abgeschlossen.',
+    kiHomepage: 'Manchmal braucht es einen ungewöhnlichen Rahmen, damit Menschen wirklich ins Gespräch kommen. Auf unserer Failure Night erzählten zwei Logistiker voneinander, was nicht geklappt hatte. Was dabei entstanden ist, läuft heute täglich auf der Hamburg–Kopenhagen-Route.',
+    kiLinkedIn: `🚛 Die beste Kooperation entsteht, wenn man nicht nach einer sucht.
+
+Auf unserer Failure Night in Schleswig erzählten zwei Logistiker öffentlich von gescheiterten Versuchen. Ehrlichkeit statt Hochglanz.
+
+Der Rest ist Geschichte: Seit März teilen Schleswig Logistik und DSV Kolding täglich Kapazitäten auf der Nordroute. 18% Ersparnis für beide. Kein Pitch, kein Vertrieb – nur ein ehrliches Gespräch.
+
+#EasyB2B #Logistik #FailureNight #DeutschDänisch`,
+    kiNewsletter: 'Der wertvollste Moment unserer Failure Night in Schleswig war kein Pitch und keine Präsentation. Es war der Augenblick, als Jens Petersen und Henrik Larsen merkten, dass sie das gleiche Problem hatten – und dass sie es gemeinsam lösen könnten. Heute läuft ihre Kooperation. Täglich.',
+    branche: 'Logistik & Transport',
+    land: 'deutschland',
+    entstehungsweg: 'event',
+    ergebnisTypen: ['kooperation', 'projekt'],
+    firma1Name: 'Schleswig Logistik GmbH',
+    firma2Name: 'DSV Transport Kolding',
+    eventId: 'evt-003',
+    createdAt: '2025-05-01',
+  },
+  {
+    id: 'ss-005',
+    titel: 'IT-Dienstleister erschließt öffentliche Verwaltung in Dänemark',
+    kurzbeschreibung: 'Ein deutsches IT-Unternehmen suchte Zugang zum dänischen öffentlichen Sektor. Über einen Netzwerkkontakt aus dem Easy-B2B-Umfeld entstand eine Partnerschaft.',
+    freigabe: 'intern',
+    anonymisiert: true,
+    ausgangssituation: 'Ein Berliner IT-Unternehmen mit Spezialisierung auf Dokumentenmanagement für Behörden wollte sein Produkt in Dänemark testen. Dänische Behörden gelten als sehr digital-affin – ein attraktiver Testmarkt.',
+    herausforderung: 'Öffentlicher Sektor in Dänemark: Ausschreibungen auf Dänisch, komplexe GDPR-Anforderungen, Bevorzugung lokaler Anbieter. Das Unternehmen hatte keine Kontakte.',
+    gesuch: 'Dänischer IT-Partner mit Erfahrung im öffentlichen Sektor als Kooperationspartner oder Reseller',
+    vermittlungsweg: 'Über einen Netzwerkkontakt aus einem Easy-B2B-Frühstücksformat. Kein formelles Matchmaking – ein Gespräch, eine Empfehlung, ein Folgetermin.',
+    ergebnis: 'Pilotprojekt mit einer Gemeinde in Mitteljütland gestartet. Noch kein vertraglich gesichertes Ergebnis, aber Gespräche laufen konstruktiv.',
+    erkenntnisse: 'Noch in Bearbeitung. Aktuell: Vorsicht bei Kommunikation über Status nach außen.',
+    branche: 'IT & Digitalisierung',
+    land: 'deutschland',
+    entstehungsweg: 'netzwerkkontakt',
+    ergebnisTypen: ['markteintritt', 'projekt'],
+    firma1Name: '[Berliner IT-Unternehmen]',
+    firma2Name: '[Dänischer IT-Partner]',
+    createdAt: '2025-05-10',
+  },
+  {
+    id: 'ss-006',
+    titel: 'Spezialprodukte aus Dänemark finden deutschen Vertrieb',
+    kurzbeschreibung: 'Ein dänisches Unternehmen für Spezialwerkzeug fand über Easy-B2B einen deutschen Großhändler als Vertriebspartner.',
+    freigabe: 'anonymisiert',
+    anonymisiert: true,
+    ausgangssituation: 'Hochspezialisiertes Werkzeug für den Holzbearbeitungssektor. Dänischer Hersteller mit starker Marke in Skandinavien, kaum bekannt in Deutschland.',
+    herausforderung: 'Der deutsche Fachhandel ist konservativ. Neue Produkte werden nur über Messen oder persönliche Empfehlungen aufgenommen. Ein Kaltakquise-Ansatz hätte Jahre gedauert.',
+    gesuch: 'Fachhandel oder Großhändler für Holzbearbeitungswerkzeug in Deutschland',
+    vermittlungsweg: 'Easy-B2B-Anfrage wurde durch Jan Thomsen direkt an drei bekannte Fachhändler weitergeleitet. Einer reagierte sofort – weil er bereits nach nordischen Produkten gesucht hatte.',
+    ergebnis: 'Exklusiver Vertriebsvertrag für Deutschland abgeschlossen. Erste Messe-Präsenz gemeinsam auf der HOLZ-HANDWERK Nürnberg 2025 geplant.',
+    erkenntnisse: 'Der Fachhändler kannte das Produkt nicht – aber er kannte Easy-B2B und vertraute der Empfehlung. Das zeigt: Vertrauen im Netzwerk überträgt sich auf neue Kontakte.',
+    titelAnon: 'Dänischer Werkzeug-Spezialist gewinnt exklusiven deutschen Vertriebspartner',
+    ergebnisAnon: 'Exklusiver Vertriebsvertrag abgeschlossen. Gemeinsamer Messeauftritt geplant.',
+    kiHomepage: 'Vertrauen überträgt sich. Ein dänischer Werkzeughersteller und ein deutscher Fachhändler kannten sich nicht – aber beide kannten Easy-B2B. Daraus ist ein exklusiver Vertriebsvertrag für Deutschland geworden.',
+    branche: 'Handwerk & Industrie',
+    land: 'daenemark',
+    entstehungsweg: 'matchmaking',
+    ergebnisTypen: ['vertriebspartner', 'markteintritt'],
+    firma1Name: '[Dänischer Werkzeughersteller]',
+    firma2Name: '[Deutscher Fachgroßhändler]',
+    createdAt: '2025-05-18',
+  },
+];
+
 // ─── UNTERNEHMEN ─────────────────────────────────────────────
 
 export interface MockUnternehmen {

@@ -281,14 +281,76 @@ enum TeilnehmerStatus {
 // ─── SUCCESS STORIES ─────────────────────────────────────────────
 
 model SuccessStory {
-  id              String      @id @default(cuid())
-  titel           String
-  beschreibung    String
-  ergebnis        String?
-  oeffentlich     Boolean     @default(false)
-  unternehmen     Unternehmen @relation(fields: [unternehmenId], references: [id])
-  unternehmenId   String
-  createdAt       DateTime    @default(now())
+  id                  String          @id @default(cuid())
+
+  // Grunddaten
+  titel               String
+  kurzbeschreibung    String?
+  freigabe            StoryFreigabe   @default(intern)
+  anonymisiert        Boolean         @default(true)
+
+  // Inhalt (Narrative Struktur)
+  ausgangssituation   String?         // Was hat Unternehmen A gesucht?
+  herausforderung     String?         // Welche Hürde gab es?
+  gesuch              String?         // Was konkret wurde gesucht?
+  vermittlungsweg     String?         // Wie kam der Kontakt zustande?
+  ergebnis            String          // Was ist entstanden?
+  erkenntnisse        String?         // Was können andere daraus lernen?
+
+  // Anonymisierte Versionen (für Marktplatz/Homepage)
+  titelAnon           String?         // Titel ohne Firmennamen
+  ergebnisAnon        String?         // Ergebnis anonymisiert
+
+  // KI-generierte Content-Varianten
+  kiHomepage          String?
+  kiLinkedIn          String?
+  kiNewsletter        String?
+
+  // Kategorisierung
+  branche             String?
+  land                Land?
+  entstehungsweg      EntstehungsWeg  @default(matchmaking)
+  ergebnisTypen       ErgebnisTyp[]
+
+  // Hauptunternehmen (Suchender)
+  unternehmen         Unternehmen     @relation(fields: [unternehmenId], references: [id])
+  unternehmenId       String
+
+  // Partner (optional, kann anonym bleiben)
+  partnerFirmaName    String?
+  partnerFirmaId      String?
+
+  // Verknüpfungen (optional)
+  anfrageId           String?
+  eventId             String?
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+}
+
+enum StoryFreigabe {
+  intern              // Nur Dashboard
+  anonymisiert        // Öffentlich ohne Firmennamen
+  freigegeben         // Öffentlich mit Firmennamen
+}
+
+enum EntstehungsWeg {
+  matchmaking
+  event
+  netzwerkkontakt
+  empfehlung
+  soft_landing
+  direktkontakt
+}
+
+enum ErgebnisTyp {
+  kooperation
+  vertriebspartner
+  lieferant
+  markteintritt
+  projekt
+  wissenstransfer
+  netzwerkaufbau
 }
 
 // ─── EVENTS & TEILNAHMEN ─────────────────────────────────────────

@@ -36,6 +36,7 @@ export default function DashboardLayout({
     { label: 'Interessenten', href: '/dashboard/interessenten', icon: '👥' },
     { label: 'Matchmaking', href: '/dashboard/matchmaking', icon: '🎯' },
     { label: 'Events', href: '/dashboard/events', icon: '🎤' },
+    { label: 'Success Stories', href: '/dashboard/success-stories', icon: '⭐' },
   ];
 
   return (
