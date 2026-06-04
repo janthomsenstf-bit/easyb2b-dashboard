@@ -1,66 +1,85 @@
 'use client';
 
 import { useState } from 'react';
-import { MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor, getRichtungLabel, getLandFlag, type MockAnfrage, type MarktplatzStatus, type MarktplatzEintrag } from '@/lib/mockdata';
-import { useStore } from '@/lib/store';
-import { berechneProjekt, getGesundheitColor, getGesundheitEmoji, getZuordnungLabel, getZuordnungColor, type Gesundheit } from '@/lib/projekte';
+import {
+  MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor,
+  getRichtungLabel, getLandFlag,
+  type MockAnfrage, type MarktplatzStatus, type MarktplatzEintrag,
+} from '@/lib/mockdata';
+import { useStore, type ProjektInteressent } from '@/lib/store';
+import {
+  berechneProjekt, getGesundheitColor, getGesundheitEmoji,
+  getZuordnungLabel, getZuordnungColor, type Gesundheit,
+} from '@/lib/projekte';
+
+// ─── HAUPTSEITE ───────────────────────────────────────────────
 
 export default function ProjektePage() {
   const store = useStore();
   const [filterGesundheit, setFilterGesundheit] = useState<'alle' | Gesundheit>('alle');
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [offeneIds, setOffeneIds] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
 
-  // Interessenten eines Projekts über die Zuordnungs-Zwischentabelle auflösen
+  const zeigeToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const toggleDetail = (id: string) => {
+    setOffeneIds(prev => {
+      const neu = new Set(prev);
+      if (neu.has(id)) neu.delete(id);
+      else { neu.clear(); neu.add(id); } // nur eines gleichzeitig offen
+      return neu;
+    });
+  };
+
+  // Interessenten via Zuordnungs-Zwischentabelle
   const interessentenFuer = (projektId: string) => {
     const ids = store.zuordnungen.filter(z => z.projektId === projektId).map(z => z.interessentId);
     return MOCK_INTERESSENTEN.filter(i => ids.includes(i.id));
   };
 
-  // Jede Anfrage = ein Projekt
   const projekte = store.anfragen.map(a => ({ anfrage: a, status: berechneProjekt(a, interessentenFuer(a.id)) }));
   const gefiltert = projekte.filter(p => filterGesundheit === 'alle' || p.status.gesundheit === filterGesundheit);
 
-  const detail = detailId ? projekte.find(p => p.anfrage.id === detailId) : null;
-
-  // Übersichts-Zahlen
-  const gruen = projekte.filter(p => p.status.gesundheit === 'gruen').length;
-  const gelb = projekte.filter(p => p.status.gesundheit === 'gelb').length;
-  const rot = projekte.filter(p => p.status.gesundheit === 'rot').length;
+  const gruen  = projekte.filter(p => p.status.gesundheit === 'gruen').length;
+  const gelb   = projekte.filter(p => p.status.gesundheit === 'gelb').length;
+  const rot    = projekte.filter(p => p.status.gesundheit === 'rot').length;
   const erfolge = projekte.filter(p => p.status.kpi.erfolge > 0).length;
 
   return (
     <div>
-      {detail && (
-        <ProjektDetail
-          anfrage={detail.anfrage}
-          status={detail.status}
-          onClose={() => setDetailId(null)}
-        />
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, backgroundColor: '#003366', color: 'white', padding: '14px 20px', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600 }}>
+          {toast}
+        </div>
       )}
 
       <div style={{ marginBottom: '8px' }}>
         <h1 style={{ margin: 0, color: '#003366', fontSize: '24px' }}>Vermittlungsprojekte</h1>
         <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
-          Jede Anfrage als Projekt — Anfrage, Interessenten, Matches und Verlauf an einem Ort.
+          Jede Anfrage als Projekt — Klick auf eine Karte öffnet die Details.
         </p>
       </div>
 
-      {/* Übersicht */}
+      {/* Übersicht-KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '14px', margin: '24px 0' }}>
         {[
           { label: 'Projekte gesamt', value: projekte.length, color: '#003366', filter: 'alle' as const },
-          { label: '🟢 Hohe Aktivität', value: gruen, color: '#4CAF50', filter: 'gruen' as const },
-          { label: '🟡 Wenig Interesse', value: gelb, color: '#FF9900', filter: 'gelb' as const },
-          { label: '🔴 Aufmerksamkeit nötig', value: rot, color: '#f44336', filter: 'rot' as const },
-          { label: '⭐ Mit Erfolg', value: erfolge, color: '#9C27B0', filter: 'alle' as const },
-        ].map(s => (
-          <div key={s.label} onClick={() => setFilterGesundheit(s.filter)} style={{
+          { label: '🟢 Hohe Aktivität',      value: gruen,   color: '#4CAF50', filter: 'gruen' as const },
+          { label: '🟡 Wenig Interesse',      value: gelb,    color: '#FF9900', filter: 'gelb' as const },
+          { label: '🔴 Aufmerksamkeit nötig', value: rot,     color: '#f44336', filter: 'rot' as const },
+          { label: '⭐ Mit Erfolg',           value: erfolge, color: '#9C27B0', filter: 'alle' as const },
+        ].map(stat => (
+          <div key={stat.label} onClick={() => setFilterGesundheit(stat.filter)} style={{
             backgroundColor: 'white', padding: '16px', borderRadius: '8px', cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.07)', borderLeft: `4px solid ${s.color}`,
-            outline: filterGesundheit === s.filter && s.filter !== 'alle' ? `2px solid ${s.color}` : 'none',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.07)', borderLeft: `4px solid ${stat.color}`,
+            outline: filterGesundheit === stat.filter && stat.filter !== 'alle' ? `2px solid ${stat.color}` : 'none',
           }}>
-            <div style={{ fontSize: '12px', color: '#666' }}>{s.label}</div>
-            <div style={{ fontSize: '26px', fontWeight: 700, color: s.color, marginTop: '4px' }}>{s.value}</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>{stat.label}</div>
+            <div style={{ fontSize: '26px', fontWeight: 700, color: stat.color, marginTop: '4px' }}>{stat.value}</div>
           </div>
         ))}
       </div>
@@ -71,79 +90,87 @@ export default function ProjektePage() {
         </button>
       )}
 
-      {/* Projekt-Karten */}
+      {/* Projekt-Liste mit Accordion */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {gefiltert.map(({ anfrage: a, status: s }) => (
-          <div key={a.id} onClick={() => setDetailId(a.id)} style={{
-            backgroundColor: 'white', borderRadius: '10px', padding: '18px 20px', cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.07)', borderLeft: `5px solid ${getGesundheitColor(s.gesundheit)}`,
-            transition: 'all 0.15s',
-          }}
-            onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)'}
-            onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)'}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-              {/* Links */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span title={s.gesundheitLabel} style={{ fontSize: '14px' }}>{getGesundheitEmoji(s.gesundheit)}</span>
-                  <span style={{ fontWeight: 700, fontSize: '16px', color: '#003366' }}>{a.ziel}</span>
+        {gefiltert.map(({ anfrage: a, status: s }) => {
+          const isOpen = offeneIds.has(a.id);
+          return (
+            <div key={a.id} style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: isOpen ? '0 4px 16px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.07)' }}>
+              {/* ── Karten-Header (immer sichtbar) ── */}
+              <div
+                onClick={() => toggleDetail(a.id)}
+                style={{
+                  backgroundColor: 'white', padding: '18px 20px', cursor: 'pointer',
+                  borderLeft: `5px solid ${getGesundheitColor(s.gesundheit)}`,
+                  borderBottom: isOpen ? '1px solid #f0f0f0' : 'none',
+                  transition: 'background 0.1s',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span>{getGesundheitEmoji(s.gesundheit)}</span>
+                      <span style={{ fontWeight: 700, fontSize: '16px', color: '#003366' }}>{a.ziel}</span>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                      {getRichtungLabel(a.richtung)} {a.firmenname} · {a.branche} · {a.anzeigenId}
+                    </div>
+                    <div style={{ display: 'flex', gap: '18px', fontSize: '12px', flexWrap: 'wrap' }}>
+                      <Kpi label="Interessenten" value={s.kpi.interessenten} color="#2196F3" />
+                      <Kpi label="Freigegeben"   value={s.kpi.freigegeben}   color="#4CAF50" />
+                      <Kpi label="Kontakte"       value={s.kpi.kontakte}      color="#9C27B0" />
+                      <Kpi label="Erfolge"        value={s.kpi.erfolge}       color="#2e7d32" />
+                    </div>
+                  </div>
+                  <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: s.veroeffentlichungColor }}>{s.veroeffentlichung}</span>
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(a.status) }}>{getStatusLabel(a.status)}</span>
+                    <span style={{ fontSize: '18px', color: '#ccc', lineHeight: 1 }}>{isOpen ? '▴' : '▾'}</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
-                  {getRichtungLabel(a.richtung)} {a.firmenname} · {a.branche} · {a.anzeigenId}
-                </div>
-                {/* KPI-Reihe */}
-                <div style={{ display: 'flex', gap: '18px', fontSize: '12px', flexWrap: 'wrap' }}>
-                  <Kpi label="Interessenten" value={s.kpi.interessenten} color="#2196F3" />
-                  <Kpi label="Freigegeben" value={s.kpi.freigegeben} color="#4CAF50" />
-                  <Kpi label="Kontakte" value={s.kpi.kontakte} color="#9C27B0" />
-                  <Kpi label="Erfolge" value={s.kpi.erfolge} color="#2e7d32" />
-                </div>
+                {s.hinweis && !isOpen && (
+                  <div style={{ marginTop: '10px', padding: '6px 10px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00', display: 'flex', gap: '6px' }}>
+                    <span>💡</span><span>{s.hinweis}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Rechts */}
-              <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: s.veroeffentlichungColor }}>
-                  {s.veroeffentlichung}
-                </span>
-                <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(a.status) }}>
-                  {getStatusLabel(a.status)}
-                </span>
-                <span style={{ fontSize: '11px', color: getGesundheitColor(s.gesundheit), fontWeight: 600 }}>
-                  {s.gesundheitLabel}
-                </span>
-              </div>
+              {/* ── Aufgeklappte Details (Accordion) ── */}
+              {isOpen && (
+                <ProjektInhalt
+                  anfrage={a}
+                  status={s}
+                  zuordnungen={store.zuordnungen.filter(z => z.projektId === a.id)}
+                  interessenten={interessentenFuer(a.id)}
+                  store={store}
+                  onToast={zeigeToast}
+                />
+              )}
             </div>
+          );
+        })}
 
-            {/* Hinweis */}
-            {s.hinweis && (
-              <div style={{ marginTop: '12px', padding: '8px 12px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span>💡</span><span>{s.hinweis}</span>
-              </div>
-            )}
+        {gefiltert.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '14px' }}>
+            Keine Projekte gefunden.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
 }
 
-// ─── DETAIL ───────────────────────────────────────────────────
+// ─── PROJEKT-INHALT (Accordion-Inhalt) ────────────────────────
 
-function ProjektDetail({ anfrage: a, status: s, onClose }: {
+function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, store, onToast }: {
   anfrage: MockAnfrage;
   status: ReturnType<typeof berechneProjekt>;
-  onClose: () => void;
+  zuordnungen: ProjektInteressent[];
+  interessenten: typeof MOCK_INTERESSENTEN;
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
 }) {
-  const store = useStore();
-  const [introStatus, setIntroStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
-
-  // Zuordnungen dieses Projekts (automatisch + manuell), aufgelöst auf Interessenten
-  const zuordnungen = store.zuordnungen
-    .filter(z => z.projektId === a.id)
-    .map(z => ({ z, i: MOCK_INTERESSENTEN.find(x => x.id === z.interessentId) }))
-    .filter(x => x.i) as { z: typeof store.zuordnungen[number]; i: typeof MOCK_INTERESSENTEN[number] }[];
-  const interessenten = zuordnungen.map(x => x.i);
+  const [introStatus, setIntroStatus] = useState<Record<string, 'idle'|'sending'|'sent'|'error'>>({});
   const matchVorschlaege = MOCK_MATCHES.filter(m => m.anfrageId === a.id);
   const aktiveMatches = interessenten.filter(i => ['kontakt_laeuft', 'erfolgreich', 'feedback_ausstehend'].includes(i.status));
 
@@ -154,187 +181,136 @@ function ProjektDetail({ anfrage: a, status: s, onClose }: {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          suchendeEmail: a.email,
-          suchenderName: a.ansprechpartner,
-          anfrageFirma: a.firmenname,
-          anfrageAnzeigenId: a.anzeigenId,
+          suchendeEmail: a.email, suchenderName: a.ansprechpartner,
+          anfrageFirma: a.firmenname, anfrageAnzeigenId: a.anzeigenId,
           anfrageTelefon: a.telefon || '',
-          interessentEmail: i.email,
-          interessentName: i.ansprechpartner,
-          interessentFirma: i.firmenname,
-          interessentTelefon: i.telefon || '',
+          interessentEmail: i.email, interessentName: i.ansprechpartner,
+          interessentFirma: i.firmenname, interessentTelefon: i.telefon || '',
         }),
       });
-      if (res.ok) {
-        setIntroStatus(prev => ({ ...prev, [interessentId]: 'sent' }));
-        store.logge(`Intro-Mail gesendet an ${i.firmenname} + ${a.firmenname}`, a.anzeigenId, 'status');
-      } else {
-        setIntroStatus(prev => ({ ...prev, [interessentId]: 'error' }));
-      }
+      setIntroStatus(prev => ({ ...prev, [interessentId]: res.ok ? 'sent' : 'error' }));
+      if (res.ok) store.logge(`Intro-Mail: ${i.firmenname} ↔ ${a.firmenname}`, a.anzeigenId, 'status');
     } catch {
       setIntroStatus(prev => ({ ...prev, [interessentId]: 'error' }));
     }
   }
 
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 3000, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '30px 20px', overflowY: 'auto' }}>
-      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '820px', boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
-        {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, backgroundColor: 'white', borderRadius: '12px 12px 0 0', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>{getGesundheitEmoji(s.gesundheit)}</span>
-                <h2 style={{ margin: 0, fontSize: '20px', color: '#003366' }}>{a.ziel}</h2>
-              </div>
-              <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
-                {getRichtungLabel(a.richtung)} {a.firmenname} · {a.anzeigenId}
-              </div>
-            </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px', color: '#999' }}>×</button>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-            <Tag color={s.veroeffentlichungColor}>{s.veroeffentlichung}</Tag>
-            <Tag color={getStatusColor(a.status)}>{getStatusLabel(a.status)}</Tag>
-            <Tag color={getGesundheitColor(s.gesundheit)}>{s.gesundheitLabel}</Tag>
-          </div>
-        </div>
+  const ms = a.marktplatzStatus || 'intern';
 
-        <div style={{ padding: '24px' }}>
-          {/* Erfolgskontrolle */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '20px' }}>
-            {[
-              { label: 'Interessenten', v: s.kpi.interessenten, c: '#2196F3' },
-              { label: 'Freigegeben', v: s.kpi.freigegeben, c: '#4CAF50' },
-              { label: 'Kontakte', v: s.kpi.kontakte, c: '#9C27B0' },
-              { label: 'Erfolge', v: s.kpi.erfolge, c: '#2e7d32' },
-              { label: 'Quote', v: `${s.erfolgsquote}%`, c: '#FF9900' },
-            ].map(k => (
-              <div key={k.label} style={{ backgroundColor: k.c + '12', borderRadius: '8px', padding: '12px', textAlign: 'center', border: `1px solid ${k.c}30` }}>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: k.c }}>{k.v}</div>
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>{k.label}</div>
+  return (
+    <div style={{ backgroundColor: '#f9fafb', padding: '24px' }}>
+      {/* KPI-Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', marginBottom: '20px' }}>
+        {[
+          { label: 'Interessenten', v: s.kpi.interessenten, c: '#2196F3' },
+          { label: 'Freigegeben',   v: s.kpi.freigegeben,   c: '#4CAF50' },
+          { label: 'Kontakte',      v: s.kpi.kontakte,      c: '#9C27B0' },
+          { label: 'Erfolge',       v: s.kpi.erfolge,       c: '#2e7d32' },
+          { label: 'Quote',         v: `${s.erfolgsquote}%`, c: '#FF9900' },
+        ].map(k => (
+          <div key={k.label} style={{ backgroundColor: k.c + '12', borderRadius: '8px', padding: '12px', textAlign: 'center', border: `1px solid ${k.c}30` }}>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: k.c }}>{k.v}</div>
+            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {s.hinweis && (
+        <div style={{ marginBottom: '20px', padding: '12px 14px', backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', fontSize: '13px', color: '#8a6d00', display: 'flex', gap: '10px' }}>
+          <span>💡</span><div><strong>Optimierungsvorschlag:</strong> {s.hinweis}</div>
+        </div>
+      )}
+
+      {/* 1. Anfrage */}
+      <Section titel="1 · Anfrage">
+        <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: '0 0 10px 0' }}>{a.beschreibung}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+          <div><span style={{ color: '#999' }}>Region:</span> {getLandFlag(a.standort.includes('Dänemark') ? 'daenemark' : 'deutschland')} {a.standort}</div>
+          <div><span style={{ color: '#999' }}>Branche:</span> {a.branche}</div>
+          <div><span style={{ color: '#999' }}>Art:</span> {a.art}</div>
+          <div><span style={{ color: '#999' }}>Sichtbarkeit:</span> {a.sichtbarkeit}</div>
+        </div>
+        <a href="/dashboard/anfragen" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Anfrage bearbeiten</a>
+      </Section>
+
+      {/* 2. Interessenten */}
+      <Section titel={`2 · Interessenten (${zuordnungen.length})`}>
+        {zuordnungen.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Es gibt Match-Vorschläge (siehe unten).'}</p>
+        ) : (
+          zuordnungen.map((z: ProjektInteressent) => {
+            const i = MOCK_INTERESSENTEN.find(x => x.id === z.interessentId);
+            if (!i) return null;
+            const istatus = introStatus[i.id] || 'idle';
+            const kannIntro = ['freigegeben', 'kontakt_hergestellt'].includes(z.status);
+            return (
+              <div key={z.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #e8e8e8', fontSize: '13px' }}>
+                <div style={{ flex: 1 }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
+                    <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
+                    <span style={{ marginLeft: '6px', padding: '1px 6px', borderRadius: '8px', fontSize: '9px', fontWeight: 700, backgroundColor: z.zuordnungsart === 'manuell' ? '#FF990020' : '#99999920', color: z.zuordnungsart === 'manuell' ? '#e65100' : '#777' }}>
+                      {z.zuordnungsart === 'manuell' ? '✋ manuell' : '⚙ auto'}
+                    </span>
+                  </div>
+                  {kannIntro && (
+                    <div style={{ marginTop: '5px' }}>
+                      {istatus === 'idle'    && <button onClick={() => sendeIntroMail(i.id, i)} style={{ padding: '4px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '5px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32', fontWeight: 600 }}>✉️ Intro-Mail senden</button>}
+                      {istatus === 'sending' && <span style={{ fontSize: '11px', color: '#999' }}>⏳ Wird gesendet…</span>}
+                      {istatus === 'sent'    && <span style={{ fontSize: '11px', color: '#4CAF50', fontWeight: 600 }}>✅ Intro-Mail gesendet</span>}
+                      {istatus === 'error'   && <span style={{ fontSize: '11px', color: '#f44336' }}>❌ Fehler — API-Key prüfen</span>}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  {i.matchScore && <span style={{ fontSize: '12px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>}
+                  <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getZuordnungColor(z.status) }}>{getZuordnungLabel(z.status)}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <a href="/dashboard/interessenten" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Interessenten verwalten</a>
+      </Section>
+
+      {/* 3. Matches */}
+      <Section titel={`3 · Matches (${aktiveMatches.length} aktiv, ${matchVorschlaege.length} Vorschläge)`}>
+        {aktiveMatches.length === 0 && matchVorschlaege.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Matches.</p>
+        ) : (
+          <>
+            {aktiveMatches.map(m => (
+              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#e8f5e9', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
+                <span>🤝 {a.firmenname} ↔ {m.firmenname}</span>
+                <span style={{ fontWeight: 600, color: '#2e7d32' }}>{getStatusLabel(m.status)}</span>
               </div>
             ))}
-          </div>
-
-          {/* Hinweis / Optimierung */}
-          {s.hinweis && (
-            <div style={{ marginBottom: '20px', padding: '12px 14px', backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', fontSize: '13px', color: '#8a6d00', display: 'flex', gap: '10px' }}>
-              <span style={{ fontSize: '16px' }}>💡</span>
-              <div><strong>Optimierungsvorschlag:</strong> {s.hinweis}</div>
-            </div>
-          )}
-
-          {/* 1. Anfrage */}
-          <Section titel="1 · Anfrage">
-            <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: '0 0 10px 0' }}>{a.beschreibung}</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
-              <div><span style={{ color: '#999' }}>Region:</span> {getLandFlag(a.standort.includes('Dänemark') ? 'daenemark' : 'deutschland')} {a.standort}</div>
-              <div><span style={{ color: '#999' }}>Branche:</span> {a.branche}</div>
-              <div><span style={{ color: '#999' }}>Art:</span> {a.art}</div>
-              <div><span style={{ color: '#999' }}>Sichtbarkeit:</span> {a.sichtbarkeit}</div>
-            </div>
-            <a href="/dashboard/anfragen" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Anfrage bearbeiten</a>
-          </Section>
-
-          {/* 2. Interessenten (über Zuordnungen) */}
-          <Section titel={`2 · Interessenten (${zuordnungen.length})`}>
-            {zuordnungen.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Aber es gibt Match-Vorschläge (siehe unten).'}</p>
-            ) : (
-              zuordnungen.map(({ z, i }) => {
-                const istatus = introStatus[i.id] || 'idle';
-                const kannIntroSenden = ['freigegeben', 'kontakt_hergestellt'].includes(z.status);
-                return (
-                  <div key={z.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div>
-                        <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
-                        <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
-                        <span style={{ marginLeft: '8px', padding: '1px 7px', borderRadius: '8px', fontSize: '9px', fontWeight: 700, backgroundColor: z.zuordnungsart === 'manuell' ? '#FF990020' : '#99999920', color: z.zuordnungsart === 'manuell' ? '#e65100' : '#777' }}>
-                          {z.zuordnungsart === 'manuell' ? '✋ manuell' : '⚙ auto'}
-                        </span>
-                      </div>
-                      {z.zuordnungsart === 'manuell' && z.grund && (
-                        <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>„{z.grund}" · {z.erstelltVon}, {z.erstelltAm}</div>
-                      )}
-                      {/* Intro-Mail Button — nur bei freigegebenen Interessenten */}
-                      {kannIntroSenden && (
-                        <div style={{ marginTop: '6px' }}>
-                          {istatus === 'idle' && (
-                            <button onClick={() => sendeIntroMail(i.id, i)} style={{ padding: '4px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '5px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32', fontWeight: 600 }}>
-                              ✉️ Intro-Mail senden
-                            </button>
-                          )}
-                          {istatus === 'sending' && <span style={{ fontSize: '11px', color: '#999' }}>⏳ Wird gesendet…</span>}
-                          {istatus === 'sent' && <span style={{ fontSize: '11px', color: '#4CAF50', fontWeight: 600 }}>✅ Intro-Mail gesendet an beide Parteien</span>}
-                          {istatus === 'error' && <span style={{ fontSize: '11px', color: '#f44336' }}>❌ Fehler — RESEND_API_KEY prüfen</span>}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      {i.matchScore && <span style={{ fontSize: '12px', fontWeight: 700, color: i.matchScore >= 80 ? '#4CAF50' : '#FF9900' }}>{i.matchScore}%</span>}
-                      <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getZuordnungColor(z.status) }}>{getZuordnungLabel(z.status)}</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <a href="/dashboard/interessenten" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Interessenten verwalten</a>
-          </Section>
-
-          {/* 3. Matches */}
-          <Section titel={`3 · Matches (${aktiveMatches.length} aktiv, ${matchVorschlaege.length} Vorschläge)`}>
-            {aktiveMatches.length === 0 && matchVorschlaege.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Matches.</p>
-            ) : (
-              <>
-                {aktiveMatches.map(m => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#e8f5e9', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
-                    <span>🤝 {a.firmenname} ↔ {m.firmenname}</span>
-                    <span style={{ fontWeight: 600, color: '#2e7d32' }}>{getStatusLabel(m.status)}</span>
-                  </div>
-                ))}
-                {matchVorschlaege.map((m, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
-                    <span>💡 Vorschlag: {m.interessentFirma}</span>
-                    <span style={{ fontWeight: 600, color: '#003366' }}>{m.score}%</span>
-                  </div>
-                ))}
-              </>
-            )}
-            <a href="/dashboard/matchmaking" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Matchmaking</a>
-          </Section>
-
-          {/* 4. Verlauf / Aktivität */}
-          <Section titel="4 · Verlauf & nächste Aufgabe">
-            <div style={{ fontSize: '13px', color: '#444' }}>
-              <div style={{ marginBottom: '6px' }}>📅 Erstellt: {a.createdAt}</div>
-              <div style={{ marginBottom: '6px' }}>📊 Letzte Aktivität: {interessenten[0]?.createdAt || a.createdAt}</div>
-              <div style={{ padding: '8px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', marginTop: '8px' }}>
-                <strong>Nächste Aufgabe:</strong> {naechsteAufgabe(s, interessenten.length, a.marktplatzStatus)}
+            {matchVorschlaege.map((m, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
+                <span>💡 Vorschlag: {m.interessentFirma}</span>
+                <span style={{ fontWeight: 600, color: '#003366' }}>{m.score}%</span>
               </div>
-            </div>
-          </Section>
+            ))}
+          </>
+        )}
+        <a href="/dashboard/matchmaking" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Matchmaking</a>
+      </Section>
 
-          {/* 5. Marktplatz */}
-          <MarktplatzSektion anfrage={a} />
+      {/* 4. Verlauf */}
+      <Section titel="4 · Verlauf & nächste Aufgabe">
+        <div style={{ fontSize: '13px', color: '#444' }}>
+          <div style={{ marginBottom: '6px' }}>📅 Erstellt: {a.createdAt}</div>
+          <div style={{ marginBottom: '6px' }}>📊 Letzte Aktivität: {interessenten[0]?.createdAt || a.createdAt}</div>
+          <div style={{ padding: '8px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', marginTop: '8px' }}>
+            <strong>Nächste Aufgabe:</strong> {naechsteAufgabe(s, interessenten.length, a.workflowStatus)}
+          </div>
         </div>
-      </div>
+      </Section>
+
+      {/* 5. Marktplatz */}
+      <MarktplatzSektion anfrage={a} store={store} onToast={onToast} />
     </div>
   );
-}
-
-function naechsteAufgabe(s: ReturnType<typeof berechneProjekt>, anzInteressenten: number, ms?: MarktplatzStatus): string {
-  if (!ms || ms === 'intern') return 'Marktplatz-Entwurf erstellen und Anfrage veröffentlichen.';
-  if (ms === 'entwurf') return 'Marktplatz-Entwurf fertigstellen, Vorschau prüfen und freigeben.';
-  if (ms === 'zur_pruefung') return 'Marktplatz-Eintrag final prüfen und jetzt veröffentlichen.';
-  if (ms === 'pausiert' || ms === 'abgelaufen') return 'Entscheiden: wieder veröffentlichen, überarbeiten oder archivieren?';
-  if (anzInteressenten === 0) return 'Aktives Matchmaking starten oder Gesuch überarbeiten.';
-  if (s.kpi.freigegeben === 0) return 'Neue Interessenten prüfen und freigeben.';
-  if (s.kpi.kontakte === 0) return 'Kontakt zwischen Suchendem und freigegebenem Interessenten herstellen.';
-  if (s.kpi.erfolge === 0) return 'Feedback zum laufenden Kontakt einholen.';
-  return 'Projekt läuft erfolgreich — Success Story dokumentieren.';
 }
 
 // ─── MARKTPLATZ SEKTION ───────────────────────────────────────
@@ -349,7 +325,10 @@ const MS_META: Record<MarktplatzStatus, { label: string; color: string; bg: stri
   archiviert:      { label: 'Archiviert',      color: '#546e7a', bg: '#eceff1' },
 };
 
-function MkBtn({ children, onClick, variant = 'default' }: { children: React.ReactNode; onClick: () => void; variant?: 'default' | 'primary' | 'danger' | 'ghost' }) {
+function MkBtn({ children, onClick, variant = 'default', disabled }: {
+  children: React.ReactNode; onClick: () => void;
+  variant?: 'default' | 'primary' | 'danger' | 'ghost'; disabled?: boolean;
+}) {
   const styles: Record<string, React.CSSProperties> = {
     default: { backgroundColor: '#f5f5f5', color: '#333', border: '1px solid #ddd' },
     primary: { backgroundColor: '#003366', color: 'white', border: 'none' },
@@ -357,33 +336,57 @@ function MkBtn({ children, onClick, variant = 'default' }: { children: React.Rea
     ghost:   { backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366' },
   };
   return (
-    <button onClick={onClick} style={{ ...styles[variant], padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+    <button onClick={onClick} disabled={disabled} style={{
+      ...styles[variant], padding: '7px 14px', borderRadius: '6px', fontSize: '12px',
+      fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.6 : 1,
+      display: 'inline-flex', alignItems: 'center', gap: '5px',
+    }}>
       {children}
     </button>
   );
 }
 
-function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
-  const store = useStore();
+function MarktplatzSektion({ anfrage, store, onToast }: {
+  anfrage: MockAnfrage;
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
+}) {
   const [editMode, setEditMode] = useState(false);
   const [showVorschau, setShowVorschau] = useState(false);
   const [showDeaktivieren, setShowDeaktivieren] = useState(false);
-  const [deaktiviereStatus, setDeaktiviereStatus] = useState<'pausiert' | 'abgelaufen' | 'archiviert'>('pausiert');
+  const [deaktiviereStatus, setDeaktiviereStatus] = useState<'pausiert'|'abgelaufen'|'archiviert'>('pausiert');
   const [deaktiviereGrund, setDeaktiviereGrund] = useState('');
   const [kiOutput, setKiOutput] = useState('');
   const [kiLoading, setKiLoading] = useState('');
   const [formData, setFormData] = useState<Partial<MarktplatzEintrag>>(anfrage.marktplatzDaten || {});
+  const [dbSyncing, setDbSyncing] = useState(false);
 
   const ms: MarktplatzStatus = anfrage.marktplatzStatus || 'intern';
   const meta = MS_META[ms];
   const md = anfrage.marktplatzDaten;
-
   const today = new Date().toISOString().split('T')[0];
 
   function addMonths(date: string, n: number): string {
     const d = new Date(date);
     d.setMonth(d.getMonth() + n);
     return d.toISOString().split('T')[0];
+  }
+
+  // ── DB-Sync: Status in Neon speichern ────────────────────────
+  async function syncDbStatus(neuerStatus: string) {
+    setDbSyncing(true);
+    try {
+      await fetch('/api/anfragen', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: anfrage.id, status: neuerStatus }),
+      });
+    } catch (e) {
+      console.warn('[Marktplatz] DB-Sync fehlgeschlagen:', e);
+    } finally {
+      setDbSyncing(false);
+    }
   }
 
   function erstelleEntwurf() {
@@ -411,7 +414,7 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
   }
 
   function speichereEntwurf() {
-    const updated: MarktplatzEintrag = { ...(md || {} as MarktplatzEintrag), ...formData, letzteBearbeitungAm: today };
+    const updated = { ...(md || {} as MarktplatzEintrag), ...formData, letzteBearbeitungAm: today };
     store.updateAnfrage(anfrage.id, { marktplatzDaten: updated });
     store.logge('Marktplatz-Entwurf bearbeitet', anfrage.anzeigenId, 'bearbeiten');
     setEditMode(false);
@@ -423,7 +426,7 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
     store.logge('Marktplatz-Eintrag zur Prüfung eingereicht', anfrage.anzeigenId, 'status');
   }
 
-  function veroeffentlichen() {
+  async function veroeffentlichen() {
     const lm = formData.laufzeitMonate || md?.laufzeitMonate || 3;
     store.updateAnfrage(anfrage.id, {
       marktplatzStatus: 'veroeffentlicht',
@@ -432,20 +435,27 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
       veroeffentlichtVon: 'Operator',
     });
     store.logge(`Marktplatz-Eintrag veröffentlicht (${lm} Monate)`, anfrage.anzeigenId, 'status');
+    // DB-Status auf "aktiv" setzen → Homepage zeigt es
+    await syncDbStatus('aktiv');
+    onToast('✅ Veröffentlicht — Projekt ist jetzt auf der Homepage sichtbar');
     setEditMode(false);
   }
 
-  function deaktivieren() {
+  async function deaktivieren() {
+    const grund = deaktiviereGrund || 'Kein Grund angegeben';
     store.updateAnfrage(anfrage.id, {
       marktplatzStatus: deaktiviereStatus,
-      deaktivierungsGrund: deaktiviereGrund || 'Kein Grund angegeben',
+      deaktivierungsGrund: grund,
     });
-    store.logge(`Marktplatz-Eintrag ${deaktiviereStatus}: ${deaktiviereGrund}`, anfrage.anzeigenId, 'status');
+    store.logge(`Marktplatz-Eintrag ${deaktiviereStatus}: ${grund}`, anfrage.anzeigenId, 'status');
+    // DB-Status auf "pausiert" setzen → verschwindet von der Homepage
+    await syncDbStatus('pausiert');
+    onToast(`✅ Vom Marktplatz genommen — Projekt ist nicht mehr öffentlich sichtbar`);
     setShowDeaktivieren(false);
     setDeaktiviereGrund('');
   }
 
-  function wiederVeroeffentlichen() {
+  async function wiederVeroeffentlichen() {
     const lm = md?.laufzeitMonate || 3;
     store.updateAnfrage(anfrage.id, {
       marktplatzStatus: 'veroeffentlicht',
@@ -454,15 +464,17 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
       deaktivierungsGrund: undefined,
     });
     store.logge('Marktplatz-Eintrag wieder veröffentlicht', anfrage.anzeigenId, 'status');
+    await syncDbStatus('aktiv');
+    onToast('✅ Wieder veröffentlicht — Projekt ist jetzt auf der Homepage sichtbar');
   }
 
   function kiSimuliere(tool: string) {
     setKiLoading(tool);
     setTimeout(() => {
       const texte: Record<string, string> = {
-        generieren: `[KI-Entwurf] ${anfrage.firmenname} sucht ${anfrage.ziel.toLowerCase()}. ${anfrage.beschreibung.slice(0, 180)} Wenn Sie Interesse haben, melden Sie sich über den Easy-B2B-Marktplatz.`,
+        generieren: `[KI-Entwurf] ${anfrage.firmenname} sucht ${anfrage.ziel.toLowerCase()}. ${anfrage.beschreibung.slice(0, 180)} Bei Interesse melden Sie sich über den Easy-B2B-Marktplatz.`,
         kuerzen: (formData.kurzbeschreibung || md?.kurzbeschreibung || '').slice(0, 140) + '…',
-        voicecheck: `✅ Klarheit: 8/10 · Vertrauen: 7/10 · Ansprache: 9/10\n💡 Verbesserung: Ersten Satz aktiver formulieren. „Wir suchen" statt „Es wird gesucht".`,
+        voicecheck: `✅ Klarheit: 8/10 · Vertrauen: 7/10 · Ansprache: 9/10\n💡 Verbesserung: Ersten Satz aktiver formulieren.`,
         anonymisieren: (formData.kurzbeschreibung || md?.kurzbeschreibung || '').replace(new RegExp(anfrage.firmenname, 'gi'), anfrage.richtung === 'de_dk' ? 'Ein deutsches Unternehmen' : 'Ein dänisches Unternehmen'),
       };
       setKiOutput(texte[tool] || '');
@@ -480,38 +492,29 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
         <div onClick={() => setShowVorschau(false)} style={{ position: 'fixed', inset: 0, zIndex: 4000, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '12px', maxWidth: '620px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
             <div style={{ padding: '14px 20px', backgroundColor: '#003366', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>Vorschau – So erscheint der Eintrag auf der Homepage</span>
+              <span style={{ fontWeight: 700, fontSize: '13px' }}>Vorschau — So erscheint der Eintrag auf der Homepage</span>
               <button onClick={() => setShowVorschau(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
             </div>
             <div style={{ padding: '24px' }}>
               <div style={{ border: '1px solid #e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ backgroundColor: '#f8f9fa', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#003366', letterSpacing: '0.5px' }}>EASY-B2B MARKTPLATZ</span>
+                <div style={{ backgroundColor: '#f8f9fa', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#003366' }}>EASY-B2B MARKTPLATZ</span>
                   <span style={{ fontSize: '11px', color: '#666' }}>{anfrage.anzeigenId}</span>
                 </div>
                 <div style={{ padding: '18px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>{md.richtung === 'dk_de' ? '🇩🇰 → 🇩🇪' : '🇩🇪 → 🇩🇰'}</span>
+                    <span>{md.richtung === 'dk_de' ? '🇩🇰 → 🇩🇪' : '🇩🇪 → 🇩🇰'}</span>
                     <span style={{ padding: '2px 8px', backgroundColor: '#e3f2fd', color: '#1565C0', borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>{md.branche}</span>
                     {md.sichtbarkeit === 'anonym' && <span style={{ padding: '2px 8px', backgroundColor: '#f3e5f5', color: '#6a1b9a', borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>Anonym</span>}
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#003366' }}>{md.titel}</h3>
-                  <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#555', lineHeight: 1.6 }}>{md.kurzbeschreibung}</p>
-                  {md.wasSuche && <div style={{ marginBottom: '8px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Gesucht:</strong> {md.wasSuche}</div>}
-                  {md.anforderungen && <div style={{ marginBottom: '8px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Anforderungen:</strong> {md.anforderungen}</div>}
-                  {md.persoenlicheNote && <div style={{ marginBottom: '8px', padding: '8px 12px', backgroundColor: '#f8f9fa', borderLeft: '3px solid #003366', borderRadius: '0 6px 6px 0', fontSize: '13px', fontStyle: 'italic', color: '#444' }}>„{md.persoenlicheNote}"</div>}
-                  {md.funFactFreigegeben && md.funFact && (
-                    <div style={{ marginBottom: '8px', padding: '8px 12px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00' }}>
-                      <strong>Fun Fact:</strong> {md.funFact}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                    <button style={{ padding: '8px 16px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'default' }}>Interesse bekunden</button>
-                    <button style={{ padding: '8px 16px', backgroundColor: 'transparent', color: '#003366', border: '1px solid #003366', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'default' }}>Details ansehen</button>
-                  </div>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#555', lineHeight: 1.6 }}>{md.kurzbeschreibung}</p>
+                  {md.wasSuche && <div style={{ marginBottom: '6px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Gesucht:</strong> {md.wasSuche}</div>}
+                  {md.anforderungen && <div style={{ marginBottom: '6px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Anforderungen:</strong> {md.anforderungen}</div>}
+                  {md.persoenlicheNote && <div style={{ marginBottom: '6px', padding: '8px 12px', backgroundColor: '#f8f9fa', borderLeft: '3px solid #003366', fontSize: '13px', fontStyle: 'italic', color: '#444' }}>„{md.persoenlicheNote}"</div>}
+                  {md.funFactFreigegeben && md.funFact && <div style={{ padding: '8px 12px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00', marginBottom: '6px' }}><strong>Fun Fact:</strong> {md.funFact}</div>}
                 </div>
               </div>
-              {md.kulturHinweis && <div style={{ marginTop: '12px', padding: '10px 14px', backgroundColor: '#f0f4ff', borderRadius: '8px', fontSize: '12px', color: '#444' }}><strong>🌍 Kulturhinweis (intern):</strong> {md.kulturHinweis}</div>}
             </div>
           </div>
         </div>
@@ -530,18 +533,18 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
             </select>
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Grund (optional)</label>
-            <select value={deaktiviereGrund} onChange={e => setDeaktiviereGrund(e.target.value)} style={{ ...INPUT, marginBottom: '6px', width: '100%' }}>
+            <label style={{ fontSize: '12px', color: '#555', display: 'block', marginBottom: '4px' }}>Grund</label>
+            <select value={deaktiviereGrund} onChange={e => setDeaktiviereGrund(e.target.value)} style={{ ...INPUT }}>
               <option value="">Bitte wählen…</option>
               <option value="Projekt erfolgreich abgeschlossen – Partner gefunden">Projekt erfolgreich abgeschlossen</option>
               <option value="Ansprechpartner momentan nicht erreichbar">Ansprechpartner nicht erreichbar</option>
-              <option value="Inhalt soll überarbeitet werden">Inhalt soll überarbeitet werden</option>
+              <option value="Inhalt soll überarbeitet werden">Inhalt überarbeiten</option>
               <option value="Keine Relevanz mehr">Keine Relevanz mehr</option>
               <option value="Anfrage abgelaufen">Anfrage abgelaufen</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <MkBtn onClick={deaktivieren} variant="danger">Jetzt entfernen</MkBtn>
+            <MkBtn onClick={deaktivieren} variant="danger" disabled={dbSyncing}>{dbSyncing ? '⏳ Wird gespeichert…' : '⏹ Jetzt vom Marktplatz nehmen'}</MkBtn>
             <MkBtn onClick={() => setShowDeaktivieren(false)} variant="ghost">Abbrechen</MkBtn>
           </div>
         </div>
@@ -552,85 +555,49 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
         <span style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 700, color: meta.color, backgroundColor: meta.bg, border: `1px solid ${meta.color}40` }}>
           ● {meta.label}
         </span>
-        {anfrage.veroeffentlichtAm && ms === 'veroeffentlicht' && (
-          <span style={{ fontSize: '12px', color: '#666' }}>Veröffentlicht: {anfrage.veroeffentlichtAm}</span>
-        )}
-        {anfrage.ablaufDatum && ms === 'veroeffentlicht' && (
-          <span style={{ fontSize: '12px', color: '#666' }}>Läuft bis: {anfrage.ablaufDatum}</span>
-        )}
-        {anfrage.veroeffentlichtVon && ms === 'veroeffentlicht' && (
-          <span style={{ fontSize: '12px', color: '#666' }}>von {anfrage.veroeffentlichtVon}</span>
-        )}
+        {anfrage.veroeffentlichtAm && ms === 'veroeffentlicht' && <span style={{ fontSize: '12px', color: '#666' }}>Veröffentlicht: {anfrage.veroeffentlichtAm}</span>}
+        {anfrage.ablaufDatum && ms === 'veroeffentlicht' && <span style={{ fontSize: '12px', color: '#666' }}>Läuft bis: {anfrage.ablaufDatum}</span>}
       </div>
 
-      {/* Deaktivierungsgrund */}
       {anfrage.deaktivierungsGrund && ['pausiert','abgelaufen','archiviert'].includes(ms) && (
         <div style={{ marginBottom: '12px', padding: '8px 12px', backgroundColor: '#f5f5f5', borderRadius: '6px', fontSize: '12px', color: '#555' }}>
           <strong>Grund:</strong> {anfrage.deaktivierungsGrund}
         </div>
       )}
 
-      {/* STATE: intern – kein Eintrag */}
+      {/* STATE: intern */}
       {ms === 'intern' && (
         <div style={{ padding: '20px', border: '2px dashed #e0e0e0', borderRadius: '8px', textAlign: 'center' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
-          <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#666' }}>
-            Dieses Projekt ist noch nicht im öffentlichen Marktplatz sichtbar.<br />
-            Erstelle jetzt einen Entwurf aus den vorhandenen Projektdaten.
-          </p>
+          <div style={{ fontSize: '28px', marginBottom: '8px' }}>📋</div>
+          <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#666' }}>Noch nicht im öffentlichen Marktplatz sichtbar.</p>
           <MkBtn onClick={erstelleEntwurf} variant="primary">+ Marktplatz-Entwurf erstellen</MkBtn>
         </div>
       )}
 
-      {/* STATE: entwurf / zur_pruefung – Bearbeitungsansicht */}
+      {/* STATE: entwurf / zur_pruefung */}
       {(ms === 'entwurf' || ms === 'zur_pruefung') && (
         <div>
-          {/* Zusammenfassung wenn nicht im Edit-Modus */}
           {!editMode && md && (
             <div style={{ marginBottom: '14px', padding: '12px 14px', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
               <div style={{ fontWeight: 600, color: '#003366', marginBottom: '4px' }}>{md.titel}</div>
               <div style={{ color: '#555', lineHeight: 1.5 }}>{md.kurzbeschreibung?.slice(0, 150)}{(md.kurzbeschreibung?.length || 0) > 150 ? '…' : ''}</div>
               <div style={{ marginTop: '8px', display: 'flex', gap: '12px', fontSize: '11px', color: '#888' }}>
                 <span>👁 {md.sichtbarkeit === 'oeffentlich' ? 'Öffentlich' : 'Anonym'}</span>
-                <span>⏱ {md.laufzeitMonate} Monate Laufzeit</span>
-                {md.entwurfErstelltAm && <span>📝 Entwurf: {md.entwurfErstelltAm}</span>}
+                <span>⏱ {md.laufzeitMonate} Monate</span>
               </div>
             </div>
           )}
 
-          {/* Edit-Formular */}
           {editMode && (
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'grid', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>TITEL (öffentlich)</label>
+                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>TITEL</label>
                   <input style={INPUT} value={formData.titel || ''} onChange={e => setFormData(p => ({ ...p, titel: e.target.value }))} placeholder="Kurzer, prägnanter Titel…" />
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>KURZBESCHREIBUNG</label>
-                  <textarea style={TEXTAREA} value={formData.kurzbeschreibung || ''} onChange={e => setFormData(p => ({ ...p, kurzbeschreibung: e.target.value }))} placeholder="Wer seid ihr und was sucht ihr? (max. 250 Zeichen)" />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>WAS WIRD GESUCHT?</label>
-                    <input style={INPUT} value={formData.wasSuche || ''} onChange={e => setFormData(p => ({ ...p, wasSuche: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>REGION</label>
-                    <input style={INPUT} value={formData.region || ''} onChange={e => setFormData(p => ({ ...p, region: e.target.value }))} />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>WARUM GESUCHT?</label>
-                  <textarea style={TEXTAREA} value={formData.warumGesucht || ''} onChange={e => setFormData(p => ({ ...p, warumGesucht: e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>ANFORDERUNGEN AN PARTNER</label>
-                  <textarea style={{ ...TEXTAREA, minHeight: '55px' }} value={formData.anforderungen || ''} onChange={e => setFormData(p => ({ ...p, anforderungen: e.target.value }))} placeholder="Optional: Was sollte ein Partner mitbringen?" />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', color: '#666', fontWeight: 600, display: 'block', marginBottom: '3px' }}>PERSÖNLICHE NOTE (optional)</label>
-                  <textarea style={{ ...TEXTAREA, minHeight: '55px' }} value={formData.persoenlicheNote || ''} onChange={e => setFormData(p => ({ ...p, persoenlicheNote: e.target.value }))} placeholder="Menschliches Detail, das vertraut macht…" />
+                  <textarea style={TEXTAREA} value={formData.kurzbeschreibung || ''} onChange={e => setFormData(p => ({ ...p, kurzbeschreibung: e.target.value }))} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div>
@@ -650,7 +617,7 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
                     </select>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#555', cursor: 'pointer', paddingBottom: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', paddingBottom: '8px' }}>
                       <input type="checkbox" checked={formData.funFactFreigegeben || false} onChange={e => setFormData(p => ({ ...p, funFactFreigegeben: e.target.checked }))} />
                       FunFact freigeben
                     </label>
@@ -659,25 +626,20 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
               </div>
 
               {/* KI-Tools */}
-              <div style={{ marginTop: '14px', padding: '12px 14px', backgroundColor: '#f0f4ff', borderRadius: '8px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#003366', marginBottom: '8px', letterSpacing: '0.5px' }}>🤖 KI-UNTERSTÜTZUNG (Entwurf)</div>
+              <div style={{ marginTop: '12px', padding: '12px 14px', backgroundColor: '#f0f4ff', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#003366', marginBottom: '8px' }}>🤖 KI-UNTERSTÜTZUNG</div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {[
-                    { key: 'generieren', label: '✨ Text generieren' },
-                    { key: 'kuerzen', label: '✂️ Text kürzen' },
-                    { key: 'voicecheck', label: '🎙 Voice Check' },
-                    { key: 'anonymisieren', label: '👤 Anonymisieren' },
-                  ].map(t => (
+                  {[{ key: 'generieren', label: '✨ Text generieren' }, { key: 'kuerzen', label: '✂️ Kürzen' }, { key: 'voicecheck', label: '🎙 Voice Check' }, { key: 'anonymisieren', label: '👤 Anonymisieren' }].map(t => (
                     <button key={t.key} onClick={() => kiSimuliere(t.key)} disabled={kiLoading !== ''} style={{ padding: '5px 12px', backgroundColor: kiLoading === t.key ? '#e3f2fd' : 'white', border: '1px solid #90caf9', borderRadius: '6px', fontSize: '11px', cursor: kiLoading !== '' ? 'wait' : 'pointer', color: '#1565C0', fontWeight: 600 }}>
                       {kiLoading === t.key ? '⏳ …' : t.label}
                     </button>
                   ))}
                 </div>
                 {kiOutput && (
-                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #90caf9', fontSize: '12px', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px', fontWeight: 600 }}>KI-ERGEBNIS (Entwurf – bitte prüfen):</div>
+                  <div style={{ marginTop: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #90caf9', fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px', fontWeight: 600 }}>KI-ERGEBNIS (Entwurf — bitte prüfen):</div>
                     {kiOutput}
-                    <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                    <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
                       <button onClick={() => { setFormData(p => ({ ...p, kurzbeschreibung: kiOutput })); setKiOutput(''); }} style={{ padding: '3px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32' }}>Übernehmen</button>
                       <button onClick={() => setKiOutput('')} style={{ padding: '3px 10px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', color: '#666' }}>Verwerfen</button>
                     </div>
@@ -687,14 +649,13 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
             </div>
           )}
 
-          {/* Aktions-Buttons */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             {!editMode ? (
               <>
                 <MkBtn onClick={() => { setFormData(md || {}); setEditMode(true); }} variant="ghost">✏️ Bearbeiten</MkBtn>
                 {md && <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Vorschau</MkBtn>}
                 {ms === 'entwurf' && <MkBtn onClick={zurPruefung} variant="default">→ Zur Prüfung</MkBtn>}
-                {(ms === 'entwurf' || ms === 'zur_pruefung') && <MkBtn onClick={veroeffentlichen} variant="primary">🚀 Jetzt veröffentlichen</MkBtn>}
+                <MkBtn onClick={veroeffentlichen} variant="primary" disabled={dbSyncing}>{dbSyncing ? '⏳ …' : '🚀 Jetzt veröffentlichen'}</MkBtn>
               </>
             ) : (
               <>
@@ -713,18 +674,19 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
           {md && (
             <div style={{ marginBottom: '14px', padding: '14px', backgroundColor: '#e8f5e9', borderRadius: '8px', border: '1px solid #a5d6a7' }}>
               <div style={{ fontWeight: 700, color: '#1b5e20', marginBottom: '4px', fontSize: '14px' }}>{md.titel}</div>
-              <div style={{ fontSize: '12px', color: '#2e7d32', marginBottom: '8px' }}>{md.kurzbeschreibung?.slice(0, 150)}{(md.kurzbeschreibung?.length || 0) > 150 ? '…' : ''}</div>
+              <div style={{ fontSize: '12px', color: '#2e7d32', marginBottom: '6px' }}>{md.kurzbeschreibung?.slice(0, 150)}{(md.kurzbeschreibung?.length || 0) > 150 ? '…' : ''}</div>
               <div style={{ display: 'flex', gap: '14px', fontSize: '11px', color: '#388e3c' }}>
                 <span>👁 {md.sichtbarkeit === 'oeffentlich' ? 'Öffentlich sichtbar' : 'Anonym sichtbar'}</span>
-                <span>⏱ Laufzeit: {md.laufzeitMonate} Monate</span>
-                {md.funFactFreigegeben && <span>✨ FunFact freigegeben</span>}
+                <span>⏱ {md.laufzeitMonate} Monate</span>
               </div>
             </div>
           )}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <MkBtn onClick={() => { setFormData(md || {}); setEditMode(false); store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf' }); }} variant="ghost">✏️ Inhalt bearbeiten</MkBtn>
+            <MkBtn onClick={() => { setFormData(md || {}); store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf' }); }} variant="ghost">✏️ Inhalt bearbeiten</MkBtn>
             {md && <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Vorschau</MkBtn>}
-            <MkBtn onClick={() => setShowDeaktivieren(true)} variant="danger">⏹ Vom Marktplatz nehmen</MkBtn>
+            <MkBtn onClick={() => setShowDeaktivieren(true)} variant="danger" disabled={dbSyncing}>
+              {dbSyncing ? '⏳ Wird gespeichert…' : '⏹ Vom Marktplatz nehmen'}
+            </MkBtn>
           </div>
         </div>
       )}
@@ -732,9 +694,17 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
       {/* STATE: pausiert / abgelaufen / archiviert */}
       {['pausiert', 'abgelaufen', 'archiviert'].includes(ms) && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {ms !== 'archiviert' && <MkBtn onClick={wiederVeroeffentlichen} variant="primary">🔄 Wieder veröffentlichen</MkBtn>}
-          {ms === 'archiviert' && <MkBtn onClick={() => { store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf' }); store.logge('Marktplatz-Eintrag reaktiviert', anfrage.anzeigenId, 'status'); }} variant="ghost">↩ Reaktivieren (als Entwurf)</MkBtn>}
-          {ms !== 'archiviert' && <MkBtn onClick={() => { store.updateAnfrage(anfrage.id, { marktplatzStatus: 'archiviert' }); store.logge('Marktplatz-Eintrag archiviert', anfrage.anzeigenId, 'status'); }} variant="danger">🗄 Archivieren</MkBtn>}
+          {ms !== 'archiviert' && (
+            <MkBtn onClick={wiederVeroeffentlichen} variant="primary" disabled={dbSyncing}>
+              {dbSyncing ? '⏳ Wird gespeichert…' : '🔄 Wieder veröffentlichen'}
+            </MkBtn>
+          )}
+          {ms === 'archiviert' && (
+            <MkBtn onClick={() => { store.updateAnfrage(anfrage.id, { marktplatzStatus: 'entwurf' }); store.logge('Reaktiviert als Entwurf', anfrage.anzeigenId, 'status'); onToast('Entwurf wiederhergestellt'); }} variant="ghost">↩ Als Entwurf reaktivieren</MkBtn>
+          )}
+          {ms !== 'archiviert' && (
+            <MkBtn onClick={() => { store.updateAnfrage(anfrage.id, { marktplatzStatus: 'archiviert' }); syncDbStatus('archiviert').then(() => onToast('Archiviert')); }} variant="danger">🗄 Archivieren</MkBtn>
+          )}
           {md && <MkBtn onClick={() => setShowVorschau(true)} variant="default">👁 Letzter Entwurf</MkBtn>}
         </div>
       )}
@@ -742,7 +712,19 @@ function MarktplatzSektion({ anfrage }: { anfrage: MockAnfrage }) {
   );
 }
 
-// ─── HILFSKOMPONENTEN ─────────────────────────────────────────
+// ─── HILFSFUNKTIONEN ──────────────────────────────────────────
+
+function naechsteAufgabe(s: ReturnType<typeof berechneProjekt>, anzInteressenten: number, ms?: string): string {
+  if (!ms || ms === 'intern') return 'Marktplatz-Entwurf erstellen und Anfrage veröffentlichen.';
+  if (ms === 'entwurf') return 'Marktplatz-Entwurf fertigstellen und prüfen.';
+  if (ms === 'zur_pruefung') return 'Marktplatz-Eintrag final prüfen und veröffentlichen.';
+  if (ms === 'pausiert' || ms === 'abgelaufen') return 'Entscheiden: wieder veröffentlichen, überarbeiten oder archivieren?';
+  if (anzInteressenten === 0) return 'Aktives Matchmaking starten oder Gesuch überarbeiten.';
+  if (s.kpi.freigegeben === 0) return 'Neue Interessenten prüfen und freigeben.';
+  if (s.kpi.kontakte === 0) return 'Kontakt zwischen Suchendem und freigegebenem Interessenten herstellen.';
+  if (s.kpi.erfolge === 0) return 'Feedback zum laufenden Kontakt einholen.';
+  return 'Projekt läuft erfolgreich — Success Story dokumentieren.';
+}
 
 function Kpi({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -753,13 +735,9 @@ function Kpi({ label, value, color }: { label: string; value: number; color: str
   );
 }
 
-function Tag({ color, children }: { color: string; children: React.ReactNode }) {
-  return <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: color }}>{children}</span>;
-}
-
 function Section({ titel, children }: { titel: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f0f0f0' }}>
+    <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #e8e8e8' }}>
       <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 700, color: '#003366', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{titel}</h3>
       {children}
     </div>
