@@ -45,13 +45,47 @@ export default function AnfragenPage() {
 
   const selectedAnfrage = detailId ? store.anfragen.find(a => a.id === detailId) : null;
 
-  const speichereAnfrage = (werte: Record<string, any>) => {
+  const speichereAnfrage = async (werte: Record<string, any>) => {
     if (detailId) {
+      // Lokal sofort aktualisieren
       store.updateAnfrage(detailId, werte);
       store.logge(`Anfrage bearbeitet: ${werte.firmenname}`, werte.anzeigenId || werte.firmenname, 'bearbeiten');
-      zeigeToast(`Anfrage aktualisiert ✓`);
+      // Status in DB persistieren
+      if (werte.status) {
+        try {
+          await fetch('/api/anfragen', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: detailId, status: werte.status }),
+          });
+          zeigeToast(`✅ Anfrage gespeichert und in Datenbank aktualisiert`);
+        } catch {
+          zeigeToast(`⚠️ Lokal gespeichert – DB-Update fehlgeschlagen`);
+        }
+      } else {
+        zeigeToast(`Anfrage aktualisiert ✓`);
+      }
     }
     setEditOffen(false);
+  };
+
+  const statusSchnellAendern = async (anfrageId: string, neuerStatus: string, label: string) => {
+    store.updateAnfrage(anfrageId, { status: neuerStatus });
+    store.logge(`Status geändert zu "${label}"`, anfrageId, 'status');
+    try {
+      const res = await fetch('/api/anfragen', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: anfrageId, status: neuerStatus }),
+      });
+      if (res.ok) {
+        zeigeToast(`✅ Status auf "${label}" gesetzt — Änderung live auf der Homepage`);
+      } else {
+        zeigeToast(`⚠️ DB-Update fehlgeschlagen. Bitte nochmal versuchen.`);
+      }
+    } catch {
+      zeigeToast(`⚠️ Verbindungsfehler – Status nur lokal geändert`);
+    }
   };
 
   const handleKiVerbessern = async (anfrageId: string, frage: string, antwort: string, firma: string) => {
@@ -208,7 +242,7 @@ export default function AnfragenPage() {
           </div>
 
           {/* Status + Bearbeiten */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <span style={{
               padding: '4px 12px', borderRadius: '12px', fontSize: '12px',
               fontWeight: 600, color: 'white', backgroundColor: getStatusColor(selectedAnfrage.status),
@@ -219,6 +253,60 @@ export default function AnfragenPage() {
               ✏️ Bearbeiten
             </button>
           </div>
+
+          {/* ── SCHNELL-AKTIONEN nach Status ── */}
+          {selectedAnfrage.status === 'eingehend' && (
+            <div style={{ backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#8a6d00', marginBottom: '10px' }}>
+                ⏳ Wartet auf Prüfung — Anfrage ist noch nicht öffentlich sichtbar
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => statusSchnellAendern(selectedAnfrage.id, 'aktiv', 'Aktiv')}
+                  style={{ padding: '8px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
+                  ✅ Freigeben & auf Marktplatz
+                </button>
+                <button
+                  onClick={() => statusSchnellAendern(selectedAnfrage.id, 'pausiert', 'Pausiert')}
+                  style={{ padding: '8px 14px', backgroundColor: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  ⏸ Ablehnen / Pausieren
+                </button>
+              </div>
+            </div>
+          )}
+
+          {selectedAnfrage.status === 'aktiv' && (
+            <div style={{ backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#2e7d32', marginBottom: '10px' }}>
+                🌐 Öffentlich sichtbar auf dem Marktplatz
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => statusSchnellAendern(selectedAnfrage.id, 'pausiert', 'Pausiert')}
+                  style={{ padding: '8px 14px', backgroundColor: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  ⏸ Vom Marktplatz nehmen
+                </button>
+                <button
+                  onClick={() => statusSchnellAendern(selectedAnfrage.id, 'vermittelt', 'Vermittelt')}
+                  style={{ padding: '8px 14px', backgroundColor: '#9C27B0', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  🏆 Als vermittelt markieren
+                </button>
+              </div>
+            </div>
+          )}
+
+          {selectedAnfrage.status === 'pausiert' && (
+            <div style={{ backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#666', marginBottom: '10px' }}>
+                ⏸ Pausiert — nicht öffentlich sichtbar
+              </div>
+              <button
+                onClick={() => statusSchnellAendern(selectedAnfrage.id, 'aktiv', 'Aktiv')}
+                style={{ padding: '8px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
+                ▶ Wieder auf Marktplatz schalten
+              </button>
+            </div>
+          )}
 
           {/* Beschreibung */}
           <div style={{ marginTop: '16px', paddingBottom: '16px', borderBottom: '1px solid #f0f0f0' }}>
