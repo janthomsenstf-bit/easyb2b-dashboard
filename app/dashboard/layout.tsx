@@ -33,17 +33,18 @@ export default function DashboardLayout({
 
   const navItems = [
     { label: 'Übersicht', href: '/dashboard', icon: '📊' },
-    { label: 'Projekte', href: '/dashboard/projekte', icon: '🚀' },
-    { label: 'Unternehmen', href: '/dashboard/unternehmen', icon: '🏢' },
     { label: 'Anfragen', href: '/dashboard/anfragen', icon: '📋' },
+    { label: 'Unternehmen', href: '/dashboard/unternehmen', icon: '🏢' },
+    { label: 'Projekte', href: '/dashboard/projekte', icon: '🚀' },
     { label: 'Interessenten', href: '/dashboard/interessenten', icon: '👥' },
+    { label: 'Kontakte', href: '/dashboard/kontakte', icon: '🤝' },
     { label: 'Matchmaking', href: '/dashboard/matchmaking', icon: '🎯' },
-    { label: 'Events', href: '/dashboard/events', icon: '🎤' },
-    { label: 'Success Stories', href: '/dashboard/success-stories', icon: '⭐' },
     { label: 'Netzwerk', href: '/dashboard/netzwerk', icon: '🕸' },
+    { label: 'Events', href: '/dashboard/events', icon: '🎤' },
+    { label: 'Newsletter', href: '/dashboard/newsletter', icon: '📰' },
     { label: 'KI-Zentrale', href: '/dashboard/ki-zentrale', icon: '🤖' },
     { label: 'Kultur & Wissen', href: '/dashboard/kultur-wissen', icon: '📚' },
-    { label: 'Newsletter', href: '/dashboard/newsletter', icon: '📰' },
+    { label: 'Success Stories', href: '/dashboard/success-stories', icon: '⭐' },
   ];
 
   return (

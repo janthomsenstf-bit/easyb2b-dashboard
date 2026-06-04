@@ -10,9 +10,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   MOCK_UNTERNEHMEN, MOCK_ANFRAGEN, MOCK_NETZWERKKONTAKTE,
-  MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES,
+  MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES, MOCK_KONTAKTE,
   type MockUnternehmen, type MockAnfrage, type MockNetzwerkkontakt,
-  type AnfrageWorkflowStatus,
+  type AnfrageWorkflowStatus, type MockKontakt, type KontaktProjektZuordnung,
 } from './mockdata';
 
 export interface Aktivitaet {
@@ -51,10 +51,16 @@ interface DashboardStore {
   updateAnfrage: (id: string, patch: Partial<MockAnfrage>) => void;
   updateKontakt: (id: string, patch: Partial<MockNetzwerkkontakt>) => void;
   addKontakt: (k: MockNetzwerkkontakt) => void;
-  // Workflow-Actions
-  legeUnternehmenAusAnfrageAn: (anfrageId: string) => string | null; // gibt neue unternehmensId zurück
+  // Workflow-Actions (Anfrage → Unternehmen)
+  legeUnternehmenAusAnfrageAn: (anfrageId: string) => string | null;
   verknuepfeMitUnternehmen: (anfrageId: string, unternehmensId: string) => void;
   setzeWorkflowStatus: (anfrageId: string, status: AnfrageWorkflowStatus) => void;
+  // Geschäftskontakte
+  geschaftskontakte: MockKontakt[];
+  addGeschaftskontakt: (k: MockKontakt) => void;
+  updateGeschaftskontakt: (id: string, patch: Partial<MockKontakt>) => void;
+  addKontaktProjektZuordnung: (kontaktId: string, z: KontaktProjektZuordnung) => void;
+  legeKontaktAusInteressentAn: (interessentId: string) => string | null;
 
   // Projektzuordnungen (n:m)
   zuordnungen: ProjektInteressent[];
@@ -98,6 +104,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const [unternehmen, setUnternehmen] = useState<MockUnternehmen[]>(MOCK_UNTERNEHMEN);
   const [anfragen, setAnfragen] = useState<MockAnfrage[]>(MOCK_ANFRAGEN);
   const [kontakte, setKontakte] = useState<MockNetzwerkkontakt[]>(MOCK_NETZWERKKONTAKTE);
+  const [geschaftskontakte, setGeschaftskontakte] = useState<MockKontakt[]>(MOCK_KONTAKTE);
   const [zuordnungen, setZuordnungen] = useState<ProjektInteressent[]>(SEED_ZUORDNUNGEN);
   const [aktivitaeten, setAktivitaeten] = useState<Aktivitaet[]>([]);
   const [dbLadenStatus, setDbLadenStatus] = useState<'laden' | 'fertig' | 'fehler'>('laden');
@@ -238,6 +245,57 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
     if (anfrage) logge(`Workflow-Status: ${status}`, anfrage.anzeigenId || anfrageId, 'status');
   };
 
+  // ── Geschäftskontakte ──────────────────────────────────────────
+
+  const addGeschaftskontakt = (k: MockKontakt) =>
+    setGeschaftskontakte(prev => [k, ...prev]);
+
+  const updateGeschaftskontakt = (id: string, patch: Partial<MockKontakt>) =>
+    setGeschaftskontakte(prev => prev.map(k => k.id === id ? { ...k, ...patch } : k));
+
+  const addKontaktProjektZuordnung = (kontaktId: string, z: KontaktProjektZuordnung) => {
+    setGeschaftskontakte(prev => prev.map(k =>
+      k.id === kontaktId ? { ...k, projektZuordnungen: [...k.projektZuordnungen, z] } : k
+    ));
+    logge(`Kontakt Projekt zugeordnet`, kontaktId, 'bearbeiten');
+  };
+
+  const legeKontaktAusInteressentAn = (interessentId: string): string | null => {
+    const interessent = MOCK_INTERESSENTEN.find(i => i.id === interessentId);
+    if (!interessent) return null;
+    const neueId_ = neueId('kon');
+    const kontakt: MockKontakt = {
+      id: neueId_,
+      quelleTyp: 'interessent',
+      interessentId,
+      anfrageId: interessent.anfrageId,
+      firmenname: interessent.firmenname,
+      ansprechpartner: interessent.ansprechpartner,
+      email: interessent.email,
+      telefon: interessent.telefon,
+      website: interessent.website,
+      linkedin: interessent.linkedin,
+      land: interessent.land,
+      region: interessent.region,
+      branche: undefined,
+      sprachen: interessent.sprachen,
+      status: 'aktiv',
+      createdAt: new Date().toISOString().split('T')[0],
+      interneNotiz: interessent.gespraechsnotiz,
+      projektZuordnungen: interessent.anfrageId ? [{
+        id: neueId('kpz'),
+        projektId: interessent.anfrageId,
+        status: 'freigegeben' as const,
+        notiz: 'Aus Interessentenformular konvertiert',
+        erstelltAm: new Date().toISOString().split('T')[0],
+        erstelltVon: 'Operator',
+      }] : [],
+    };
+    setGeschaftskontakte(prev => [kontakt, ...prev]);
+    logge(`Kontakt "${interessent.firmenname}" aus Interessent erstellt`, interessent.firmenname, 'anlegen');
+    return neueId_;
+  };
+
   return (
     <Ctx.Provider value={{
       unternehmen, anfragen, kontakte,
@@ -245,6 +303,8 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       zuordnungen, addZuordnung, updateZuordnung,
       aktivitaeten, logge, dbLadenStatus,
       legeUnternehmenAusAnfrageAn, verknuepfeMitUnternehmen, setzeWorkflowStatus,
+      geschaftskontakte, addGeschaftskontakt, updateGeschaftskontakt,
+      addKontaktProjektZuordnung, legeKontaktAusInteressentAn,
     }}>
       {children}
     </Ctx.Provider>

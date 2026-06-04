@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor,
   getRichtungLabel, getLandFlag,
+  getKontaktZuordnungLabel, getKontaktZuordnungColor,
   type MockAnfrage, type MarktplatzStatus, type MarktplatzEintrag,
 } from '@/lib/mockdata';
 import { useStore, type ProjektInteressent } from '@/lib/store';
@@ -171,7 +172,35 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
   onToast: (m: string) => void;
 }) {
   const [introStatus, setIntroStatus] = useState<Record<string, 'idle'|'sending'|'sent'|'error'>>({});
+  const [kontaktSucheOffen, setKontaktSucheOffen] = useState(false);
+  const [kontaktSuche, setKontaktSuche] = useState('');
   const matchVorschlaege = MOCK_MATCHES.filter(m => m.anfrageId === a.id);
+
+  // Zugeordnete Kontakte (dauerhafte Stammdaten)
+  const zugeordneteKontakte = store.geschaftskontakte.filter(k =>
+    k.projektZuordnungen.some(z => z.projektId === a.id)
+  );
+  const zugeordneteKontaktIds = zugeordneteKontakte.map(k => k.id);
+  const kq = kontaktSuche.trim().toLowerCase();
+  const verfuegbareKontakte = store.geschaftskontakte.filter(k =>
+    !zugeordneteKontaktIds.includes(k.id) &&
+    (!kq || [k.firmenname, k.ansprechpartner, k.email, k.branche, k.region].some(f => f?.toLowerCase().includes(kq)))
+  );
+
+  function kontaktHinzufuegen(kontaktId: string) {
+    const k = store.geschaftskontakte.find(x => x.id === kontaktId);
+    store.addKontaktProjektZuordnung(kontaktId, {
+      id: `kpz-${Date.now()}`,
+      projektId: a.id,
+      status: 'vorgeschlagen',
+      notiz: 'Aus Projekt hinzugefügt',
+      erstelltAm: new Date().toISOString().split('T')[0],
+      erstelltVon: 'Operator',
+    });
+    onToast(`Kontakt „${k?.firmenname}" hinzugefügt ✓`);
+    setKontaktSucheOffen(false);
+    setKontaktSuche('');
+  }
   const aktiveMatches = interessenten.filter(i => ['kontakt_laeuft', 'erfolgreich', 'feedback_ausstehend'].includes(i.status));
 
   async function sendeIntroMail(interessentId: string, i: typeof MOCK_INTERESSENTEN[number]) {
@@ -271,6 +300,60 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
           })
         )}
         <a href="/dashboard/interessenten" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Interessenten verwalten</a>
+        <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', fontStyle: 'italic' }}>
+          ℹ️ Eingangskorb — neue Interessensbekundungen vom Marktplatz. Nach Prüfung „Kontakt erstellen".
+        </div>
+      </Section>
+
+      {/* 2b. Zugeordnete Kontakte (dauerhafte Stammdaten) */}
+      <Section titel={`2b · Zugeordnete Kontakte (${zugeordneteKontakte.length})`}>
+        {zugeordneteKontakte.length === 0 ? (
+          <p style={{ fontSize: '13px', color: '#999', margin: '0 0 10px 0' }}>Noch keine dauerhaften Kontakte zugeordnet.</p>
+        ) : (
+          zugeordneteKontakte.map(k => {
+            const z = k.projektZuordnungen.find(zz => zz.projektId === a.id)!;
+            return (
+              <div key={k.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e8e8e8', fontSize: '13px' }}>
+                <div>
+                  <span style={{ fontWeight: 600, color: '#003366' }}>{k.firmenname}</span>
+                  <span style={{ color: '#999' }}> · {k.ansprechpartner}</span>
+                  {k.region && <span style={{ color: '#bbb', fontSize: '11px' }}> · {k.region}</span>}
+                  {z.notiz && <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>„{z.notiz}"</div>}
+                </div>
+                <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getKontaktZuordnungColor(z.status), flexShrink: 0 }}>
+                  {getKontaktZuordnungLabel(z.status)}
+                </span>
+              </div>
+            );
+          })
+        )}
+
+        {!kontaktSucheOffen ? (
+          <button onClick={() => setKontaktSucheOffen(true)} style={{ marginTop: '10px', padding: '7px 14px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+            + Kontakt hinzufügen
+          </button>
+        ) : (
+          <div style={{ marginTop: '12px', padding: '14px', backgroundColor: '#f0f4ff', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#003366' }}>Bestehenden Kontakt suchen</div>
+              <a href="/dashboard/kontakte" style={{ fontSize: '11px', color: '#003366', fontWeight: 600, textDecoration: 'none' }}>+ Neuen Kontakt anlegen →</a>
+            </div>
+            <input value={kontaktSuche} onChange={e => setKontaktSuche(e.target.value)} placeholder="Name, Firma, Branche, Region, E-Mail…" style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box', marginBottom: '8px' }} />
+            <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {verfuegbareKontakte.length === 0 ? (
+                <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>Keine passenden Kontakte. Lege im Kontakte-Modul einen neuen an.</p>
+              ) : verfuegbareKontakte.slice(0, 8).map(k => (
+                <button key={k.id} onClick={() => kontaktHinzufuegen(k.id)} style={{ textAlign: 'left', padding: '8px 10px', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
+                  <div style={{ fontWeight: 600, color: '#003366' }}>{k.firmenname}</div>
+                  <div style={{ fontSize: '11px', color: '#888' }}>{k.ansprechpartner} · {k.email}{k.region ? ` · ${k.region}` : ''}</div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => { setKontaktSucheOffen(false); setKontaktSuche(''); }} style={{ marginTop: '8px', padding: '6px 12px', backgroundColor: 'transparent', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#666' }}>
+              Schließen
+            </button>
+          </div>
+        )}
       </Section>
 
       {/* 3. Matches */}

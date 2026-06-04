@@ -21,9 +21,11 @@ function kiZusammenfassung(i: MockInteressent): string {
   return text;
 }
 
+// Eingangskorb-Lifecycle (primär) + Legacy-Status (Kompatibilität mit Bestandsdaten)
 const STATUS_OPTIONEN = [
-  'neu', 'in_pruefung', 'rueckfrage', 'freigegeben', 'abgelehnt',
-  'kontakt_laeuft', 'feedback_ausstehend', 'erfolgreich', 'nicht_passend', 'archiviert',
+  'neu', 'in_pruefung', 'rueckfrage', 'abgelehnt', 'kontakt_erstellt',
+  // Legacy (für bestehende Mock-Daten)
+  'freigegeben', 'kontakt_laeuft', 'feedback_ausstehend', 'erfolgreich', 'nicht_passend', 'archiviert',
 ];
 
 export default function InteressentenPage() {
@@ -160,6 +162,44 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
   const [zuordnenOffen, setZuordnenOffen] = useState(false);
   const [neuProjekt, setNeuProjekt] = useState('');
   const [neuGrund, setNeuGrund] = useState('');
+  const [kontaktDuplikate, setKontaktDuplikate] = useState<typeof store.geschaftskontakte | null>(null);
+
+  // Kontakt aus Interessent erstellen (mit Duplikat-Check)
+  const kontaktErstellen = () => {
+    const duplikate = store.geschaftskontakte.filter(k =>
+      k.email.toLowerCase() === i.email.toLowerCase() ||
+      k.firmenname.toLowerCase() === i.firmenname.toLowerCase()
+    );
+    if (duplikate.length > 0) {
+      setKontaktDuplikate(duplikate);
+    } else {
+      const kid = store.legeKontaktAusInteressentAn(i.id);
+      if (kid) onUpdate(i.id, { status: 'kontakt_erstellt', kontaktId: kid }, `✅ Kontakt "${i.firmenname}" erstellt`);
+    }
+  };
+
+  const kontaktNeuTrotzdem = () => {
+    const kid = store.legeKontaktAusInteressentAn(i.id);
+    if (kid) onUpdate(i.id, { status: 'kontakt_erstellt', kontaktId: kid }, `✅ Neuer Kontakt erstellt`);
+    setKontaktDuplikate(null);
+  };
+
+  const kontaktVerknuepfen = (kontaktId: string) => {
+    const k = store.geschaftskontakte.find(x => x.id === kontaktId);
+    // Bestehenden Kontakt mit diesem Projekt verknüpfen (falls noch nicht)
+    if (k && i.anfrageId && !k.projektZuordnungen.some(z => z.projektId === i.anfrageId)) {
+      store.addKontaktProjektZuordnung(kontaktId, {
+        id: `kpz-${Date.now()}`,
+        projektId: i.anfrageId,
+        status: 'freigegeben',
+        notiz: 'Über Interessent verknüpft',
+        erstelltAm: new Date().toISOString().split('T')[0],
+        erstelltVon: 'Operator',
+      });
+    }
+    onUpdate(i.id, { status: 'kontakt_erstellt', kontaktId }, `✅ Mit "${k?.firmenname}" verknüpft`);
+    setKontaktDuplikate(null);
+  };
 
   const anfrage = MOCK_ANFRAGEN.find(a => a.id === i.anfrageId);
   // Historie: andere Meldungen derselben Firma (per E-Mail-Domain oder Name)
@@ -390,6 +430,40 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
               ))}
             </Box>
           )}
+
+          {/* ── KONTAKT ERSTELLEN ── */}
+          <Box titel="Kontakt erstellen" bg="#e8f5e9">
+            {i.kontaktId ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#2e7d32', fontWeight: 600 }}>✅ Kontakt wurde erstellt</span>
+                <a href="/dashboard/kontakte" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none' }}>→ Im Kontakte-Modul ansehen</a>
+              </div>
+            ) : kontaktDuplikate ? (
+              <div>
+                <div style={{ fontSize: '12px', color: '#c62828', marginBottom: '8px', padding: '8px', backgroundColor: '#ffebee', borderRadius: '6px' }}>
+                  ⚠️ Möglicher bestehender Kontakt gefunden: <strong>{kontaktDuplikate.map(k => k.firmenname).join(', ')}</strong>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <button onClick={kontaktNeuTrotzdem} style={btnStyle('#1565C0')}>+ Trotzdem neu erstellen</button>
+                  {kontaktDuplikate.map(k => (
+                    <button key={k.id} onClick={() => kontaktVerknuepfen(k.id)} style={{ ...btnStyle('#fff'), color: '#1565C0', border: '1px solid #1565C0' }}>
+                      🔗 Mit „{k.firmenname}" verknüpfen
+                    </button>
+                  ))}
+                  <button onClick={() => setKontaktDuplikate(null)} style={{ ...btnStyle('#f5f5f5'), color: '#666' }}>Abbrechen</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: '12px', color: '#555', margin: '0 0 10px 0' }}>
+                  Aus diesem geprüften Interessenten einen dauerhaften Kontakt anlegen. Der Interessent bleibt als Ursprungsvorgang erhalten.
+                </p>
+                <button onClick={kontaktErstellen} disabled={i.status === 'abgelehnt'} style={{ ...btnStyle('#2e7d32'), opacity: i.status === 'abgelehnt' ? 0.5 : 1, cursor: i.status === 'abgelehnt' ? 'not-allowed' : 'pointer' }}>
+                  🤝 Kontakt aus Interessent erstellen
+                </button>
+              </div>
+            )}
+          </Box>
 
           {/* ── ENTSCHEIDUNG / STATUS ── */}
           <Box titel="Entscheidung">

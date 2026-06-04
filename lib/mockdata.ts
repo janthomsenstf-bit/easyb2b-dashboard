@@ -953,7 +953,138 @@ export interface MockInteressent {
   // Matching-Bezug
   matchGruende?: string[];
   matchRisiken?: string[];
+  // Kontakt-Link (nach Konvertierung)
+  kontaktId?: string;
 }
+
+// ─── KONTAKTE ────────────────────────────────────────────────
+// Dauerhafte Stammdaten — entstehen aus geprüften Interessenten
+// oder werden manuell angelegt.
+
+export type KontaktQuelleTyp = 'interessent' | 'manuell' | 'empfehlung' | 'event' | 'gespraech' | 'netzwerk';
+export type KontaktStatus    = 'aktiv' | 'pausiert' | 'archiviert';
+export type KontaktZuordnungStatus = 'vorgeschlagen' | 'in_pruefung' | 'freigegeben' | 'kontakt_laeuft' | 'abgelehnt' | 'abgeschlossen';
+
+export interface KontaktProjektZuordnung {
+  id: string;
+  projektId: string;          // = anfrageId
+  status: KontaktZuordnungStatus;
+  notiz?: string;
+  erstelltAm: string;
+  erstelltVon: string;
+}
+
+export interface MockKontakt {
+  id: string;
+  quelleTyp: KontaktQuelleTyp;
+  interessentId?: string;     // Link zum Ursprungs-Interessenten
+  anfrageId?: string;         // Link zur ursprünglichen Anfrage
+  firmenname: string;
+  ansprechpartner: string;
+  email: string;
+  telefon?: string;
+  website?: string;
+  linkedin?: string;
+  land?: string;
+  region?: string;
+  branche?: string;
+  sprachen?: string[];
+  status: KontaktStatus;
+  createdAt: string;
+  interneNotiz?: string;
+  projektZuordnungen: KontaktProjektZuordnung[];
+}
+
+export function getKontaktQuelleLabel(q: KontaktQuelleTyp): string {
+  const map: Record<KontaktQuelleTyp, string> = {
+    interessent: '📋 Interessent', manuell: '✏️ Manuell',
+    empfehlung: '⭐ Empfehlung', event: '🎤 Event',
+    gespraech: '📞 Gespräch', netzwerk: '🕸 Netzwerk',
+  };
+  return map[q] ?? q;
+}
+
+export function getKontaktStatusLabel(s: KontaktStatus): string {
+  return { aktiv: 'Aktiv', pausiert: 'Pausiert', archiviert: 'Archiviert' }[s] ?? s;
+}
+export function getKontaktStatusColor(s: KontaktStatus): string {
+  return { aktiv: '#4CAF50', pausiert: '#FF9900', archiviert: '#9E9E9E' }[s] ?? '#999';
+}
+
+export function getKontaktZuordnungLabel(s: KontaktZuordnungStatus): string {
+  const map: Record<KontaktZuordnungStatus, string> = {
+    vorgeschlagen: 'Vorgeschlagen', in_pruefung: 'In Prüfung', freigegeben: 'Freigegeben',
+    kontakt_laeuft: 'Kontakt läuft', abgelehnt: 'Abgelehnt', abgeschlossen: 'Abgeschlossen',
+  };
+  return map[s] ?? s;
+}
+export function getKontaktZuordnungColor(s: KontaktZuordnungStatus): string {
+  const map: Record<KontaktZuordnungStatus, string> = {
+    vorgeschlagen: '#2196F3', in_pruefung: '#FF9900', freigegeben: '#4CAF50',
+    kontakt_laeuft: '#9C27B0', abgelehnt: '#f44336', abgeschlossen: '#2e7d32',
+  };
+  return map[s] ?? '#999';
+}
+
+export const MOCK_KONTAKTE: MockKontakt[] = [
+  {
+    id: 'kon-001',
+    quelleTyp: 'interessent',
+    interessentId: 'int-001',
+    anfrageId: 'anf-001',
+    firmenname: 'Frische-Markt Hamburg GmbH',
+    ansprechpartner: 'Klaus Bergmann',
+    email: 'bergmann@frischemarkt-hh.de',
+    telefon: '+49 40 123 456',
+    website: 'https://frischemarkt-hh.de',
+    land: 'deutschland',
+    region: 'Hamburg',
+    branche: 'Lebensmittel & Fischerei',
+    sprachen: ['deutsch', 'englisch'],
+    status: 'aktiv',
+    createdAt: '2025-05-20',
+    interneNotiz: 'Sehr seriöser Partner. Großes Vertriebsnetz in Norddeutschland. Persönliches Gespräch sehr positiv.',
+    projektZuordnungen: [
+      { id: 'kpz-001', projektId: 'anf-001', status: 'kontakt_laeuft', notiz: 'Aus Interessentenformular. Passung sehr hoch.', erstelltAm: '2025-05-20', erstelltVon: 'Jan Thomsen' },
+    ],
+  },
+  {
+    id: 'kon-002',
+    quelleTyp: 'interessent',
+    interessentId: 'int-004',
+    anfrageId: 'anf-002',
+    firmenname: 'Vestas Wind Components ApS',
+    ansprechpartner: 'Søren Nielsen',
+    email: 'nielsen@vestas-comp.dk',
+    telefon: '+45 87 65 43 21',
+    land: 'daenemark',
+    region: 'Jütland',
+    branche: 'Maschinenbau & Industrie',
+    sprachen: ['daenisch', 'englisch'],
+    status: 'aktiv',
+    createdAt: '2025-05-23',
+    projektZuordnungen: [
+      { id: 'kpz-002', projektId: 'anf-002', status: 'kontakt_laeuft', erstelltAm: '2025-05-23', erstelltVon: 'Jan Thomsen' },
+    ],
+  },
+  {
+    id: 'kon-003',
+    quelleTyp: 'manuell',
+    firmenname: 'Hamburger Handelskontor GmbH',
+    ansprechpartner: 'Petra Müller',
+    email: 'p.mueller@hh-handelskontor.de',
+    telefon: '+49 40 987 654',
+    website: 'https://hh-handelskontor.de',
+    land: 'deutschland',
+    region: 'Hamburg',
+    branche: 'Handel & Vermittlung',
+    sprachen: ['deutsch', 'daenisch'],
+    status: 'aktiv',
+    createdAt: '2025-04-10',
+    interneNotiz: 'Telefonkontakt von Ulrike (IHK). Bereits Erfahrung in DE-DK Geschäften. Sehr interessiert.',
+    projektZuordnungen: [],
+  },
+];
 
 export interface MockMatch {
   anfrageId: string;
@@ -1565,6 +1696,7 @@ export function getStatusLabel(status: string): string {
     in_pruefung: 'In Prüfung',
     rueckfrage: 'Rückfrage erforderlich',
     nicht_passend: 'Nicht passend',
+    kontakt_erstellt: 'Kontakt erstellt',
   };
   return labels[status] || status;
 }
@@ -1591,6 +1723,7 @@ export function getStatusColor(status: string): string {
     in_pruefung: '#FF9900',
     rueckfrage: '#FF5722',
     nicht_passend: '#999',
+    kontakt_erstellt: '#2e7d32',
   };
   return colors[status] || '#999';
 }
