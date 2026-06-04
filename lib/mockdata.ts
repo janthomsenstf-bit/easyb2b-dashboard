@@ -425,6 +425,7 @@ Der Rest ist Geschichte: Seit März teilen Schleswig Logistik und DSV Kolding t�
 export interface MockUnternehmen {
   id: string;
   firmenname: string;
+  anfrageId?: string;          // Link zur Ursprungs-Anfrage
   land: 'deutschland' | 'daenemark' | 'andere';
   standort: string;
   website?: string;
@@ -825,6 +826,48 @@ export interface MarktplatzEintrag {
   letzteBearbeitungAm?: string;
 }
 
+// ─── WORKFLOW-STATUS (Prozessfluss) ──────────────────────────
+
+export type AnfrageWorkflowStatus =
+  | 'neu'
+  | 'in_pruefung'
+  | 'unternehmen_angelegt'
+  | 'unternehmen_verifiziert'
+  | 'projekt_erstellt'
+  | 'veroeffentlicht'
+  | 'archiviert';
+
+export const WORKFLOW_SCHRITTE: { status: AnfrageWorkflowStatus; label: string; schritt: number }[] = [
+  { status: 'neu',                   label: 'Neu',                   schritt: 1 },
+  { status: 'in_pruefung',           label: 'In Prüfung',            schritt: 2 },
+  { status: 'unternehmen_angelegt',  label: 'Unternehmen',           schritt: 3 },
+  { status: 'unternehmen_verifiziert',label:'Verifiziert',           schritt: 4 },
+  { status: 'projekt_erstellt',      label: 'Projekt',               schritt: 5 },
+  { status: 'veroeffentlicht',       label: 'Veröffentlicht',        schritt: 6 },
+  { status: 'archiviert',            label: 'Archiviert',            schritt: 7 },
+];
+
+export function getWorkflowStatusLabel(s?: AnfrageWorkflowStatus): string {
+  return WORKFLOW_SCHRITTE.find(w => w.status === s)?.label ?? 'Neu';
+}
+
+export function getWorkflowStatusSchritt(s?: AnfrageWorkflowStatus): number {
+  return WORKFLOW_SCHRITTE.find(w => w.status === s)?.schritt ?? 1;
+}
+
+export function getWorkflowStatusColor(s?: AnfrageWorkflowStatus): string {
+  const map: Record<AnfrageWorkflowStatus, string> = {
+    neu:                    '#9E9E9E',
+    in_pruefung:            '#FF9900',
+    unternehmen_angelegt:   '#2196F3',
+    unternehmen_verifiziert:'#4CAF50',
+    projekt_erstellt:       '#9C27B0',
+    veroeffentlicht:        '#2e7d32',
+    archiviert:             '#546e7a',
+  };
+  return map[s ?? 'neu'] ?? '#9E9E9E';
+}
+
 export interface MockAnfrage {
   id: string;
   anzeigenId: string;
@@ -857,6 +900,9 @@ export interface MockAnfrage {
   ablaufDatum?: string;
   veroeffentlichtVon?: string;
   deaktivierungsGrund?: string;
+  // Prozess-Workflow
+  workflowStatus?: AnfrageWorkflowStatus;
+  unternehmensId?: string;     // Link zum verknüpften Unternehmen
 }
 
 export interface MockInteressent {
@@ -947,6 +993,8 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Dänischer Kommunikationsstil: direkt, informell, herzlich. Kein langer Smalltalk nötig.',
     gespraechseinstieg: 'Frag nach der Familientradition im Unternehmen – Nordic Fish ist seit Generationen in Familienhand.',
     funFactOeffentlich: true,
+    workflowStatus: 'veroeffentlicht',
+    unternehmensId: 'unt-001',
     marktplatzStatus: 'veroeffentlicht',
     veroeffentlichtAm: '2025-05-15',
     ablaufDatum: '2025-08-15',
@@ -994,6 +1042,8 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Strukturiert, pünktlich, erwartet klare Unterlagen. Typisch deutsch, aber ohne Bürokratie.',
     gespraechseinstieg: 'Thomas ist ein Macher – fang direkt mit konkreten Zahlen und Kapazitäten an.',
     funFactOeffentlich: true,
+    workflowStatus: 'veroeffentlicht',
+    unternehmensId: 'unt-002',
     marktplatzStatus: 'veroeffentlicht',
     veroeffentlichtAm: '2025-05-21',
     ablaufDatum: '2025-08-21',
@@ -1034,6 +1084,7 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     email: 'mette@danskdesign.dk',
     interessentenCount: 2,
     createdAt: '2025-05-10',
+    workflowStatus: 'projekt_erstellt',
     marktplatzStatus: 'veroeffentlicht',
     veroeffentlichtAm: '2025-05-10',
     ablaufDatum: '2025-08-10',
@@ -1072,6 +1123,7 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 4841 789 012',
     interessentenCount: 0,
     createdAt: '2025-05-28',
+    workflowStatus: 'unternehmen_verifiziert',
     marktplatzStatus: 'entwurf',
     marktplatzDaten: {
       titel: 'Dänische Zulieferer für Offshore-Windpark-Komponenten',
@@ -1111,6 +1163,7 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Sehr persönlicher, künstlerischer Ansatz. Nicht als rein kommerziellen Partner angehen.',
     gespraechseinstieg: 'Frag nach der Insel Bornholm – Pia liebt es, darüber zu erzählen.',
     funFactOeffentlich: true,
+    workflowStatus: 'veroeffentlicht',
     marktplatzStatus: 'veroeffentlicht',
     veroeffentlichtAm: '2025-05-02',
     ablaufDatum: '2025-08-02',
@@ -1152,6 +1205,7 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 4621 456 789',
     interessentenCount: 2,
     createdAt: '2025-04-15',
+    workflowStatus: 'archiviert',
     marktplatzStatus: 'archiviert',
     veroeffentlichtAm: '2025-04-15',
     ablaufDatum: '2025-07-15',
@@ -1175,6 +1229,7 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     email: 'mikkel@greentech-aarhus.dk',
     interessentenCount: 1,
     createdAt: '2025-05-22',
+    workflowStatus: 'unternehmen_angelegt',
     marktplatzStatus: 'zur_pruefung',
     marktplatzDaten: {
       titel: 'Deutsche Industriekunden für Wasseraufbereitungs-Pilotprojekte',
@@ -1210,6 +1265,7 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     telefon: '+49 431 987 654',
     interessentenCount: 0,
     createdAt: '2025-04-28',
+    workflowStatus: 'in_pruefung',
     marktplatzStatus: 'pausiert',
     veroeffentlichtAm: '2025-04-29',
     deaktivierungsGrund: 'Ansprechpartner momentan nicht erreichbar – vorübergehend pausiert',

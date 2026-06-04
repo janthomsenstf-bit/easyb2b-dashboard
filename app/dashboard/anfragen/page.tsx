@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { getStatusLabel, getStatusColor, getRichtungLabel, MOCK_INTERESSENTEN } from '@/lib/mockdata';
-import { verbessereAntwortMock, generiereGespraechseinstieg } from '@/lib/funfact';
+import {
+  getStatusLabel, getStatusColor, getRichtungLabel, MOCK_INTERESSENTEN,
+  getWorkflowStatusLabel, getWorkflowStatusColor, getWorkflowStatusSchritt,
+  WORKFLOW_SCHRITTE, type AnfrageWorkflowStatus,
+} from '@/lib/mockdata';
+import { verbessereAntwortMock } from '@/lib/funfact';
 import { useStore } from '@/lib/store';
 import EntityModal, { type FeldDef } from '@/components/EntityModal';
 
@@ -34,6 +38,7 @@ export default function AnfragenPage() {
   const [kiErgebnisse, setKiErgebnisse] = useState<Record<string, string>>({});
   const [editOffen, setEditOffen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [duplikatWarnung, setDuplikatWarnung] = useState<{ anfrageId: string; kandidaten: typeof store.unternehmen } | null>(null);
 
   const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
@@ -67,6 +72,30 @@ export default function AnfragenPage() {
       }
     }
     setEditOffen(false);
+  };
+
+  const unternehmenAnlegen = (anfrageId: string) => {
+    const anfrage = store.anfragen.find(a => a.id === anfrageId);
+    if (!anfrage) return;
+    // Duplikat-Check
+    const kandidaten = store.unternehmen.filter(u =>
+      u.firmenname.toLowerCase() === anfrage.firmenname.toLowerCase() ||
+      u.email.toLowerCase() === anfrage.email.toLowerCase()
+    );
+    if (kandidaten.length > 0) {
+      setDuplikatWarnung({ anfrageId, kandidaten });
+    } else {
+      store.legeUnternehmenAusAnfrageAn(anfrageId);
+      zeigeToast(`✅ Unternehmen "${anfrage.firmenname}" angelegt`);
+    }
+  };
+
+  const projektErstellen = (anfrageId: string) => {
+    const anfrage = store.anfragen.find(a => a.id === anfrageId);
+    if (!anfrage) return;
+    store.setzeWorkflowStatus(anfrageId, 'projekt_erstellt');
+    store.logge(`Projekt aus Anfrage erstellt`, anfrage.anzeigenId || anfrageId, 'anlegen');
+    zeigeToast(`✅ Projekt erstellt — jetzt unter "Projekte" sichtbar`);
   };
 
   const statusSchnellAendern = async (anfrageId: string, neuerStatus: string, label: string) => {
@@ -240,6 +269,92 @@ export default function AnfragenPage() {
             <button onClick={() => setDetailId(null)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
           </div>
+
+          {/* ── PROZESS-FORTSCHRITTSLEISTE ── */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: '6px' }}>
+              {WORKFLOW_SCHRITTE.filter(w => w.status !== 'archiviert').map((w, idx, arr) => {
+                const aktuell = getWorkflowStatusSchritt(selectedAnfrage.workflowStatus);
+                const istErledigt = w.schritt < aktuell;
+                const istAktiv = w.schritt === aktuell;
+                return (
+                  <div key={w.status} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                      <div style={{
+                        width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', fontWeight: 700, flexShrink: 0,
+                        backgroundColor: istErledigt ? '#4CAF50' : istAktiv ? getWorkflowStatusColor(w.status) : '#e0e0e0',
+                        color: istErledigt || istAktiv ? 'white' : '#999',
+                        boxShadow: istAktiv ? `0 0 0 3px ${getWorkflowStatusColor(w.status)}30` : 'none',
+                      }}>
+                        {istErledigt ? '✓' : w.schritt}
+                      </div>
+                      <div style={{ fontSize: '9px', color: istAktiv ? getWorkflowStatusColor(w.status) : '#999', fontWeight: istAktiv ? 700 : 400, whiteSpace: 'nowrap' }}>{w.label}</div>
+                    </div>
+                    {idx < arr.length - 1 && (
+                      <div style={{ flex: 1, height: '2px', backgroundColor: istErledigt ? '#4CAF50' : '#e0e0e0', marginBottom: '12px' }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── WORKFLOW-AKTIONEN ── */}
+          {/* Schritt: Unternehmen anlegen */}
+          {(!selectedAnfrage.workflowStatus || selectedAnfrage.workflowStatus === 'neu' || selectedAnfrage.workflowStatus === 'in_pruefung') && (
+            <div style={{ backgroundColor: '#e3f2fd', border: '1px solid #90caf9', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#1565C0', marginBottom: '8px' }}>
+                🏢 Nächster Schritt: Unternehmen anlegen
+              </div>
+              {duplikatWarnung?.anfrageId === selectedAnfrage.id ? (
+                <div>
+                  <div style={{ fontSize: '12px', color: '#c62828', marginBottom: '8px', padding: '8px', backgroundColor: '#ffebee', borderRadius: '6px' }}>
+                    ⚠️ Mögliches bestehendes Unternehmen gefunden: <strong>{duplikatWarnung.kandidaten.map(k => k.firmenname).join(', ')}</strong>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <button onClick={() => { store.legeUnternehmenAusAnfrageAn(selectedAnfrage.id); setDuplikatWarnung(null); zeigeToast('✅ Neues Unternehmen angelegt'); }}
+                      style={{ padding: '6px 12px', backgroundColor: '#1565C0', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+                      + Trotzdem neu anlegen
+                    </button>
+                    {duplikatWarnung.kandidaten.map(k => (
+                      <button key={k.id} onClick={() => { store.verknuepfeMitUnternehmen(selectedAnfrage.id, k.id); setDuplikatWarnung(null); zeigeToast(`✅ Mit "${k.firmenname}" verknüpft`); }}
+                        style={{ padding: '6px 12px', backgroundColor: 'white', color: '#1565C0', border: '1px solid #1565C0', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+                        🔗 Mit "{k.firmenname}" verknüpfen
+                      </button>
+                    ))}
+                    <button onClick={() => setDuplikatWarnung(null)}
+                      style={{ padding: '6px 12px', backgroundColor: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => unternehmenAnlegen(selectedAnfrage.id)}
+                  style={{ padding: '8px 14px', backgroundColor: '#1565C0', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
+                  🏢 Unternehmen aus Anfrage anlegen
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Schritt: Projekt erstellen */}
+          {(selectedAnfrage.workflowStatus === 'unternehmen_angelegt' || selectedAnfrage.workflowStatus === 'unternehmen_verifiziert') && (
+            <div style={{ backgroundColor: '#f3e5f5', border: '1px solid #ce93d8', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#6a1b9a', marginBottom: '8px' }}>
+                🚀 Nächster Schritt: Projekt erstellen
+                {selectedAnfrage.workflowStatus === 'unternehmen_angelegt' && (
+                  <span style={{ marginLeft: '8px', padding: '2px 6px', backgroundColor: '#fff3e0', color: '#E65100', borderRadius: '4px', fontSize: '10px' }}>
+                    ⚠️ Unternehmen noch nicht verifiziert
+                  </span>
+                )}
+              </div>
+              <button onClick={() => projektErstellen(selectedAnfrage.id)}
+                style={{ padding: '8px 14px', backgroundColor: '#6a1b9a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>
+                🚀 Projekt erstellen → Projekte-Modul
+              </button>
+            </div>
+          )}
 
           {/* Status + Bearbeiten */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>

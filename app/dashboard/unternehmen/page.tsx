@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { getKommunikationStilLabel, getKommunikationStilIcon } from '@/lib/funfact';
-import { MOCK_INTERESSENTEN, getNetzwerkLabel, getNetzwerkColor, getGroesseLabel, getLandFlag, getStatusLabel, getStatusColor, getRichtungLabel } from '@/lib/mockdata';
+import { MOCK_INTERESSENTEN, getNetzwerkLabel, getNetzwerkColor, getGroesseLabel, getLandFlag, getStatusLabel, getStatusColor, getRichtungLabel, getWorkflowStatusLabel, getWorkflowStatusColor } from '@/lib/mockdata';
 import { berechneTrustScore, getLevelLabel, getLevelColor, getLevelBackground, getVerifizierungsStatusLabel, getVerifizierungsStatusColor } from '@/lib/trustscore';
 import { useStore, neueEntityId, type ProjektInteressent } from '@/lib/store';
 import { berechneProjekt, getGesundheitEmoji, getGesundheitColor, getZuordnungLabel, getZuordnungColor } from '@/lib/projekte';
@@ -149,8 +149,10 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
 }) {
   const trust = berechneTrustScore({ persoenlichesGespraech: u.persoenlichesGespraech, websiteGeprueft: u.websiteGeprueft, linkedinGeprueft: u.linkedinGeprueft, empfehlungVorhanden: u.empfehlungVorhanden, eventTeilnahmen: u.events?.length || 0, erfolgreicheMatches: u.successStories || 0, negativeHinweise: u.negativeHinweise, spamRisiko: u.spamRisiko, verifizierungsStatus: u.verifizierungsStatus });
 
-  // Eigene Projekte (als Suchender)
-  const eigeneProjekte = store.anfragen.filter((a: any) => a.email === u.email || a.firmenname === u.firmenname);
+  // Eigene Projekte (via unternehmensId ODER firmenname-Match)
+  const eigeneProjekte = store.anfragen.filter((a: any) =>
+    a.unternehmensId === u.id || a.email === u.email || a.firmenname === u.firmenname
+  );
   // Beteiligungen (als Interessent)
   const beteiligungen = MOCK_INTERESSENTEN.filter((i: any) => i.email === u.email || i.firmenname === u.firmenname);
   // Zuordnungen
@@ -248,6 +250,56 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
               {u.verifiziertDurch && <p style={{ fontSize: '11px', color: '#999', margin: '8px 0 0 0' }}>von {u.verifiziertDurch} · {u.verifiziertAm}</p>}
             </Card>
           )}
+          {/* Verifikations-Schnellaktionen */}
+          <Card titel="Verifizierung">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+              {[
+                { key: 'websiteGeprueft', label: '🌐 Website geprüft' },
+                { key: 'linkedinGeprueft', label: '💼 LinkedIn geprüft' },
+                { key: 'persoenlichesGespraech', label: '📞 Persönliches Gespräch' },
+                { key: 'empfehlungVorhanden', label: '⭐ Empfehlung vorhanden' },
+              ].map(item => (
+                <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!(u as any)[item.key]}
+                    onChange={e => {
+                      store.updateUnternehmen(u.id, { [item.key]: e.target.checked } as any);
+                      store.logge(`${item.label}: ${e.target.checked ? 'Ja' : 'Nein'}`, u.firmenname, 'bearbeiten');
+                    }}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: (u as any)[item.key] ? '#2e7d32' : '#666' }}>{item.label}</span>
+                </label>
+              ))}
+            </div>
+            {u.verifizierungsStatus !== 'verifiziert' ? (
+              <button
+                onClick={() => {
+                  store.updateUnternehmen(u.id, {
+                    verifizierungsStatus: 'verifiziert',
+                    verifiziertAm: new Date().toISOString().split('T')[0],
+                    verifiziertDurch: 'Operator',
+                  });
+                  // Verknüpfte Anfragen auf 'unternehmen_verifiziert' setzen
+                  eigeneProjekte.forEach((a: any) => {
+                    if (a.workflowStatus === 'unternehmen_angelegt') {
+                      store.setzeWorkflowStatus(a.id, 'unternehmen_verifiziert');
+                    }
+                  });
+                  store.logge('Unternehmen verifiziert', u.firmenname, 'status');
+                  onToast('✅ Unternehmen verifiziert');
+                }}
+                style={{ width: '100%', padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
+              >
+                ✅ Unternehmen verifizieren
+              </button>
+            ) : (
+              <div style={{ padding: '8px 12px', backgroundColor: '#e8f5e9', borderRadius: '6px', fontSize: '12px', color: '#2e7d32', fontWeight: 600 }}>
+                ✅ Verifiziert am {u.verifiziertAm} von {u.verifiziertDurch}
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
@@ -296,6 +348,29 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
                         💡 {ps.hinweis}
                       </div>
                     )}
+                    {/* Workflow-Status + Aktionen */}
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      {a.workflowStatus && (
+                        <span style={{ padding: '3px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 700, color: 'white', backgroundColor: getWorkflowStatusColor(a.workflowStatus) }}>
+                          Schritt {a.workflowStatus}: {getWorkflowStatusLabel(a.workflowStatus)}
+                        </span>
+                      )}
+                      <a href="/dashboard/projekte" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', marginLeft: 'auto' }}>
+                        → Zum Projekt
+                      </a>
+                      {(a.workflowStatus === 'unternehmen_angelegt' || a.workflowStatus === 'unternehmen_verifiziert') && (
+                        <button
+                          onClick={() => {
+                            store.setzeWorkflowStatus(a.id, 'projekt_erstellt');
+                            store.logge('Projekt aus Unternehmen erstellt', a.anzeigenId || a.id, 'anlegen');
+                            onToast('✅ Projekt erstellt — unter Projekte sichtbar');
+                          }}
+                          style={{ padding: '5px 12px', backgroundColor: '#6a1b9a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}
+                        >
+                          🚀 Projekt erstellen
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
