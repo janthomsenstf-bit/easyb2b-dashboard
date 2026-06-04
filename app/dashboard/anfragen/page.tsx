@@ -428,6 +428,20 @@ export default function AnfragenPage() {
             <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: 0 }}>{selectedAnfrage.beschreibung}</p>
           </div>
 
+          {/* Verwendetes Formular */}
+          {(() => {
+            const formular = selectedAnfrage.anfrageFormularId
+              ? store.formulare.find(f => f.id === selectedAnfrage.anfrageFormularId)
+              : null;
+            if (!formular) return null;
+            return (
+              <div style={{ marginTop: '12px', padding: '10px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', fontSize: '12px', color: '#555' }}>
+                📝 <strong>Anfrageformular:</strong> {formular.name} ({formular.fragen.length} Fragen)
+                <a href="/dashboard/formulare" style={{ marginLeft: '8px', color: '#003366', fontWeight: 600, textDecoration: 'none' }}>ansehen →</a>
+              </div>
+            );
+          })()}
+
           {/* ── INTERESSENTEN für diese Anfrage ─── */}
           {(() => {
             const interessenten = MOCK_INTERESSENTEN.filter(i => i.anfrageId === selectedAnfrage.id);

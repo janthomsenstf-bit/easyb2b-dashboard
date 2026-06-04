@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor,
   getRichtungLabel, getLandFlag,
-  getKontaktZuordnungLabel, getKontaktZuordnungColor,
+  getKontaktZuordnungLabel, getKontaktZuordnungColor, findeFormular,
   type MockAnfrage, type MarktplatzStatus, type MarktplatzEintrag,
 } from '@/lib/mockdata';
 import { useStore, type ProjektInteressent } from '@/lib/store';
@@ -392,7 +392,80 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
 
       {/* 5. Marktplatz */}
       <MarktplatzSektion anfrage={a} store={store} onToast={onToast} />
+
+      {/* 6. Formulare */}
+      <FormularSektion anfrage={a} store={store} onToast={onToast} />
     </div>
+  );
+}
+
+// ─── FORMULAR-ZUORDNUNG ───────────────────────────────────────
+
+function FormularSektion({ anfrage: a, store, onToast }: {
+  anfrage: MockAnfrage;
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
+}) {
+  const anfrageFormulare = store.formulare.filter(f => f.typ === 'anfrage' && f.aktiv);
+  const interessentFormulare = store.formulare.filter(f => f.typ === 'interessent' && f.aktiv);
+
+  // Auto-Vorauswahl: Branchen-Spezial vor Standard
+  const autoAnfrage = findeFormular(store.formulare, 'anfrage', a.branche);
+  const autoInteressent = findeFormular(store.formulare, 'interessent', a.branche);
+
+  const aktAnfrageId = a.anfrageFormularId || autoAnfrage?.id || '';
+  const aktInteressentId = a.interessentFormularId || autoInteressent?.id || '';
+
+  const aktAnfrage = store.formulare.find(f => f.id === aktAnfrageId);
+  const aktInteressent = store.formulare.find(f => f.id === aktInteressentId);
+
+  const SELECT: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box', marginTop: '4px' };
+
+  return (
+    <Section titel="6 · Formulare">
+      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 12px 0' }}>
+        Bestimmt, welche Fragen beim Anfragen und beim Interesse-Bekunden gestellt werden.
+        Ohne Auswahl gilt automatisch das Branchen-Spezial- oder Standardformular.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>📋 Anfrageformular</label>
+          <select
+            value={aktAnfrageId}
+            onChange={e => { store.updateAnfrage(a.id, { anfrageFormularId: e.target.value }); store.logge('Anfrageformular zugeordnet', a.anzeigenId, 'bearbeiten'); onToast('Anfrageformular zugeordnet ✓'); }}
+            style={SELECT}
+          >
+            {anfrageFormulare.map(f => (
+              <option key={f.id} value={f.id}>{f.name}{f.istStandard ? ' (Standard)' : f.branche ? ` · ${f.branche}` : ''}</option>
+            ))}
+          </select>
+          {aktAnfrage && (
+            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+              {aktAnfrage.fragen.length} Fragen{!a.anfrageFormularId && autoAnfrage ? ' · automatisch gewählt' : ''}
+              {' · '}<a href="/dashboard/formulare" style={{ color: '#003366', fontWeight: 600, textDecoration: 'none' }}>bearbeiten →</a>
+            </div>
+          )}
+        </div>
+        <div>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>👥 Interessentenformular</label>
+          <select
+            value={aktInteressentId}
+            onChange={e => { store.updateAnfrage(a.id, { interessentFormularId: e.target.value }); store.logge('Interessentenformular zugeordnet', a.anzeigenId, 'bearbeiten'); onToast('Interessentenformular zugeordnet ✓'); }}
+            style={SELECT}
+          >
+            {interessentFormulare.map(f => (
+              <option key={f.id} value={f.id}>{f.name}{f.istStandard ? ' (Standard)' : f.branche ? ` · ${f.branche}` : ''}</option>
+            ))}
+          </select>
+          {aktInteressent && (
+            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+              {aktInteressent.fragen.length} Fragen{!a.interessentFormularId && autoInteressent ? ' · automatisch gewählt' : ''}
+              {' · '}<a href="/dashboard/formulare" style={{ color: '#003366', fontWeight: 600, textDecoration: 'none' }}>bearbeiten →</a>
+            </div>
+          )}
+        </div>
+      </div>
+    </Section>
   );
 }
 

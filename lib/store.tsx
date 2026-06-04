@@ -10,9 +10,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   MOCK_UNTERNEHMEN, MOCK_ANFRAGEN, MOCK_NETZWERKKONTAKTE,
-  MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES, MOCK_KONTAKTE,
+  MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES, MOCK_KONTAKTE, MOCK_FORMULARE,
   type MockUnternehmen, type MockAnfrage, type MockNetzwerkkontakt,
   type AnfrageWorkflowStatus, type MockKontakt, type KontaktProjektZuordnung,
+  type FormularVorlage,
 } from './mockdata';
 
 export interface Aktivitaet {
@@ -61,6 +62,11 @@ interface DashboardStore {
   updateGeschaftskontakt: (id: string, patch: Partial<MockKontakt>) => void;
   addKontaktProjektZuordnung: (kontaktId: string, z: KontaktProjektZuordnung) => void;
   legeKontaktAusInteressentAn: (interessentId: string) => string | null;
+  // Formular-Vorlagen
+  formulare: FormularVorlage[];
+  addFormular: (f: FormularVorlage) => void;
+  updateFormular: (id: string, patch: Partial<FormularVorlage>) => void;
+  deleteFormular: (id: string) => void;
 
   // Projektzuordnungen (n:m)
   zuordnungen: ProjektInteressent[];
@@ -105,6 +111,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const [anfragen, setAnfragen] = useState<MockAnfrage[]>(MOCK_ANFRAGEN);
   const [kontakte, setKontakte] = useState<MockNetzwerkkontakt[]>(MOCK_NETZWERKKONTAKTE);
   const [geschaftskontakte, setGeschaftskontakte] = useState<MockKontakt[]>(MOCK_KONTAKTE);
+  const [formulare, setFormulare] = useState<FormularVorlage[]>(MOCK_FORMULARE);
   const [zuordnungen, setZuordnungen] = useState<ProjektInteressent[]>(SEED_ZUORDNUNGEN);
   const [aktivitaeten, setAktivitaeten] = useState<Aktivitaet[]>([]);
   const [dbLadenStatus, setDbLadenStatus] = useState<'laden' | 'fertig' | 'fehler'>('laden');
@@ -296,6 +303,14 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
     return neueId_;
   };
 
+  // ── Formular-Vorlagen ──────────────────────────────────────────
+
+  const addFormular = (f: FormularVorlage) => setFormulare(prev => [f, ...prev]);
+  const updateFormular = (id: string, patch: Partial<FormularVorlage>) =>
+    setFormulare(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f));
+  const deleteFormular = (id: string) =>
+    setFormulare(prev => prev.filter(f => f.id !== id));
+
   return (
     <Ctx.Provider value={{
       unternehmen, anfragen, kontakte,
@@ -305,6 +320,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       legeUnternehmenAusAnfrageAn, verknuepfeMitUnternehmen, setzeWorkflowStatus,
       geschaftskontakte, addGeschaftskontakt, updateGeschaftskontakt,
       addKontaktProjektZuordnung, legeKontaktAusInteressentAn,
+      formulare, addFormular, updateFormular, deleteFormular,
     }}>
       {children}
     </Ctx.Provider>

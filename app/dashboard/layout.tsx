@@ -43,6 +43,7 @@ export default function DashboardLayout({
     { label: 'Events', href: '/dashboard/events', icon: '🎤' },
     { label: 'Newsletter', href: '/dashboard/newsletter', icon: '📰' },
     { label: 'KI-Zentrale', href: '/dashboard/ki-zentrale', icon: '🤖' },
+    { label: 'Formulare', href: '/dashboard/formulare', icon: '📝' },
     { label: 'Kultur & Wissen', href: '/dashboard/kultur-wissen', icon: '📚' },
     { label: 'Success Stories', href: '/dashboard/success-stories', icon: '⭐' },
   ];

@@ -303,7 +303,25 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
             </Grid>
           </Box>
 
-          {/* ── FORMULAR-ANTWORTEN ── */}
+          {/* ── GENERISCHE FORMULAR-ANTWORTEN (aus zugeordnetem Formular) ── */}
+          {i.formularAntworten && i.formularAntworten.length > 0 && (
+            <Box titel="Formular-Antworten" bg="#f0f4ff">
+              {(() => {
+                const formular = i.formularId ? store.formulare.find(f => f.id === i.formularId) : null;
+                return formular ? (
+                  <div style={{ fontSize: '11px', color: '#1565C0', fontWeight: 600, marginBottom: '10px' }}>
+                    📝 Formular: {formular.name}
+                    <a href="/dashboard/formulare" style={{ marginLeft: '8px', color: '#003366', textDecoration: 'none' }}>ansehen →</a>
+                  </div>
+                ) : null;
+              })()}
+              {i.formularAntworten.map((a, idx) => (
+                <Antwort key={idx} frage={a.frageText} antwort={a.wert} />
+              ))}
+            </Box>
+          )}
+
+          {/* ── FORMULAR-ANTWORTEN (Legacy) ── */}
           {(i.warumInteresse || i.warumPassung || i.beitrag) ? (
             <Box titel="Antworten aus dem Interessentenformular">
               {i.warumInteresse && <Antwort frage="Warum interessiert Sie diese Anfrage?" antwort={i.warumInteresse} />}

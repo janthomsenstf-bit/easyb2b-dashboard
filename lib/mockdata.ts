@@ -903,6 +903,9 @@ export interface MockAnfrage {
   // Prozess-Workflow
   workflowStatus?: AnfrageWorkflowStatus;
   unternehmensId?: string;     // Link zum verknüpften Unternehmen
+  // Formular-Zuordnung
+  anfrageFormularId?: string;       // welches Anfrageformular wurde verwendet
+  interessentFormularId?: string;   // welches Interessentenformular für Reaktionen
 }
 
 export interface MockInteressent {
@@ -955,7 +958,154 @@ export interface MockInteressent {
   matchRisiken?: string[];
   // Kontakt-Link (nach Konvertierung)
   kontaktId?: string;
+  // Formular-Antworten (generisch, aus zugeordnetem Interessentenformular)
+  formularId?: string;
+  formularAntworten?: FormularAntwort[];
 }
+
+// ─── FORMULAR-VORLAGEN ───────────────────────────────────────
+// Verwaltbare, branchenspezifische Fragebögen für Anfragen und
+// Interessenten. Datenmodell an Homepage-Prisma ausgerichtet.
+
+export type FormularTyp = 'anfrage' | 'interessent';
+
+export type FrageTyp =
+  | 'text_kurz' | 'text_lang' | 'auswahl_single' | 'auswahl_multi'
+  | 'zahl' | 'ja_nein' | 'skala' | 'datum' | 'datei';
+
+export const FRAGETYP_OPTIONEN: { value: FrageTyp; label: string }[] = [
+  { value: 'text_kurz', label: 'Text kurz' },
+  { value: 'text_lang', label: 'Text lang' },
+  { value: 'auswahl_single', label: 'Auswahl (eine)' },
+  { value: 'auswahl_multi', label: 'Mehrfachauswahl' },
+  { value: 'zahl', label: 'Zahl' },
+  { value: 'ja_nein', label: 'Ja / Nein' },
+  { value: 'skala', label: 'Skala 1–10' },
+  { value: 'datum', label: 'Datum' },
+  { value: 'datei', label: 'Datei-Upload' },
+];
+
+export function getFrageTypLabel(t: FrageTyp): string {
+  return FRAGETYP_OPTIONEN.find(o => o.value === t)?.label ?? t;
+}
+
+export interface FormularFrage {
+  id: string;
+  reihenfolge: number;
+  text: string;
+  typ: FrageTyp;
+  pflicht: boolean;
+  optionen?: string[];   // bei auswahl_single / auswahl_multi
+  hinweis?: string;      // Hilfetext unter der Frage
+}
+
+export interface FormularVorlage {
+  id: string;
+  name: string;
+  typ: FormularTyp;
+  branche?: string;      // undefined = allgemein gültig
+  istStandard: boolean;  // Fallback wenn kein Spezialformular zugeordnet
+  beschreibung?: string;
+  fragen: FormularFrage[];
+  aktiv: boolean;
+  createdAt: string;
+}
+
+export interface FormularAntwort {
+  frageId: string;
+  frageText: string;
+  wert: string;
+}
+
+// Hilfsfunktion: passende Vorlage finden (Branchen-Spezial vor Standard)
+export function findeFormular(formulare: FormularVorlage[], typ: FormularTyp, branche?: string): FormularVorlage | undefined {
+  if (branche) {
+    const spezial = formulare.find(f => f.aktiv && f.typ === typ && f.branche === branche);
+    if (spezial) return spezial;
+  }
+  return formulare.find(f => f.aktiv && f.typ === typ && f.istStandard);
+}
+
+// ─── Standardfragen ──────────────────────────────────────────
+
+let _fid = 0;
+function fr(text: string, typ: FrageTyp, pflicht = true, optionen?: string[], hinweis?: string): FormularFrage {
+  _fid += 1;
+  return { id: `frq-${_fid}`, reihenfolge: _fid, text, typ, pflicht, optionen, hinweis };
+}
+
+const STANDARD_ANFRAGE_FRAGEN: FormularFrage[] = [
+  fr('Wer seid ihr?', 'text_lang', true, undefined, 'Kurze Vorstellung eures Unternehmens'),
+  fr('Was sucht ihr?', 'text_lang'),
+  fr('Warum sucht ihr das?', 'text_lang'),
+  fr('In welchem Land / welcher Region?', 'text_kurz'),
+  fr('Welche Branche?', 'text_kurz'),
+  fr('Welche Anforderungen gibt es?', 'text_lang', false),
+  fr('Welche Ausschlusskriterien gibt es?', 'text_lang', false),
+  fr('Wie konkret ist das Vorhaben?', 'auswahl_single', true, ['Idee', 'Konzept', 'Bereit', 'Sofort']),
+  fr('Wann soll es starten?', 'datum', false),
+  fr('Welche Sprachen sind möglich?', 'auswahl_multi', true, ['Deutsch', 'Dänisch', 'Englisch']),
+  fr('Gibt es Unterlagen, Bilder oder Produktkataloge?', 'datei', false),
+];
+
+const STANDARD_INTERESSENT_FRAGEN: FormularFrage[] = [
+  fr('Warum interessiert euch dieses Projekt?', 'text_lang'),
+  fr('Warum passt ihr zu dieser Anfrage?', 'text_lang'),
+  fr('Was könnt ihr konkret beitragen?', 'text_lang'),
+  fr('Welche Erfahrung habt ihr in diesem Bereich?', 'text_lang'),
+  fr('Welche Region deckt ihr ab?', 'text_kurz'),
+  fr('Welche Sprachen sind möglich?', 'auswahl_multi', true, ['Deutsch', 'Dänisch', 'Englisch']),
+  fr('Wie schnell könnt ihr reagieren?', 'auswahl_single', true, ['Sofort', 'Innerhalb 1 Woche', 'Innerhalb 1 Monat']),
+  fr('Welche Art der Kooperation stellt ihr euch vor?', 'text_lang'),
+  fr('Gibt es Referenzen oder Beispiele?', 'text_lang', false),
+];
+
+const FOOD_ANFRAGE_ZUSATZ: FormularFrage[] = [
+  fr('Welche Produkte sollen vertrieben werden?', 'text_lang'),
+  fr('Gibt es bereits deutsche Etiketten?', 'ja_nein'),
+  fr('Sind Zertifikate vorhanden?', 'text_kurz', false),
+  fr('Gibt es Listungserfahrung im Einzelhandel?', 'ja_nein'),
+  fr('Gibt es deutsche Preislisten?', 'ja_nein', false),
+  fr('Sind Logistik und Kühlung geklärt?', 'ja_nein'),
+  fr('Gibt es Mindestabnahmemengen?', 'text_kurz', false),
+  fr('Welche Zielgruppe wird gesucht?', 'auswahl_multi', true, ['Einzelhandel', 'Gastronomie', 'Großhandel', 'Fachhandel']),
+];
+
+const FOOD_INTERESSENT_ZUSATZ: FormularFrage[] = [
+  fr('Habt ihr Erfahrung mit Lebensmittelvertrieb?', 'ja_nein'),
+  fr('Habt ihr Kontakte zum Lebensmitteleinzelhandel?', 'ja_nein'),
+  fr('Habt ihr Kontakte zur Gastronomie?', 'ja_nein', false),
+  fr('Welche Produktgruppen vertreibt ihr bereits?', 'text_lang'),
+  fr('Gibt es Kühl-/Lagerlogistik?', 'ja_nein'),
+  fr('Habt ihr Erfahrung mit Importprodukten?', 'ja_nein', false),
+  fr('Welche Regionen deckt ihr ab?', 'text_kurz'),
+  fr('Habt ihr Referenzen im Food-Bereich?', 'text_lang', false),
+];
+
+export const MOCK_FORMULARE: FormularVorlage[] = [
+  {
+    id: 'form-001', name: 'Standard Anfrageformular', typ: 'anfrage',
+    istStandard: true, beschreibung: 'Allgemeines Formular für alle Branchen, wenn kein Spezialformular zugeordnet ist.',
+    fragen: STANDARD_ANFRAGE_FRAGEN, aktiv: true, createdAt: '2025-01-01',
+  },
+  {
+    id: 'form-002', name: 'Standard Interessentenformular', typ: 'interessent',
+    istStandard: true, beschreibung: 'Allgemeines Formular für Interessenten, wenn kein Spezialformular zugeordnet ist.',
+    fragen: STANDARD_INTERESSENT_FRAGEN, aktiv: true, createdAt: '2025-01-01',
+  },
+  {
+    id: 'form-003', name: 'Food-Markteintritt Deutschland', typ: 'anfrage',
+    branche: 'Lebensmittel & Fischerei', istStandard: false,
+    beschreibung: 'Für Lebensmittelunternehmen, die in den deutschen Markt möchten.',
+    fragen: [...STANDARD_ANFRAGE_FRAGEN.slice(0, 5), ...FOOD_ANFRAGE_ZUSATZ], aktiv: true, createdAt: '2025-02-15',
+  },
+  {
+    id: 'form-004', name: 'Food-Vertriebspartner Deutschland', typ: 'interessent',
+    branche: 'Lebensmittel & Fischerei', istStandard: false,
+    beschreibung: 'Für Interessenten, die als Food-Vertriebspartner reagieren.',
+    fragen: [...STANDARD_INTERESSENT_FRAGEN.slice(0, 5), ...FOOD_INTERESSENT_ZUSATZ], aktiv: true, createdAt: '2025-02-15',
+  },
+];
 
 // ─── KONTAKTE ────────────────────────────────────────────────
 // Dauerhafte Stammdaten — entstehen aus geprüften Interessenten
@@ -993,6 +1143,7 @@ export interface MockKontakt {
   createdAt: string;
   interneNotiz?: string;
   projektZuordnungen: KontaktProjektZuordnung[];
+  formularAntworten?: FormularAntwort[];   // aus Interessent übernommen
 }
 
 export function getKontaktQuelleLabel(q: KontaktQuelleTyp): string {
@@ -1126,6 +1277,8 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     funFactOeffentlich: true,
     workflowStatus: 'veroeffentlicht',
     unternehmensId: 'unt-001',
+    anfrageFormularId: 'form-003',
+    interessentFormularId: 'form-004',
     marktplatzStatus: 'veroeffentlicht',
     veroeffentlichtAm: '2025-05-15',
     ablaufDatum: '2025-08-15',
@@ -1443,6 +1596,14 @@ export const MOCK_INTERESSENTEN: MockInteressent[] = [
     gespraechsnotiz: 'Telefonat 20.05.: Klaus sehr engagiert, kennt den Markt genau. Will schnell starten. Kühlkette ist das starke Argument.',
     matchGruende: ['Etablierte Vertriebsstruktur in der Zielregion', 'Eigene Kühlkette löst Nordic Fishs Logistik-Sorge', 'Premium-Positionierung passt zum Produkt'],
     matchRisiken: ['Großer Player — könnte kleinen dänischen Lieferanten dominieren'],
+    formularId: 'form-004',
+    formularAntworten: [
+      { frageId: 'fa-1', frageText: 'Habt ihr Erfahrung mit Lebensmittelvertrieb?', wert: 'Ja, seit 25 Jahren im Fischhandel' },
+      { frageId: 'fa-2', frageText: 'Habt ihr Kontakte zum Lebensmitteleinzelhandel?', wert: 'Ja, über 40 Restaurants und Feinkostläden, EDEKA Nord' },
+      { frageId: 'fa-3', frageText: 'Gibt es Kühl-/Lagerlogistik?', wert: 'Ja, eigene Kühlkette bis Hamburg' },
+      { frageId: 'fa-4', frageText: 'Welche Regionen deckt ihr ab?', wert: 'Hamburg, Schleswig-Holstein, Niedersachsen' },
+      { frageId: 'fa-5', frageText: 'Habt ihr Referenzen im Food-Bereich?', wert: 'Block House, EDEKA Nord, diverse Sternerestaurants' },
+    ],
   },
   {
     id: 'int-002',
