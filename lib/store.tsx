@@ -4,10 +4,10 @@
 // DASHBOARD DATA STORE — gemeinsame Session-Datenschicht
 // Liegt im Dashboard-Layout → bleibt über Seitenwechsel erhalten.
 // Globale Suche + Edit-Formulare greifen auf dieselben Daten zu.
-// (Noch keine DB — Reset bei vollem Reload.)
+// Echte Anfragen werden beim Start aus der Neon-DB geladen.
 // =============================================================
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import {
   MOCK_UNTERNEHMEN, MOCK_ANFRAGEN, MOCK_NETZWERKKONTAKTE,
   MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES,
@@ -42,6 +42,7 @@ interface DashboardStore {
   unternehmen: MockUnternehmen[];
   anfragen: MockAnfrage[];
   kontakte: MockNetzwerkkontakt[];
+  dbLadenStatus: 'laden' | 'fertig' | 'fehler';
 
   // Mutatoren
   updateUnternehmen: (id: string, patch: Partial<MockUnternehmen>) => void;
@@ -94,6 +95,26 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const [kontakte, setKontakte] = useState<MockNetzwerkkontakt[]>(MOCK_NETZWERKKONTAKTE);
   const [zuordnungen, setZuordnungen] = useState<ProjektInteressent[]>(SEED_ZUORDNUNGEN);
   const [aktivitaeten, setAktivitaeten] = useState<Aktivitaet[]>([]);
+  const [dbLadenStatus, setDbLadenStatus] = useState<'laden' | 'fertig' | 'fehler'>('laden');
+
+  // Echte Anfragen aus Neon-DB laden (ersetzt Mock-Daten)
+  useEffect(() => {
+    fetch('/api/anfragen')
+      .then(r => r.json())
+      .then((dbAnfragen: MockAnfrage[]) => {
+        if (Array.isArray(dbAnfragen) && dbAnfragen.length > 0) {
+          setAnfragen(dbAnfragen);
+          setDbLadenStatus('fertig');
+        } else {
+          // Keine echten Daten → Mock-Daten behalten
+          setDbLadenStatus('fertig');
+        }
+      })
+      .catch(() => {
+        // Bei Fehler Mock-Daten behalten
+        setDbLadenStatus('fehler');
+      });
+  }, []);
 
   const logge = (was: string, bezug: string, typ: Aktivitaet['typ'] = 'bearbeiten') => {
     setAktivitaeten(prev => [{
@@ -130,7 +151,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       unternehmen, anfragen, kontakte,
       updateUnternehmen, addUnternehmen, updateAnfrage, updateKontakt, addKontakt,
       zuordnungen, addZuordnung, updateZuordnung,
-      aktivitaeten, logge,
+      aktivitaeten, logge, dbLadenStatus,
     }}>
       {children}
     </Ctx.Provider>
