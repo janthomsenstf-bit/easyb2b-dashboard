@@ -151,7 +151,7 @@ function MomentKarte({ m, selected, onClick }: { m: MockKulturMoment; selected: 
         <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, backgroundColor: getKategorieColor(m.kategorie) + '20', color: getKategorieColor(m.kategorie) }}>
           {getKategorieLabel(m.kategorie)}
         </span>
-        <span style={{ fontSize: '10px', color: '#999' }}>
+        <span style={{ fontSize: '10px', color: '#555', fontWeight: 500 }}>
           {m.oeffentlich ? '🌐' : '🔒'} · {m.verwendetCount}× genutzt
         </span>
       </div>

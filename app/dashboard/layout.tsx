@@ -153,7 +153,7 @@ export default function DashboardLayout({
           position: 'sticky', top: 0, zIndex: 100,
         }}>
           <GlobaleSuche />
-          <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#999' }}>
+          <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#555' }}>
             {session.user?.email}
           </div>
         </header>

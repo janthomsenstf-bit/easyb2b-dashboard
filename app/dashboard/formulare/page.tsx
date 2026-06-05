@@ -78,7 +78,7 @@ export default function FormularePage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', flexShrink: 0 }}>
                   {f.istStandard && <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 700, backgroundColor: '#e8f5e9', color: '#2e7d32' }}>STANDARD</span>}
                   {f.branche && <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#f3e5f5', color: '#6a1b9a' }}>{f.branche}</span>}
-                  {!f.aktiv && <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#f5f5f5', color: '#999' }}>inaktiv</span>}
+                  {!f.aktiv && <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#e8e8e8', color: '#444' }}>inaktiv</span>}
                 </div>
               </div>
               {f.beschreibung && <div style={{ fontSize: '12px', color: '#888', marginTop: '6px' }}>{f.beschreibung}</div>}
@@ -252,11 +252,11 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                 {f.fragen.map((fr, idx) => (
-                  <div key={fr.id} style={{ padding: '12px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #eee' }}>
+                  <div key={fr.id} style={{ padding: '12px', backgroundColor: '#f5f7fa', borderRadius: '8px', border: '1px solid #ddd' }}>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }}>
                         <button onClick={() => verschieben(idx, -1)} disabled={idx === 0} style={arrowBtn(idx === 0)}>▲</button>
-                        <span style={{ fontSize: '10px', color: '#bbb', textAlign: 'center' }}>{idx + 1}</span>
+                        <span style={{ fontSize: '10px', color: '#555', textAlign: 'center', fontWeight: 600 }}>{idx + 1}</span>
                         <button onClick={() => verschieben(idx, 1)} disabled={idx === f.fragen.length - 1} style={arrowBtn(idx === f.fragen.length - 1)}>▼</button>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -385,7 +385,7 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
 // ─── VORSCHAU-FELD ────────────────────────────────────────────
 
 function VorschauFeld({ frage }: { frage: FormularFrage }) {
-  const base: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fafafa' };
+  const base: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid #ccc', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white', color: '#333' };
   switch (frage.typ) {
     case 'text_lang': return <textarea rows={3} disabled style={{ ...base, resize: 'none' }} placeholder="Antwort…" />;
     case 'zahl': return <input type="number" disabled style={base} placeholder="0" />;

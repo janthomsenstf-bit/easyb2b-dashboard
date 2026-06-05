@@ -107,7 +107,7 @@ export default function InteressentenPage() {
 
             {/* Anfrage-Bezug */}
             <div style={{ backgroundColor: '#f9f9f9', borderRadius: '6px', padding: '10px', marginBottom: '12px', fontSize: '13px' }}>
-              <span style={{ color: '#999' }}>Interesse an:</span> <strong>{i.anfrageFirma}</strong>
+              <span style={{ color: '#555' }}>Interesse an:</span> <strong>{i.anfrageFirma}</strong>
             </div>
 
             {/* Vorschau warum */}
@@ -141,7 +141,7 @@ export default function InteressentenPage() {
               </button>
             </div>
 
-            <div style={{ fontSize: '11px', color: '#999', marginTop: '12px' }}>Eingegangen: {i.createdAt}</div>
+            <div style={{ fontSize: '11px', color: '#555', marginTop: '12px' }}>Eingegangen: {i.createdAt}</div>
           </div>
         ))}
       </div>
@@ -548,7 +548,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 function Feld({ label, wert }: { label: string; wert: React.ReactNode }) {
   return (
     <div style={{ fontSize: '13px' }}>
-      <span style={{ color: '#999', fontSize: '11px', display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>{label}</span>
+      <span style={{ color: '#555', fontSize: '11px', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>{label}</span>
       <span style={{ color: '#333' }}>{wert}</span>
     </div>
   );

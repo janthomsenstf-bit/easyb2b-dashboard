@@ -835,6 +835,8 @@ export interface MockAnfrage {
   interessentFormularId?: string;   // welches Interessentenformular für Reaktionen
   // Klärungs-Bestätigungen
   klaerungsBestaetigungen?: Record<string, { notiz?: string; bestaetigtVon: string; bestaetigtAm: string }>;
+  // Interne Operator-Notizen (nicht öffentlich)
+  interneNotiz?: string;
 }
 
 export interface MockInteressent {
