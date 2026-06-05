@@ -444,21 +444,11 @@ export interface MockUnternehmen {
   bevorzugteSprache?: string;
   funFactStandard?: string;
   persoenlicheNotiz?: string;
-  // Verifizierung
-  verifizierungsStatus: string;
-  verifiziertAm?: string;
-  verifiziertDurch?: string;
-  verifizierungsNotiz?: string;
-  // Vertrauen
-  vertrauensScore: number;
-  vertrauensLevel: 'niedrig' | 'mittel' | 'hoch' | 'sehr_hoch';
-  // Vertrauensfaktoren
+  // Glaubwürdigkeits-Faktoren (jetzt Klärungspunkte im Bereich „Glaubwürdigkeit")
   persoenlichesGespraech: boolean;
   websiteGeprueft: boolean;
   linkedinGeprueft: boolean;
   empfehlungVorhanden: boolean;
-  negativeHinweise: boolean;
-  spamRisiko: boolean;
   // Netzwerk
   netzwerkStatus: string;
   erstkontakt: string;
@@ -468,6 +458,8 @@ export interface MockUnternehmen {
   interessentCount: number;
   successStories: number;
   events: MockEvent[];
+  // Klärungs-Bestätigungen (Operator hat Klärungspunkt manuell bestätigt)
+  klaerungsBestaetigungen?: Record<string, { notiz?: string; bestaetigtVon: string; bestaetigtAm: string }>;
 }
 
 export interface MockEvent {
@@ -497,18 +489,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     bevorzugteSprache: 'englisch',
     funFactStandard: 'Am liebsten treffen wir uns persönlich – am besten beim Fisch.',
     persoenlicheNotiz: 'Lars ist sehr offen und herzlich. Schätzt direkte Kommunikation, kein Smalltalk nötig.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-05-12',
-    verifiziertDurch: 'Jan Thomsen',
-    verifizierungsNotiz: 'Website geprüft, Handelsregister bestätigt. Telefonat mit Lars war professionell.',
-    vertrauensScore: 65,
-    vertrauensLevel: 'hoch',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: true,
     empfehlungVorhanden: false,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'aktiv',
     erstkontakt: '2025-05-10',
     letzteAktivitaet: '2025-05-28',
@@ -535,18 +519,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     kommunikationsstil: 'strukturiert_formal',
     bevorzugteSprache: 'deutsch',
     funFactStandard: 'Nach einem guten Deal gibt es Currywurst – das ist bei uns Tradition seit 1987.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-05-20',
-    verifiziertDurch: 'Jan Thomsen',
-    verifizierungsNotiz: 'Persönliches Gespräch auf dem Branchentag Flensburg. Sehr seriöser Eindruck.',
-    vertrauensScore: 55,
-    vertrauensLevel: 'mittel',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: false,
     empfehlungVorhanden: false,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'aktiv',
     erstkontakt: '2025-05-18',
     letzteAktivitaet: '2025-05-25',
@@ -576,18 +552,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     bevorzugteSprache: 'englisch',
     funFactStandard: 'Als Studio würden wir eine Kooperation feiern, indem wir gemeinsam etwas bauen – buchstäblich.',
     persoenlicheNotiz: 'Mette hat selbst einen deutschen Hintergrund – spricht fließend Deutsch, was die Kommunikation sehr erleichtert.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-05-05',
-    verifiziertDurch: 'Jan Thomsen',
-    verifizierungsNotiz: 'Empfehlung über BVMW-Netzwerk. LinkedIn aktiv, Portfolio überzeugt.',
-    vertrauensScore: 85,
-    vertrauensLevel: 'sehr_hoch',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: true,
     empfehlungVorhanden: true,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'aktiv',
     erstkontakt: '2025-05-01',
     letzteAktivitaet: '2025-05-26',
@@ -609,17 +577,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     telefon: '+49 40 123 456',
     sprachen: ['deutsch'],
     kurzbeschreibung: 'Großer Lebensmittel-Distributor in Norddeutschland. Spezialisiert auf frische Fisch- und Meeresfrüchte.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-05-20',
-    verifiziertDurch: 'Jan Thomsen',
-    vertrauensScore: 45,
-    vertrauensLevel: 'mittel',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: false,
     empfehlungVorhanden: false,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'partner',
     erstkontakt: '2025-05-18',
     letzteAktivitaet: '2025-05-28',
@@ -647,18 +608,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     bevorzugteSprache: 'deutsch',
     funFactStandard: 'Wir feiern Deals auf der Autobahn zwischen Hamburg und Kolding – mit dem besten Kaffee aus dem Lkw.',
     persoenlicheNotiz: 'Jens spricht fließend Dänisch. Sehr verlässlicher Charakter, hält was er verspricht.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-04-15',
-    verifiziertDurch: 'Jan Thomsen',
-    verifizierungsNotiz: 'Sehr zuverlässiger Partner. Kooperation mit DSV erfolgreich. Für weitere Anfragen vormerken.',
-    vertrauensScore: 95,
-    vertrauensLevel: 'sehr_hoch',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: true,
     empfehlungVorhanden: true,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'partner',
     erstkontakt: '2025-04-10',
     letzteAktivitaet: '2025-05-20',
@@ -682,17 +635,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     email: 'larsen@dsv-kolding.dk',
     sprachen: ['daenisch', 'englisch', 'deutsch'],
     kurzbeschreibung: 'Internationaler Logistikkonzern. Kolding-Niederlassung fokussiert auf deutsch-dänischen Korridor.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-04-20',
-    verifiziertDurch: 'Jan Thomsen',
-    vertrauensScore: 90,
-    vertrauensLevel: 'sehr_hoch',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: true,
     empfehlungVorhanden: true,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'partner',
     erstkontakt: '2025-04-18',
     letzteAktivitaet: '2025-05-15',
@@ -714,16 +660,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     email: 'mikkel@greentech-aarhus.dk',
     sprachen: ['daenisch', 'englisch', 'deutsch'],
     kurzbeschreibung: 'CleanTech-Startup mit innovativer Wasseraufbereitungstechnologie. Sucht erste Pilotpartner in Deutschland.',
-    verifizierungsStatus: 'in_pruefung',
-    verifizierungsNotiz: 'Erste E-Mail beantwortet. Gespräch noch ausständig.',
-    vertrauensScore: 10,
-    vertrauensLevel: 'niedrig',
     persoenlichesGespraech: false,
     websiteGeprueft: true,
     linkedinGeprueft: false,
     empfehlungVorhanden: false,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'interessiert',
     erstkontakt: '2025-05-22',
     letzteAktivitaet: '2025-05-28',
@@ -745,17 +685,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     email: 'pia@bornholm-keramik.dk',
     sprachen: ['daenisch', 'englisch'],
     kurzbeschreibung: 'Handgefertigte Keramik aus Bornholm. Kleine Manufaktur mit starker Marke in Skandinavien.',
-    verifizierungsStatus: 'verifiziert',
-    verifiziertAm: '2025-05-02',
-    verifiziertDurch: 'Jan Thomsen',
-    vertrauensScore: 55,
-    vertrauensLevel: 'mittel',
     persoenlichesGespraech: true,
     websiteGeprueft: true,
     linkedinGeprueft: false,
     empfehlungVorhanden: false,
-    negativeHinweise: false,
-    spamRisiko: false,
     netzwerkStatus: 'aktiv',
     erstkontakt: '2025-04-28',
     letzteAktivitaet: '2025-05-27',
@@ -775,16 +708,10 @@ export const MOCK_UNTERNEHMEN: MockUnternehmen[] = [
     email: 'info@baltictrade.de',
     sprachen: ['deutsch'],
     kurzbeschreibung: 'Handelsagentur. Wirkte im Gespräch ausweichend. Referenzen nicht prüfbar.',
-    verifizierungsStatus: 'eingeschraenkt',
-    verifizierungsNotiz: 'Referenzen konnten nicht verifiziert werden. Website seit 3 Monaten offline. Vorsicht.',
-    vertrauensScore: 5,
-    vertrauensLevel: 'niedrig',
     persoenlichesGespraech: false,
     websiteGeprueft: false,
     linkedinGeprueft: false,
     empfehlungVorhanden: false,
-    negativeHinweise: true,
-    spamRisiko: false,
     netzwerkStatus: 'pausiert',
     erstkontakt: '2025-04-01',
     letzteAktivitaet: '2025-04-10',
@@ -906,6 +833,8 @@ export interface MockAnfrage {
   // Formular-Zuordnung
   anfrageFormularId?: string;       // welches Anfrageformular wurde verwendet
   interessentFormularId?: string;   // welches Interessentenformular für Reaktionen
+  // Klärungs-Bestätigungen
+  klaerungsBestaetigungen?: Record<string, { notiz?: string; bestaetigtVon: string; bestaetigtAm: string }>;
 }
 
 export interface MockInteressent {
@@ -961,6 +890,8 @@ export interface MockInteressent {
   // Formular-Antworten (generisch, aus zugeordnetem Interessentenformular)
   formularId?: string;
   formularAntworten?: FormularAntwort[];
+  // Klärungs-Bestätigungen
+  klaerungsBestaetigungen?: Record<string, { notiz?: string; bestaetigtVon: string; bestaetigtAm: string }>;
 }
 
 // ─── FORMULAR-VORLAGEN ───────────────────────────────────────

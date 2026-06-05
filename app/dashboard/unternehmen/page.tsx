@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { getKommunikationStilLabel, getKommunikationStilIcon } from '@/lib/funfact';
 import { MOCK_INTERESSENTEN, getNetzwerkLabel, getNetzwerkColor, getGroesseLabel, getLandFlag, getStatusLabel, getStatusColor, getRichtungLabel, getWorkflowStatusLabel, getWorkflowStatusColor } from '@/lib/mockdata';
-import { berechneTrustScore, getLevelLabel, getLevelColor, getLevelBackground, getVerifizierungsStatusLabel, getVerifizierungsStatusColor } from '@/lib/trustscore';
+import { berechneUnternehmenKlaerung, SCORE_LEVEL_META } from '@/lib/klaerungsstand';
+import KlaerungsBox, { ScoreCircle as KlaerungsScoreCircle } from '@/components/KlaerungsBox';
 import { useStore, neueEntityId, type ProjektInteressent } from '@/lib/store';
 import { berechneProjekt, getGesundheitEmoji, getGesundheitColor, getZuordnungLabel, getZuordnungColor } from '@/lib/projekte';
 import EntityModal, { type FeldDef } from '@/components/EntityModal';
@@ -37,15 +38,9 @@ export default function UnternehmenPage() {
 
   const zeigeToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
-  const verifiziere = (id: string, name: string) => {
-    store.updateUnternehmen(id, { verifizierungsStatus: 'verifiziert', verifiziertAm: 'gerade eben', verifiziertDurch: 'Operator' });
-    store.logge(`${name} verifiziert`, name, 'status');
-    zeigeToast(`${name} verifiziert ✓`);
-  };
-
   const speichereUnternehmen = (werte: Record<string, any>) => {
     if (modalOffen === 'neu') {
-      const neu = { id: neueEntityId('unt'), ...werte, sprachen: [], verifizierungsStatus: 'ungeprueft', vertrauensScore: 0, vertrauensLevel: 'niedrig' as const, persoenlichesGespraech: false, websiteGeprueft: false, linkedinGeprueft: false, empfehlungVorhanden: false, negativeHinweise: false, spamRisiko: false, netzwerkStatus: 'interessiert', erstkontakt: 'gerade eben', letzteAktivitaet: 'gerade eben', anfrageCount: 0, interessentCount: 0, successStories: 0, events: [] } as any;
+      const neu = { id: neueEntityId('unt'), ...werte, sprachen: [], persoenlichesGespraech: false, websiteGeprueft: false, linkedinGeprueft: false, empfehlungVorhanden: false, netzwerkStatus: 'interessiert', erstkontakt: 'gerade eben', letzteAktivitaet: 'gerade eben', anfrageCount: 0, interessentCount: 0, successStories: 0, events: [] } as any;
       store.addUnternehmen(neu);
       store.logge(`Unternehmen angelegt: ${werte.firmenname}`, werte.firmenname, 'anlegen');
       zeigeToast(`${werte.firmenname} angelegt ✓`);
@@ -72,7 +67,6 @@ export default function UnternehmenPage() {
           u={selectedU} store={store} tab={detailTab} setTab={setDetailTab}
           onZurueck={() => { setSelected(null); setDetailTab('ueberblick'); }}
           onEdit={() => setModalOffen('edit')}
-          onVerifizieren={() => verifiziere(selectedU.id, selectedU.firmenname)}
           onToast={zeigeToast}
         />
       </>
@@ -104,7 +98,8 @@ export default function UnternehmenPage() {
         {filtered.map(u => {
           const projekte = store.anfragen.filter(a => a.email === u.email || a.firmenname === u.firmenname);
           const interessen = MOCK_INTERESSENTEN.filter(i => i.email === u.email || i.firmenname === u.firmenname);
-          const trust = berechneTrustScore({ persoenlichesGespraech: u.persoenlichesGespraech, websiteGeprueft: u.websiteGeprueft, linkedinGeprueft: u.linkedinGeprueft, empfehlungVorhanden: u.empfehlungVorhanden, eventTeilnahmen: u.events.length, erfolgreicheMatches: u.successStories, negativeHinweise: u.negativeHinweise, spamRisiko: u.spamRisiko, verifizierungsStatus: u.verifizierungsStatus });
+          const klaerung = berechneUnternehmenKlaerung(u, u.klaerungsBestaetigungen);
+          const klaerungsMeta = SCORE_LEVEL_META[klaerung.scoreLevel];
 
           return (
             <div key={u.id} onClick={() => { setSelected(u.id); setDetailTab('ueberblick'); }} style={{ backgroundColor: 'white', borderRadius: '10px', padding: '16px 20px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.07)', transition: 'all 0.15s' }}
@@ -120,9 +115,9 @@ export default function UnternehmenPage() {
                   <div style={{ fontSize: '12px', color: '#666' }}>{u.branche} · {u.standort} · {getGroesseLabel(u.groesse || '')}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                  <TrustCircle score={trust.score} level={trust.level} size={40} />
+                  <KlaerungsScoreCircle score={klaerung.score} color={klaerungsMeta.color} size={40} />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getVerifizierungsStatusColor(u.verifizierungsStatus) }}>{getVerifizierungsStatusLabel(u.verifizierungsStatus)}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: klaerungsMeta.color, backgroundColor: klaerungsMeta.bg, border: `1px solid ${klaerungsMeta.color}40` }}>{klaerungsMeta.label}</span>
                     <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getNetzwerkColor(u.netzwerkStatus) }}>{getNetzwerkLabel(u.netzwerkStatus)}</span>
                   </div>
                 </div>
@@ -143,11 +138,12 @@ export default function UnternehmenPage() {
 
 // ─── FULLSCREEN DETAIL ────────────────────────────────────────
 
-function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifizieren, onToast }: {
+function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onToast }: {
   u: any; store: any; tab: DetailTab; setTab: (t: DetailTab) => void;
-  onZurueck: () => void; onEdit: () => void; onVerifizieren: () => void; onToast: (m: string) => void;
+  onZurueck: () => void; onEdit: () => void; onToast: (m: string) => void;
 }) {
-  const trust = berechneTrustScore({ persoenlichesGespraech: u.persoenlichesGespraech, websiteGeprueft: u.websiteGeprueft, linkedinGeprueft: u.linkedinGeprueft, empfehlungVorhanden: u.empfehlungVorhanden, eventTeilnahmen: u.events?.length || 0, erfolgreicheMatches: u.successStories || 0, negativeHinweise: u.negativeHinweise, spamRisiko: u.spamRisiko, verifizierungsStatus: u.verifizierungsStatus });
+  const klaerung = berechneUnternehmenKlaerung(u, u.klaerungsBestaetigungen);
+  const klaerungsMeta = SCORE_LEVEL_META[klaerung.scoreLevel];
 
   // Eigene Projekte (via unternehmensId ODER firmenname-Match)
   const eigeneProjekte = store.anfragen.filter((a: any) =>
@@ -185,19 +181,15 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
             </div>
             <div style={{ fontSize: '14px', color: '#666' }}>{u.ansprechpartner} · {u.branche} · {u.standort}</div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-              <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getVerifizierungsStatusColor(u.verifizierungsStatus) }}>{getVerifizierungsStatusLabel(u.verifizierungsStatus)}</span>
+              <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: klaerungsMeta.color, backgroundColor: klaerungsMeta.bg, border: `1px solid ${klaerungsMeta.color}40` }}>
+                ✓ {klaerungsMeta.label} · {klaerung.score}%
+              </span>
               <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getNetzwerkColor(u.netzwerkStatus) }}>{getNetzwerkLabel(u.netzwerkStatus)}</span>
-              <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: getLevelColor(trust.level), backgroundColor: getLevelBackground(trust.level) }}>Trust {trust.score} · {getLevelLabel(trust.level)}</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-            <TrustCircle score={trust.score} level={trust.level} size={56} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <button onClick={onEdit} style={{ padding: '8px 14px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>✏️ Bearbeiten</button>
-              {u.verifizierungsStatus !== 'verifiziert' && (
-                <button onClick={onVerifizieren} style={{ padding: '8px 14px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>✓ Verifizieren</button>
-              )}
-            </div>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'flex-start' }}>
+            <KlaerungsScoreCircle score={klaerung.score} color={klaerungsMeta.color} size={56} />
+            <button onClick={onEdit} style={{ padding: '8px 14px', backgroundColor: '#FF9900', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>✏️ Bearbeiten</button>
           </div>
         </div>
 
@@ -244,19 +236,16 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
               ))}
             </div>
           </Card>
-          {u.verifizierungsNotiz && (
-            <Card titel="Verifizierungsnotiz">
-              <p style={{ fontSize: '13px', color: '#555', fontStyle: 'italic', margin: 0, lineHeight: 1.6 }}>{u.verifizierungsNotiz}</p>
-              {u.verifiziertDurch && <p style={{ fontSize: '11px', color: '#999', margin: '8px 0 0 0' }}>von {u.verifiziertDurch} · {u.verifiziertAm}</p>}
-            </Card>
-          )}
-          {/* Verifikations-Schnellaktionen */}
-          <Card titel="Verifizierung">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+          {/* Glaubwürdigkeits-Schnellaktionen (frühere Verifikations-Checkboxen) */}
+          <Card titel="Glaubwürdigkeit dokumentieren">
+            <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
+              Diese Punkte fließen in den Klärungsstand ein. Hake ab, was tatsächlich erledigt wurde.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
                 { key: 'websiteGeprueft', label: '🌐 Website geprüft' },
                 { key: 'linkedinGeprueft', label: '💼 LinkedIn geprüft' },
-                { key: 'persoenlichesGespraech', label: '📞 Persönliches Gespräch' },
+                { key: 'persoenlichesGespraech', label: '📞 Persönliches Gespräch geführt' },
                 { key: 'empfehlungVorhanden', label: '⭐ Empfehlung vorhanden' },
               ].map(item => (
                 <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
@@ -266,6 +255,17 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
                     onChange={e => {
                       store.updateUnternehmen(u.id, { [item.key]: e.target.checked } as any);
                       store.logge(`${item.label}: ${e.target.checked ? 'Ja' : 'Nein'}`, u.firmenname, 'bearbeiten');
+                      // Verknüpfte Anfragen auf 'unternehmen_verifiziert' setzen, wenn ≥80% geklärt
+                      if (e.target.checked) {
+                        const neueKlaerung = berechneUnternehmenKlaerung({ ...u, [item.key]: true }, u.klaerungsBestaetigungen);
+                        if (neueKlaerung.score >= 80) {
+                          eigeneProjekte.forEach((a: any) => {
+                            if (a.workflowStatus === 'unternehmen_angelegt') {
+                              store.setzeWorkflowStatus(a.id, 'unternehmen_verifiziert');
+                            }
+                          });
+                        }
+                      }
                     }}
                     style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                   />
@@ -273,33 +273,25 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
                 </label>
               ))}
             </div>
-            {u.verifizierungsStatus !== 'verifiziert' ? (
-              <button
-                onClick={() => {
-                  store.updateUnternehmen(u.id, {
-                    verifizierungsStatus: 'verifiziert',
-                    verifiziertAm: new Date().toISOString().split('T')[0],
-                    verifiziertDurch: 'Operator',
-                  });
-                  // Verknüpfte Anfragen auf 'unternehmen_verifiziert' setzen
-                  eigeneProjekte.forEach((a: any) => {
-                    if (a.workflowStatus === 'unternehmen_angelegt') {
-                      store.setzeWorkflowStatus(a.id, 'unternehmen_verifiziert');
-                    }
-                  });
-                  store.logge('Unternehmen verifiziert', u.firmenname, 'status');
-                  onToast('✅ Unternehmen verifiziert');
-                }}
-                style={{ width: '100%', padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}
-              >
-                ✅ Unternehmen verifizieren
-              </button>
-            ) : (
-              <div style={{ padding: '8px 12px', backgroundColor: '#e8f5e9', borderRadius: '6px', fontSize: '12px', color: '#2e7d32', fontWeight: 600 }}>
-                ✅ Verifiziert am {u.verifiziertAm} von {u.verifiziertDurch}
-              </div>
-            )}
           </Card>
+        </div>
+      )}
+
+      {/* ── KLÄRUNGSSTAND (immer im Überblick-Tab unter den Karten) ── */}
+      {tab === 'ueberblick' && (
+        <div style={{ marginTop: '20px' }}>
+          <KlaerungsBox
+            stand={klaerung}
+            typ="unternehmen"
+            onBestaetigen={(punktId, notiz) => {
+              store.bestaetigeKlaerungsPunkt('unternehmen', u.id, punktId, notiz);
+              onToast('Klärungspunkt bestätigt ✓');
+            }}
+            onEntfernen={(punktId) => {
+              store.entferneKlaerungsBestaetigung('unternehmen', u.id, punktId);
+              onToast('Bestätigung entfernt');
+            }}
+          />
         </div>
       )}
 
@@ -470,16 +462,6 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onVerifiz
 
 function Toast({ msg }: { msg: string }) {
   return <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 4000, backgroundColor: '#003366', color: 'white', padding: '14px 20px', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600 }}>{msg}</div>;
-}
-
-function TrustCircle({ score, level, size }: { score: number; level: string; size: number }) {
-  const color = getLevelColor(level as any);
-  const bg = getLevelBackground(level as any);
-  return (
-    <div style={{ width: size, height: size, borderRadius: '50%', backgroundColor: bg, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <span style={{ fontSize: size > 50 ? '16px' : '12px', fontWeight: 700, color, lineHeight: 1 }}>{score}</span>
-    </div>
-  );
 }
 
 function Card({ titel, children, style: s }: { titel: string; children: React.ReactNode; style?: React.CSSProperties }) {

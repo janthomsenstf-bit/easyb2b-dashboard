@@ -10,6 +10,8 @@ import {
   type MockKontakt, type KontaktStatus, type KontaktQuelleTyp, type KontaktZuordnungStatus,
 } from '@/lib/mockdata';
 import EntityModal, { type FeldDef } from '@/components/EntityModal';
+import { berechneInteressentKlaerung } from '@/lib/klaerungsstand';
+import KlaerungsBox from '@/components/KlaerungsBox';
 
 const KONTAKT_FELDER: FeldDef[] = [
   { key: 'firmenname', label: 'Firmenname', pflicht: true, spalte: 1 },
@@ -327,6 +329,20 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
           {k.interneNotiz && (
             <div style={{ marginTop: '14px', padding: '12px', backgroundColor: '#fff8e1', borderRadius: '8px', fontSize: '12px', color: '#555', fontStyle: 'italic' }}>
               <strong style={{ fontStyle: 'normal', color: '#8a6d00' }}>Notiz:</strong> {k.interneNotiz}
+            </div>
+          )}
+
+          {/* Klärungsstand — wenn aus Interessent abgeleitet */}
+          {ursprungsInteressent && (
+            <div style={{ marginTop: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#003366', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                Klärungsstand (aus Interessent)
+              </div>
+              <KlaerungsBox
+                stand={berechneInteressentKlaerung(ursprungsInteressent)}
+                typ="interessent"
+                variante="kompakt"
+              />
             </div>
           )}
         </div>

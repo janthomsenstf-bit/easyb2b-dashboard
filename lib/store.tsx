@@ -67,6 +67,18 @@ interface DashboardStore {
   addFormular: (f: FormularVorlage) => void;
   updateFormular: (id: string, patch: Partial<FormularVorlage>) => void;
   deleteFormular: (id: string) => void;
+  // Klärungsstand-Bestätigungen
+  bestaetigeKlaerungsPunkt: (
+    typ: 'anfrage' | 'interessent' | 'unternehmen',
+    entitaetId: string,
+    punktId: string,
+    notiz?: string,
+  ) => void;
+  entferneKlaerungsBestaetigung: (
+    typ: 'anfrage' | 'interessent' | 'unternehmen',
+    entitaetId: string,
+    punktId: string,
+  ) => void;
 
   // Projektzuordnungen (n:m)
   zuordnungen: ProjektInteressent[];
@@ -211,15 +223,10 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       telefon: anfrage.telefon,
       sprachen: anfrage.sprachen || [],
       kurzbeschreibung: anfrage.beschreibung?.slice(0, 200) || '',
-      verifizierungsStatus: 'ungeprueft',
-      vertrauensScore: 0,
-      vertrauensLevel: 'niedrig',
       persoenlichesGespraech: false,
       websiteGeprueft: false,
       linkedinGeprueft: false,
       empfehlungVorhanden: false,
-      negativeHinweise: false,
-      spamRisiko: false,
       netzwerkStatus: 'interessiert',
       erstkontakt: new Date().toISOString().split('T')[0],
       letzteAktivitaet: new Date().toISOString().split('T')[0],
@@ -311,6 +318,62 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const deleteFormular = (id: string) =>
     setFormulare(prev => prev.filter(f => f.id !== id));
 
+  // ── Klärungsstand-Bestätigungen ───────────────────────────────
+
+  const bestaetigeKlaerungsPunkt = (
+    typ: 'anfrage' | 'interessent' | 'unternehmen',
+    entitaetId: string,
+    punktId: string,
+    notiz?: string,
+  ) => {
+    const eintrag = {
+      notiz,
+      bestaetigtVon: 'Operator',
+      bestaetigtAm: new Date().toISOString().split('T')[0],
+    };
+    if (typ === 'anfrage') {
+      setAnfragen(prev => prev.map(a => a.id === entitaetId
+        ? { ...a, klaerungsBestaetigungen: { ...(a.klaerungsBestaetigungen || {}), [punktId]: eintrag } }
+        : a
+      ));
+      const a = anfragen.find(x => x.id === entitaetId);
+      if (a) logge(`Klärungspunkt bestätigt: ${punktId}`, a.anzeigenId || entitaetId, 'bearbeiten');
+    } else if (typ === 'unternehmen') {
+      setUnternehmen(prev => prev.map(u => u.id === entitaetId
+        ? { ...u, klaerungsBestaetigungen: { ...(u.klaerungsBestaetigungen || {}), [punktId]: eintrag } }
+        : u
+      ));
+      const u = unternehmen.find(x => x.id === entitaetId);
+      if (u) logge(`Klärungspunkt bestätigt: ${punktId}`, u.firmenname, 'bearbeiten');
+    } else if (typ === 'interessent') {
+      // Interessenten sind aktuell MOCK_INTERESSENTEN (nicht im Store) — wir loggen nur,
+      // die UI hält die Bestätigungen lokal. Folgeschritt: Interessenten in Store überführen.
+      logge(`Klärungspunkt bestätigt (Interessent ${entitaetId}): ${punktId}`, entitaetId, 'bearbeiten');
+    }
+  };
+
+  const entferneKlaerungsBestaetigung = (
+    typ: 'anfrage' | 'interessent' | 'unternehmen',
+    entitaetId: string,
+    punktId: string,
+  ) => {
+    if (typ === 'anfrage') {
+      setAnfragen(prev => prev.map(a => {
+        if (a.id !== entitaetId) return a;
+        const next = { ...(a.klaerungsBestaetigungen || {}) };
+        delete next[punktId];
+        return { ...a, klaerungsBestaetigungen: next };
+      }));
+    } else if (typ === 'unternehmen') {
+      setUnternehmen(prev => prev.map(u => {
+        if (u.id !== entitaetId) return u;
+        const next = { ...(u.klaerungsBestaetigungen || {}) };
+        delete next[punktId];
+        return { ...u, klaerungsBestaetigungen: next };
+      }));
+    }
+  };
+
   return (
     <Ctx.Provider value={{
       unternehmen, anfragen, kontakte,
@@ -321,6 +384,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       geschaftskontakte, addGeschaftskontakt, updateGeschaftskontakt,
       addKontaktProjektZuordnung, legeKontaktAusInteressentAn,
       formulare, addFormular, updateFormular, deleteFormular,
+      bestaetigeKlaerungsPunkt, entferneKlaerungsBestaetigung,
     }}>
       {children}
     </Ctx.Provider>

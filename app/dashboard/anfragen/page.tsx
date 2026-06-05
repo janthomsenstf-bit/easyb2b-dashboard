@@ -9,6 +9,8 @@ import {
 } from '@/lib/mockdata';
 import { verbessereAntwortMock } from '@/lib/funfact';
 import { useStore } from '@/lib/store';
+import { berechneAnfrageKlaerung } from '@/lib/klaerungsstand';
+import KlaerungsBox from '@/components/KlaerungsBox';
 import EntityModal, { type FeldDef } from '@/components/EntityModal';
 
 const ANFRAGE_FELDER: FeldDef[] = [
@@ -507,6 +509,23 @@ function AnfrageInhalt({ anfrage: a, store, onEdit, onToast }: {
               </div>
             </Section>
           )}
+
+          {/* Klärungsstand */}
+          <Section titel="Klärungsstand">
+            <KlaerungsBox
+              stand={berechneAnfrageKlaerung(a, a.klaerungsBestaetigungen)}
+              typ="anfrage"
+              zeigeVorschauHinweis
+              onBestaetigen={(punktId, notiz) => {
+                store.bestaetigeKlaerungsPunkt('anfrage', a.id, punktId, notiz);
+                onToast('Klärungspunkt bestätigt ✓');
+              }}
+              onEntfernen={(punktId) => {
+                store.entferneKlaerungsBestaetigung('anfrage', a.id, punktId);
+                onToast('Bestätigung entfernt');
+              }}
+            />
+          </Section>
         </div>
 
         {/* RECHTE SPALTE: Sidebar mit Eckdaten */}
@@ -526,9 +545,6 @@ function AnfrageInhalt({ anfrage: a, store, onEdit, onToast }: {
               </div>
               <div style={{ fontWeight: 600, fontSize: '14px', color: '#003366', marginBottom: '4px' }}>{verknuepftesUnternehmen.firmenname}</div>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>{verknuepftesUnternehmen.ansprechpartner}</div>
-              <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px' }}>
-                <strong>Verifizierung:</strong> {verknuepftesUnternehmen.verifizierungsStatus}
-              </div>
               <a href="/dashboard/unternehmen" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none' }}>
                 → Zur Unternehmensakte
               </a>

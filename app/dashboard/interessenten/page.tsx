@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { MOCK_INTERESSENTEN, MOCK_ANFRAGEN, getStatusLabel, getStatusColor, type MockInteressent } from '@/lib/mockdata';
 import { useStore } from '@/lib/store';
 import { ZUORDNUNG_STATUS, getZuordnungLabel, getZuordnungColor } from '@/lib/projekte';
+import { berechneInteressentKlaerung } from '@/lib/klaerungsstand';
+import KlaerungsBox from '@/components/KlaerungsBox';
 
 // KI-Zusammenfassung (Mock — später Anthropic API)
 function kiZusammenfassung(i: MockInteressent): string {
@@ -448,6 +450,17 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
               ))}
             </Box>
           )}
+
+          {/* ── KLÄRUNGSSTAND ── */}
+          <Box titel="Klärungsstand">
+            <KlaerungsBox
+              stand={berechneInteressentKlaerung(i)}
+              typ="interessent"
+            />
+            <div style={{ fontSize: '11px', color: '#888', marginTop: '8px', fontStyle: 'italic' }}>
+              💡 Nach Konvertierung zum Kontakt werden Klärungspunkte dort dauerhaft pflegbar.
+            </div>
+          </Box>
 
           {/* ── KONTAKT ERSTELLEN ── */}
           <Box titel="Kontakt erstellen" bg="#e8f5e9">

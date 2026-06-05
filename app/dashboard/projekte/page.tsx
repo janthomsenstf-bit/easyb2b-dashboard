@@ -12,6 +12,8 @@ import {
   berechneProjekt, getGesundheitColor, getGesundheitEmoji,
   getZuordnungLabel, getZuordnungColor, type Gesundheit,
 } from '@/lib/projekte';
+import { berechneAnfrageKlaerung } from '@/lib/klaerungsstand';
+import KlaerungsBox from '@/components/KlaerungsBox';
 
 // ─── HAUPTSEITE ───────────────────────────────────────────────
 
@@ -395,6 +397,23 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
 
       {/* 6. Formulare */}
       <FormularSektion anfrage={a} store={store} onToast={onToast} />
+
+      {/* 7. Klärungsstand */}
+      <Section titel="7 · Klärungsstand">
+        <KlaerungsBox
+          stand={berechneAnfrageKlaerung(a, a.klaerungsBestaetigungen)}
+          typ="anfrage"
+          zeigeVorschauHinweis
+          onBestaetigen={(punktId, notiz) => {
+            store.bestaetigeKlaerungsPunkt('anfrage', a.id, punktId, notiz);
+            onToast('Klärungspunkt bestätigt ✓');
+          }}
+          onEntfernen={(punktId) => {
+            store.entferneKlaerungsBestaetigung('anfrage', a.id, punktId);
+            onToast('Bestätigung entfernt');
+          }}
+        />
+      </Section>
     </div>
   );
 }
