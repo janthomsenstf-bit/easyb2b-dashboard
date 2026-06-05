@@ -292,6 +292,26 @@ export interface MockAnfrage {
   klaerungsBestaetigungen?: Record<string, { notiz?: string; bestaetigtVon: string; bestaetigtAm: string }>;
   // Interne Operator-Notizen (nicht öffentlich)
   interneNotiz?: string;
+
+  // ── Marktplatz-Reichinhalt (öffentlich sichtbar auf der Anzeige) ──
+  motivation?: string;                  // „Warum dieses Projekt gestartet wurde"
+  ziele?: string[];                     // „Was ein gutes Ergebnis wäre"
+  partnerErwartungen?: string[];        // „Was wir uns von einem Partner wünschen"
+  zielgruppe?: string[];                // „Für wen besonders interessant"
+  vorbereitung?: {
+    produktunterlagen?: boolean;
+    preislisten?: boolean;
+    zertifikate?: boolean;
+    produktproben?: boolean;
+    marketingmaterial?: boolean;
+    referenzen?: boolean;
+    webseiteDeutsch?: boolean;
+    notiz?: string;                     // z.B. „Preislisten in Vorbereitung"
+  };
+  // Zeitfenster
+  projektStartDatum?: string;
+  projektEndDatum?: string;
+  erstgespraechFristDatum?: string;
 }
 
 export interface MockInteressent {
@@ -667,6 +687,41 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
       'anf-anforder': { notiz: 'Anforderungen detailliert besprochen — LEH-Kontakte sind das Schlüsselkriterium.', bestaetigtVon: 'Operator', bestaetigtAm: '2026-05-19' },
       'anf-laufzeit': { notiz: 'Aktive Suche Sept. 2026 bis März 2027. Ziel: erste Partnerschaft innerhalb 6 Monaten.', bestaetigtVon: 'Operator', bestaetigtAm: '2026-05-20' },
     },
+    // ── Marktplatz-Reichinhalt ──
+    motivation: 'Nach erfolgreichen Aktivitäten in Dänemark möchten wir innerhalb der nächsten 12 Monate erste Vertriebspartnerschaften in Norddeutschland aufbauen. Die Marke ist im Heimatmarkt etabliert — jetzt ist der richtige Moment, die nächste Wachstumsphase zu starten.',
+    ziele: [
+      '2 bis 3 aktive Vertriebspartner in Norddeutschland',
+      'Erste Listungen im LEH (Edeka Nord, Edeka Hamburg, Rewe Nord, Famila)',
+      'Pilotregion Norddeutschland in den ersten 6 Monaten',
+      'Langfristige Zusammenarbeit statt Lead-Verkauf',
+    ],
+    partnerErwartungen: [
+      'Bestehende Kontakte zum Lebensmitteleinzelhandel',
+      'Mindestens 5 Jahre Erfahrung im Food-Vertrieb',
+      'Bereitschaft zu langfristiger partnerschaftlicher Zusammenarbeit',
+      'Regionale Marktkenntnis (Norddeutschland, idealerweise Hamburg/SH/NI)',
+      'Persönliche Treffen und direkte Kommunikation möglich',
+    ],
+    zielgruppe: [
+      'Handelsagenten Food',
+      'Food-Vertriebspartner',
+      'LEH-Spezialisten',
+      'Großhandelskontakte',
+      'Import- und Distributionspartner',
+    ],
+    vorbereitung: {
+      produktunterlagen: true,
+      preislisten: false,
+      zertifikate: true,
+      produktproben: true,
+      marketingmaterial: true,
+      referenzen: true,
+      webseiteDeutsch: false,
+      notiz: 'Deutsche Preislisten in Vorbereitung (verfügbar bis Q4 2026). Deutsche Website in Planung.',
+    },
+    projektStartDatum: '2026-09-01',
+    projektEndDatum: '2027-03-31',
+    erstgespraechFristDatum: '2026-07-15',
   },
 ];
 

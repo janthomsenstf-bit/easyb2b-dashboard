@@ -14,6 +14,7 @@ import {
 } from '@/lib/projekte';
 import { berechneAnfrageKlaerung } from '@/lib/klaerungsstand';
 import KlaerungsBox from '@/components/KlaerungsBox';
+import EditableSection, { editInputStyle, editTextareaStyle, editLabelStyle } from '@/components/EditableSection';
 
 // ─── HAUPTSEITE ───────────────────────────────────────────────
 
@@ -414,6 +415,9 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
           }}
         />
       </Section>
+
+      {/* 8. Marktplatz-Reichinhalt (öffentlich sichtbar auf der Anzeige) */}
+      <MarktplatzReichinhalt anfrage={a} store={store} onToast={onToast} />
     </div>
   );
 }
@@ -664,35 +668,7 @@ function MarktplatzSektion({ anfrage, store, onToast }: {
     <Section titel="5 · Marktplatz-Veröffentlichung">
       {/* Vorschau-Modal */}
       {showVorschau && md && (
-        <div onClick={() => setShowVorschau(false)} style={{ position: 'fixed', inset: 0, zIndex: 4000, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '12px', maxWidth: '620px', width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
-            <div style={{ padding: '14px 20px', backgroundColor: '#003366', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>Vorschau — So erscheint der Eintrag auf der Homepage</span>
-              <button onClick={() => setShowVorschau(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
-            </div>
-            <div style={{ padding: '24px' }}>
-              <div style={{ border: '1px solid #e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
-                <div style={{ backgroundColor: '#f8f9fa', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#003366' }}>EASY-B2B MARKTPLATZ</span>
-                  <span style={{ fontSize: '11px', color: '#666' }}>{anfrage.anzeigenId}</span>
-                </div>
-                <div style={{ padding: '18px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span>{md.richtung === 'dk_de' ? '🇩🇰 → 🇩🇪' : '🇩🇪 → 🇩🇰'}</span>
-                    <span style={{ padding: '2px 8px', backgroundColor: '#e3f2fd', color: '#1565C0', borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>{md.branche}</span>
-                    {md.sichtbarkeit === 'anonym' && <span style={{ padding: '2px 8px', backgroundColor: '#f3e5f5', color: '#6a1b9a', borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>Anonym</span>}
-                  </div>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#003366' }}>{md.titel}</h3>
-                  <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#555', lineHeight: 1.6 }}>{md.kurzbeschreibung}</p>
-                  {md.wasSuche && <div style={{ marginBottom: '6px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Gesucht:</strong> {md.wasSuche}</div>}
-                  {md.anforderungen && <div style={{ marginBottom: '6px', fontSize: '13px' }}><strong style={{ color: '#003366' }}>Anforderungen:</strong> {md.anforderungen}</div>}
-                  {md.persoenlicheNote && <div style={{ marginBottom: '6px', padding: '8px 12px', backgroundColor: '#f8f9fa', borderLeft: '3px solid #003366', fontSize: '13px', fontStyle: 'italic', color: '#444' }}>„{md.persoenlicheNote}"</div>}
-                  {md.funFactFreigegeben && md.funFact && <div style={{ padding: '8px 12px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#8a6d00', marginBottom: '6px' }}><strong>Fun Fact:</strong> {md.funFact}</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <MarktplatzVorschau anfrage={anfrage} md={md} onClose={() => setShowVorschau(false)} />
       )}
 
       {/* Deaktivieren-Dialog */}
@@ -907,6 +883,434 @@ function Kpi({ label, value, color }: { label: string; value: number; color: str
       <span style={{ fontWeight: 700, color, fontSize: '14px' }}>{value}</span>
       <span style={{ color: '#888' }}>{label}</span>
     </span>
+  );
+}
+
+// ─── MARKTPLATZ-REICHINHALT (Editor für neue öffentliche Felder) ──
+
+function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
+  anfrage: MockAnfrage;
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
+}) {
+  const speichere = (patch: Partial<MockAnfrage>, label: string) => {
+    store.updateAnfrage(a.id, patch);
+    store.logge(`Marktplatz-Reichinhalt: ${label} aktualisiert`, a.anzeigenId || a.id, 'bearbeiten');
+    onToast(`${label} gespeichert ✓`);
+  };
+
+  return (
+    <Section titel="8 · Marktplatz-Reichinhalt (was Interessenten sehen)">
+      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 14px 0' }}>
+        Diese Inhalte machen die Anzeige zu einer „vorbereiteten Anfrage" — Motivation, Ziele, Erwartungen und Vorbereitung werden öffentlich angezeigt.
+      </p>
+
+      {/* Motivation */}
+      <EditableSection
+        titel="Warum dieses Projekt gestartet wurde (Motivation)"
+        startWerte={{ motivation: a.motivation || '' }}
+        beimSpeichern={(w) => speichere({ motivation: w.motivation || undefined }, 'Motivation')}
+        rendere={(w, set, edit) => edit ? (
+          <textarea style={editTextareaStyle} value={w.motivation} onChange={e => set('motivation', e.target.value)} placeholder="Warum wird gerade jetzt gesucht? Was steckt dahinter?" />
+        ) : w.motivation ? (
+          <p style={{ fontSize: '13px', color: '#333', lineHeight: 1.6, margin: 0 }}>{w.motivation}</p>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Motivation erfasst.</p>
+        )}
+      />
+
+      {/* Ziele */}
+      <EditableSection
+        titel="Was ein gutes Ergebnis wäre (Ziele)"
+        startWerte={{ ziele: (a.ziele || []).join('\n') }}
+        beimSpeichern={(w) => speichere({ ziele: zeilen(w.ziele) }, 'Ziele')}
+        rendere={(w, set, edit) => edit ? (
+          <div>
+            <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px 0' }}>Ein Ziel pro Zeile:</p>
+            <textarea style={{ ...editTextareaStyle, minHeight: '120px' }} value={w.ziele} onChange={e => set('ziele', e.target.value)} placeholder="2-3 aktive Vertriebspartner&#10;Erste Listungen im LEH&#10;Pilotregion Norddeutschland" />
+          </div>
+        ) : zeilen(w.ziele).length > 0 ? (
+          <ul style={{ margin: 0, paddingLeft: '18px' }}>{zeilen(w.ziele).map((z: string, i: number) => <li key={i} style={{ fontSize: '13px', color: '#333', padding: '2px 0' }}>{z}</li>)}</ul>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Ziele erfasst.</p>
+        )}
+      />
+
+      {/* Partner-Erwartungen */}
+      <EditableSection
+        titel="Was wir uns von einem Partner wünschen (Erwartungen)"
+        startWerte={{ partnerErwartungen: (a.partnerErwartungen || []).join('\n') }}
+        beimSpeichern={(w) => speichere({ partnerErwartungen: zeilen(w.partnerErwartungen) }, 'Partner-Erwartungen')}
+        rendere={(w, set, edit) => edit ? (
+          <div>
+            <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px 0' }}>Eine Erwartung pro Zeile:</p>
+            <textarea style={{ ...editTextareaStyle, minHeight: '120px' }} value={w.partnerErwartungen} onChange={e => set('partnerErwartungen', e.target.value)} placeholder="Kontakte zum LEH&#10;Erfahrung im Food-Vertrieb&#10;Langfristige Zusammenarbeit" />
+          </div>
+        ) : zeilen(w.partnerErwartungen).length > 0 ? (
+          <ul style={{ margin: 0, paddingLeft: '18px' }}>{zeilen(w.partnerErwartungen).map((z: string, i: number) => <li key={i} style={{ fontSize: '13px', color: '#333', padding: '2px 0' }}>{z}</li>)}</ul>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Erwartungen erfasst.</p>
+        )}
+      />
+
+      {/* Zielgruppe */}
+      <EditableSection
+        titel="Für wen besonders interessant (Zielgruppe)"
+        startWerte={{ zielgruppe: (a.zielgruppe || []).join('\n') }}
+        beimSpeichern={(w) => speichere({ zielgruppe: zeilen(w.zielgruppe) }, 'Zielgruppe')}
+        rendere={(w, set, edit) => edit ? (
+          <div>
+            <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px 0' }}>Ein Tag pro Zeile:</p>
+            <textarea style={editTextareaStyle} value={w.zielgruppe} onChange={e => set('zielgruppe', e.target.value)} placeholder="Handelsagenten&#10;Food-Vertriebspartner&#10;LEH-Spezialisten" />
+          </div>
+        ) : zeilen(w.zielgruppe).length > 0 ? (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {zeilen(w.zielgruppe).map((z: string, i: number) => (
+              <span key={i} style={{ padding: '4px 10px', backgroundColor: '#e3f2fd', color: '#0d47a1', borderRadius: '14px', fontSize: '12px', fontWeight: 600 }}>🏷 {z}</span>
+            ))}
+          </div>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Zielgruppe definiert.</p>
+        )}
+      />
+
+      {/* Vorbereitung */}
+      <EditableSection
+        titel="Was bereits vorhanden ist (Vorbereitung)"
+        startWerte={{
+          produktunterlagen: !!a.vorbereitung?.produktunterlagen,
+          preislisten: !!a.vorbereitung?.preislisten,
+          zertifikate: !!a.vorbereitung?.zertifikate,
+          produktproben: !!a.vorbereitung?.produktproben,
+          marketingmaterial: !!a.vorbereitung?.marketingmaterial,
+          referenzen: !!a.vorbereitung?.referenzen,
+          webseiteDeutsch: !!a.vorbereitung?.webseiteDeutsch,
+          notiz: a.vorbereitung?.notiz || '',
+        }}
+        beimSpeichern={(w) => speichere({
+          vorbereitung: {
+            produktunterlagen: w.produktunterlagen,
+            preislisten: w.preislisten,
+            zertifikate: w.zertifikate,
+            produktproben: w.produktproben,
+            marketingmaterial: w.marketingmaterial,
+            referenzen: w.referenzen,
+            webseiteDeutsch: w.webseiteDeutsch,
+            notiz: w.notiz || undefined,
+          },
+        }, 'Vorbereitung')}
+        rendere={(w, set, edit) => {
+          const items: { key: keyof typeof w; label: string }[] = [
+            { key: 'produktunterlagen', label: 'Produktunterlagen' },
+            { key: 'preislisten', label: 'Preislisten' },
+            { key: 'zertifikate', label: 'Zertifikate' },
+            { key: 'produktproben', label: 'Produktproben' },
+            { key: 'marketingmaterial', label: 'Marketingmaterial' },
+            { key: 'referenzen', label: 'Referenzen' },
+            { key: 'webseiteDeutsch', label: 'Deutsche Website' },
+          ];
+          return edit ? (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '6px', marginBottom: '10px' }}>
+                {items.map(it => (
+                  <label key={it.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!w[it.key]} onChange={e => set(it.key, e.target.checked as never)} />
+                    {it.label}
+                  </label>
+                ))}
+              </div>
+              <label style={editLabelStyle}>Zusätzliche Notiz (z.B. „Preislisten in Vorbereitung")</label>
+              <textarea style={{ ...editTextareaStyle, minHeight: '60px' }} value={w.notiz as string} onChange={e => set('notiz', e.target.value as never)} />
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '4px' }}>
+                {items.map(it => (
+                  <div key={it.key} style={{ fontSize: '13px', color: w[it.key] ? '#1b5e20' : '#888' }}>
+                    {w[it.key] ? '✓' : '○'} {it.label}
+                  </div>
+                ))}
+              </div>
+              {!!w.notiz && (
+                <div style={{ marginTop: '8px', padding: '6px 10px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#5d4037', fontStyle: 'italic' }}>💡 {w.notiz}</div>
+              )}
+            </div>
+          );
+        }}
+      />
+
+      {/* Zeitfenster */}
+      <EditableSection
+        titel="Aktuelles Zeitfenster"
+        startWerte={{
+          projektStartDatum: a.projektStartDatum || '',
+          projektEndDatum: a.projektEndDatum || '',
+          erstgespraechFristDatum: a.erstgespraechFristDatum || '',
+        }}
+        beimSpeichern={(w) => speichere({
+          projektStartDatum: w.projektStartDatum || undefined,
+          projektEndDatum: w.projektEndDatum || undefined,
+          erstgespraechFristDatum: w.erstgespraechFristDatum || undefined,
+        }, 'Zeitfenster')}
+        rendere={(w, set, edit) => edit ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={editLabelStyle}>Aktive Suche ab</label>
+              <input type="date" style={editInputStyle} value={w.projektStartDatum} onChange={e => set('projektStartDatum', e.target.value)} />
+            </div>
+            <div>
+              <label style={editLabelStyle}>Aktive Suche bis</label>
+              <input type="date" style={editInputStyle} value={w.projektEndDatum} onChange={e => set('projektEndDatum', e.target.value)} />
+            </div>
+            <div>
+              <label style={editLabelStyle}>Erstgespräch bis</label>
+              <input type="date" style={editInputStyle} value={w.erstgespraechFristDatum} onChange={e => set('erstgespraechFristDatum', e.target.value)} />
+            </div>
+          </div>
+        ) : (w.projektStartDatum || w.projektEndDatum || w.erstgespraechFristDatum) ? (
+          <div style={{ fontSize: '13px', color: '#333' }}>
+            {(w.projektStartDatum || w.projektEndDatum) && (
+              <div>📅 <strong>Aktive Suche:</strong> {w.projektStartDatum || '?'} – {w.projektEndDatum || '?'}</div>
+            )}
+            {w.erstgespraechFristDatum && <div>💬 <strong>Erste Gespräche bis:</strong> {w.erstgespraechFristDatum}</div>}
+          </div>
+        ) : (
+          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch kein Zeitfenster definiert.</p>
+        )}
+      />
+    </Section>
+  );
+}
+
+function zeilen(s: string): string[] {
+  return (s || '').split('\n').map((l: string) => l.trim()).filter(Boolean);
+}
+
+// ─── MARKTPLATZ-VORSCHAU (entspricht der Homepage-Detailseite) ─
+
+function MarktplatzVorschau({ anfrage, md, onClose }: {
+  anfrage: MockAnfrage;
+  md: MarktplatzEintrag;
+  onClose: () => void;
+}) {
+  // Klärungspunkte für die Anzeige (Whitelist — nur öffentlich relevante)
+  const klaerung = [
+    { titel: 'Ansprechpartner vorhanden',          erfuellt: !!anfrage.ansprechpartner },
+    { titel: 'Suchziel definiert',                 erfuellt: !!anfrage.ziel },
+    { titel: 'Zielregion definiert',               erfuellt: !!md.region || !!anfrage.standort },
+    { titel: 'Kommunikationssprachen geklärt',     erfuellt: (anfrage.sprachen?.length || 0) > 0 },
+    { titel: 'Zeitfenster abgestimmt',             erfuellt: !!anfrage.projektEndDatum || !!anfrage.ablaufDatum },
+    { titel: 'Erwartung an Partner beschrieben',   erfuellt: (anfrage.partnerErwartungen?.length || 0) > 0 || !!md.anforderungen },
+    { titel: 'Erstgespräch grundsätzlich erwünscht', erfuellt: !!anfrage.erstgespraechFristDatum || !!anfrage.gespraechseinstieg },
+    { titel: 'Produktunterlagen vorhanden',        erfuellt: !!anfrage.vorbereitung?.produktunterlagen },
+    { titel: 'Preislisten vorhanden bzw. in Vorbereitung', erfuellt: !!anfrage.vorbereitung?.preislisten || !!anfrage.vorbereitung?.notiz },
+  ];
+
+  const vorbereitungsLabel: Record<string, string> = {
+    produktunterlagen: 'Produktunterlagen',
+    preislisten: 'Preislisten',
+    zertifikate: 'Zertifikate',
+    produktproben: 'Produktproben',
+    marketingmaterial: 'Marketingmaterial',
+    referenzen: 'Referenzen',
+    webseiteDeutsch: 'Deutsche Website',
+  };
+
+  function formatDatum(iso?: string): string {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    } catch { return iso; }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 4000, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
+      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '12px', maxWidth: '720px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', margin: '20px 0' }}>
+        {/* Header */}
+        <div style={{ padding: '14px 20px', backgroundColor: '#003366', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '12px 12px 0 0', position: 'sticky', top: 0, zIndex: 1 }}>
+          <span style={{ fontWeight: 700, fontSize: '13px' }}>Vorschau — So erscheint die Anzeige auf der Homepage</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
+        </div>
+
+        {/* Anzeigen-Body */}
+        <div style={{ padding: '20px 24px' }}>
+          {/* Meta-Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '14px' }}>{md.richtung === 'dk_de' ? '🇩🇰 → 🇩🇪' : '🇩🇪 → 🇩🇰'}</span>
+            <span style={{ padding: '3px 10px', backgroundColor: '#e3f2fd', color: '#0d47a1', borderRadius: '10px', fontSize: '11px', fontWeight: 700 }}>{md.branche}</span>
+            {md.sichtbarkeit === 'anonym' && <span style={{ padding: '3px 10px', backgroundColor: '#f3e5f5', color: '#4a148c', borderRadius: '10px', fontSize: '11px', fontWeight: 700 }}>Anonym</span>}
+            <span style={{ marginLeft: 'auto', fontFamily: 'monospace', fontSize: '11px', color: '#555', backgroundColor: '#eee', padding: '2px 8px', borderRadius: '4px' }}>{anfrage.anzeigenId}</span>
+          </div>
+
+          <h1 style={{ margin: '0 0 6px 0', fontSize: '22px', color: '#003366', lineHeight: 1.3 }}>{md.titel}</h1>
+          <div style={{ fontSize: '13px', color: '#555', marginBottom: '20px' }}>
+            {md.sichtbarkeit === 'anonym' ? '🔒 Anonyme Anfrage' : `📍 ${anfrage.standort}`}
+          </div>
+
+          {/* 1. Was wird gesucht? */}
+          <VBlock titel="Was wird gesucht?">
+            <p style={{ margin: 0, fontSize: '14px', color: '#333', lineHeight: 1.7 }}>{md.kurzbeschreibung}</p>
+            {md.wasSuche && <p style={{ marginTop: '10px', fontSize: '14px', color: '#333', lineHeight: 1.7 }}><strong style={{ color: '#003366' }}>Konkret gesucht:</strong> {md.wasSuche}</p>}
+          </VBlock>
+
+          {/* 2. Von Easy-B2B vorbereitet */}
+          <VBlock titel="✓ Von Easy-B2B vorbereitet" akzent="#e8f5e9">
+            <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#1b5e20', fontWeight: 500 }}>
+              Diese Punkte wurden im Vorfeld bereits geklärt:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '6px' }}>
+              {klaerung.map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: p.erfuellt ? '#1b5e20' : '#888' }}>
+                  <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: p.erfuellt ? '#2e7d32' : 'transparent', border: p.erfuellt ? 'none' : '2px solid #ccc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>{p.erfuellt ? '✓' : ''}</span>
+                  <span style={{ textDecoration: p.erfuellt ? 'none' : 'none' }}>{p.titel}</span>
+                </div>
+              ))}
+            </div>
+          </VBlock>
+
+          {/* 3. Warum gestartet (motivation) */}
+          {anfrage.motivation && (
+            <VBlock titel="Warum dieses Projekt gestartet wurde">
+              <p style={{ margin: 0, fontSize: '14px', color: '#333', lineHeight: 1.7 }}>{anfrage.motivation}</p>
+            </VBlock>
+          )}
+
+          {/* 4. Was ein gutes Ergebnis wäre (ziele) */}
+          {(anfrage.ziele?.length || 0) > 0 && (
+            <VBlock titel="Was ein gutes Ergebnis wäre">
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none' }}>
+                {anfrage.ziele!.map((z, i) => (
+                  <li key={i} style={{ display: 'flex', gap: '10px', fontSize: '14px', color: '#333', lineHeight: 1.6, padding: '4px 0' }}>
+                    <span style={{ color: '#FF9900', fontWeight: 700, flexShrink: 0 }}>→</span>
+                    <span>{z}</span>
+                  </li>
+                ))}
+              </ul>
+            </VBlock>
+          )}
+
+          {/* 5. Aktuelles Zeitfenster */}
+          {(anfrage.projektStartDatum || anfrage.projektEndDatum || anfrage.erstgespraechFristDatum) && (
+            <VBlock titel="Aktuelles Zeitfenster">
+              {(anfrage.projektStartDatum || anfrage.projektEndDatum) && (
+                <div style={{ fontSize: '14px', color: '#333', marginBottom: '6px' }}>
+                  📅 <strong>Aktive Suche:</strong> {formatDatum(anfrage.projektStartDatum)}
+                  {anfrage.projektEndDatum && ` – ${formatDatum(anfrage.projektEndDatum)}`}
+                </div>
+              )}
+              {anfrage.erstgespraechFristDatum && (
+                <div style={{ fontSize: '14px', color: '#333' }}>
+                  💬 <strong>Erste Gespräche gewünscht bis:</strong> {formatDatum(anfrage.erstgespraechFristDatum)}
+                </div>
+              )}
+            </VBlock>
+          )}
+
+          {/* 6. Erwartungen */}
+          {(anfrage.partnerErwartungen?.length || 0) > 0 && (
+            <VBlock titel="Was wir uns von einem Partner wünschen">
+              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none' }}>
+                {anfrage.partnerErwartungen!.map((e, i) => (
+                  <li key={i} style={{ display: 'flex', gap: '10px', fontSize: '14px', color: '#333', lineHeight: 1.6, padding: '4px 0' }}>
+                    <span style={{ color: '#003366', fontWeight: 700, flexShrink: 0 }}>•</span>
+                    <span>{e}</span>
+                  </li>
+                ))}
+              </ul>
+            </VBlock>
+          )}
+
+          {/* 7. Vorbereitung */}
+          {anfrage.vorbereitung && (
+            <VBlock titel="Was bereits vorhanden ist">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', marginBottom: anfrage.vorbereitung.notiz ? '10px' : 0 }}>
+                {Object.entries(vorbereitungsLabel).map(([key, label]) => {
+                  const erfuellt = !!(anfrage.vorbereitung as any)[key];
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: erfuellt ? '#1b5e20' : '#888' }}>
+                      <span style={{ width: '14px', flexShrink: 0, fontSize: '14px' }}>{erfuellt ? '✓' : '○'}</span>
+                      <span>{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {anfrage.vorbereitung.notiz && (
+                <div style={{ padding: '8px 12px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#5d4037', fontStyle: 'italic', marginTop: '8px' }}>
+                  💡 {anfrage.vorbereitung.notiz}
+                </div>
+              )}
+            </VBlock>
+          )}
+
+          {/* 8. Zielgruppe */}
+          {(anfrage.zielgruppe?.length || 0) > 0 && (
+            <VBlock titel="Für wen dieses Projekt besonders interessant ist">
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {anfrage.zielgruppe!.map((z, i) => (
+                  <span key={i} style={{ padding: '6px 12px', backgroundColor: '#e3f2fd', color: '#0d47a1', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                    🏷 {z}
+                  </span>
+                ))}
+              </div>
+            </VBlock>
+          )}
+
+          {/* 9. Persönlicher Touch */}
+          {md.persoenlicheNote && (
+            <VBlock titel="Persönlicher Touch">
+              <div style={{ padding: '14px 18px', backgroundColor: '#fafafa', borderLeft: '4px solid #FF9900', fontSize: '14px', fontStyle: 'italic', color: '#444', lineHeight: 1.7 }}>
+                „{md.persoenlicheNote}"
+              </div>
+            </VBlock>
+          )}
+
+          {/* 10. FunFact (wenn freigegeben) */}
+          {md.funFactFreigegeben && md.funFact && (
+            <VBlock titel="🎉 Fun Fact">
+              <p style={{ margin: 0, fontSize: '13px', color: '#5d4037', backgroundColor: '#fff8e1', padding: '10px 14px', borderRadius: '6px', lineHeight: 1.6 }}>
+                {md.funFact}
+              </p>
+            </VBlock>
+          )}
+
+          {/* 11. Bevor Sie Ihr Interesse bekunden */}
+          <VBlock titel="Bevor Sie Ihr Interesse bekunden" akzent="#f0f4ff">
+            <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#003366', fontWeight: 500 }}>
+              Folgende Informationen werden im Anschluss abgefragt:
+            </p>
+            {[
+              'Warum passt Ihr Unternehmen zu diesem Projekt?',
+              'Welche Erfahrung bringen Sie mit?',
+              'Welche Regionen decken Sie ab?',
+              'Welche Kontakte oder Netzwerke sind vorhanden?',
+            ].map((f, i) => (
+              <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#333', padding: '3px 0' }}>
+                <span style={{ color: '#003366', flexShrink: 0 }}>→</span>
+                <span>{f}</span>
+              </div>
+            ))}
+          </VBlock>
+
+          {/* CTA */}
+          <div style={{ marginTop: '24px', padding: '20px', backgroundColor: '#003366', borderRadius: '10px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#a8c4e0' }}>Passt das zu Ihnen?</p>
+            <div style={{ display: 'inline-block', padding: '12px 28px', backgroundColor: '#FF9900', color: 'white', borderRadius: '8px', fontSize: '14px', fontWeight: 700 }}>
+              Interesse bekunden →
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VBlock({ titel, children, akzent }: { titel: string; children: React.ReactNode; akzent?: string }) {
+  return (
+    <div style={{ marginBottom: '20px', padding: akzent ? '14px 16px' : 0, backgroundColor: akzent, borderRadius: akzent ? '8px' : 0 }}>
+      <h3 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 700, color: '#003366', letterSpacing: '0.3px' }}>{titel}</h3>
+      {children}
+    </div>
   );
 }
 
