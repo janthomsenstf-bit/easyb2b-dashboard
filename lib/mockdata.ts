@@ -617,6 +617,117 @@ export const MOCK_KONTAKTE: MockKontakt[] = [
   },
 ];
 
+// ─── MATCH-STATUS (DSGVO-konformer Freigabeprozess) ─────────
+
+export type MatchStatus =
+  | 'vorschlag_erstellt'        // Operator hat Match vorgeschlagen
+  | 'freigabe_angefragt'        // Consent-Mails an beide Parteien gesendet
+  | 'suchender_zugestimmt'      // Nur Suchender hat zugestimmt
+  | 'interessent_zugestimmt'    // Nur Interessent hat zugestimmt
+  | 'beide_zugestimmt'          // Beide haben zugestimmt
+  | 'kontaktdaten_freigegeben'  // Match-Paket wurde versendet
+  | 'erstkontakt_offen'         // Warten auf Erstkontakt
+  | 'erstkontakt_erfolgt'       // Erstkontakt hat stattgefunden
+  | 'problem_gemeldet'          // Eine Partei hat ein Problem gemeldet
+  | 'abgeschlossen'             // Match erfolgreich abgeschlossen
+  | 'abgelehnt_suchender'       // Suchender hat abgelehnt
+  | 'abgelehnt_interessent';    // Interessent hat abgelehnt
+
+export interface DsgvoZustimmung {
+  zeitpunkt: string;            // ISO datetime
+  person: string;               // Wer hat zugestimmt
+  unternehmen: string;          // Welches Unternehmen
+}
+
+export interface MatchPaket {
+  erstelltAm: string;
+  versendetAm?: string;
+  empfohlenerErstkontakt: 'suchender' | 'interessent';
+  empfohleneSprache: string;
+  hinweise: string[];
+}
+
+export interface MatchVorschlag {
+  id: string;
+  anfrageId: string;            // Projekt
+  interessentId: string;        // Interessent
+  kontaktId?: string;           // Falls bereits als Kontakt geführt
+  // Beteiligte (für Anzeige und E-Mails)
+  anfrageFirma: string;
+  anfrageBranche: string;
+  interessentFirma: string;
+  // Bewertung
+  score: number;                // Match-Score 0-100
+  gruende: string[];            // Warum der Match passt
+  risiken?: string[];           // Bekannte Risiken
+  status: MatchStatus;
+  // DSGVO-konforme Zustimmungs-Dokumentation
+  zustimmungSuchender?: DsgvoZustimmung;
+  zustimmungInteressent?: DsgvoZustimmung;
+  ablehnungGrund?: string;      // Falls abgelehnt
+  // Match-Paket (wird generiert nach beidseitiger Zustimmung)
+  matchPaket?: MatchPaket;
+  // Timeline
+  erstelltAm: string;
+  erstelltVon: string;
+  letzteAenderung: string;
+}
+
+export function getMatchStatusLabel(s: MatchStatus): string {
+  const map: Record<MatchStatus, string> = {
+    vorschlag_erstellt: 'Vorschlag erstellt',
+    freigabe_angefragt: 'Freigabe angefragt',
+    suchender_zugestimmt: 'Suchender hat zugestimmt',
+    interessent_zugestimmt: 'Interessent hat zugestimmt',
+    beide_zugestimmt: 'Beide zugestimmt',
+    kontaktdaten_freigegeben: 'Kontaktdaten freigegeben',
+    erstkontakt_offen: 'Erstkontakt offen',
+    erstkontakt_erfolgt: 'Erstkontakt erfolgt',
+    problem_gemeldet: 'Problem gemeldet',
+    abgeschlossen: 'Abgeschlossen',
+    abgelehnt_suchender: 'Vom Suchenden abgelehnt',
+    abgelehnt_interessent: 'Vom Interessenten abgelehnt',
+  };
+  return map[s] ?? s;
+}
+
+export function getMatchStatusColor(s: MatchStatus): string {
+  const map: Record<MatchStatus, string> = {
+    vorschlag_erstellt: '#2196F3',
+    freigabe_angefragt: '#FF9900',
+    suchender_zugestimmt: '#FF9900',
+    interessent_zugestimmt: '#FF9900',
+    beide_zugestimmt: '#4CAF50',
+    kontaktdaten_freigegeben: '#4CAF50',
+    erstkontakt_offen: '#9C27B0',
+    erstkontakt_erfolgt: '#2e7d32',
+    problem_gemeldet: '#f44336',
+    abgeschlossen: '#2e7d32',
+    abgelehnt_suchender: '#f44336',
+    abgelehnt_interessent: '#f44336',
+  };
+  return map[s] ?? '#999';
+}
+
+export function getMatchStatusIcon(s: MatchStatus): string {
+  const map: Record<MatchStatus, string> = {
+    vorschlag_erstellt: '💡',
+    freigabe_angefragt: '📩',
+    suchender_zugestimmt: '✅🔲',
+    interessent_zugestimmt: '🔲✅',
+    beide_zugestimmt: '✅✅',
+    kontaktdaten_freigegeben: '📦',
+    erstkontakt_offen: '📞',
+    erstkontakt_erfolgt: '🤝',
+    problem_gemeldet: '⚠️',
+    abgeschlossen: '⭐',
+    abgelehnt_suchender: '❌',
+    abgelehnt_interessent: '❌',
+  };
+  return map[s] ?? '?';
+}
+
+// Legacy-Typ für Abwärtskompatibilität
 export interface MockMatch {
   anfrageId: string;
   anfrageFirma: string;
@@ -787,8 +898,36 @@ export const MOCK_INTERESSENTEN: MockInteressent[] = [
   },
 ];
 
-// ─── MATCH-VORSCHLÄGE ────────────────────────────────────────
+// ─── MATCH-VORSCHLÄGE (NEU: mit DSGVO-Consent) ─────────────
 
+export const MOCK_MATCH_VORSCHLAEGE: MatchVorschlag[] = [
+  {
+    id: 'match-nordhavn-nordconsult',
+    anfrageId: 'anf-nordhavn',
+    interessentId: 'int-nordconsult',
+    kontaktId: 'kon-nordconsult',
+    anfrageFirma: 'Nordhavn Foods A/S',
+    anfrageBranche: 'Lebensmittel',
+    interessentFirma: 'NordConsult Vertrieb GmbH',
+    score: 92,
+    gruende: [
+      'Exakt passende Branche (Food-Vertrieb)',
+      'Zielregion (Norddeutschland) deckt sich mit Nordhavns Fokus',
+      'Bestehende LEH-Kontakte (Edeka Nord, Hamburg, Famila)',
+      'Langjährige Erfahrung mit skandinavischen Lebensmittelmarken',
+      'Bereit für langfristige Partnerschaft (kein Leadgenerator)',
+    ],
+    risiken: [
+      'Konkurrierende Marken im Portfolio prüfen',
+    ],
+    status: 'vorschlag_erstellt',
+    erstelltAm: '2026-06-05',
+    erstelltVon: 'Operator',
+    letzteAenderung: '2026-06-05',
+  },
+];
+
+// Legacy (Abwärtskompatibilität)
 export const MOCK_MATCHES: MockMatch[] = [
   {
     anfrageId: 'anf-nordhavn',

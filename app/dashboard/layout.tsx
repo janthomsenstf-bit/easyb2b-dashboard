@@ -38,7 +38,6 @@ export default function DashboardLayout({
     { label: 'Projekte', href: '/dashboard/projekte', icon: '🚀' },
     { label: 'Interessenten', href: '/dashboard/interessenten', icon: '👥' },
     { label: 'Kontakte', href: '/dashboard/kontakte', icon: '🤝' },
-    { label: 'Matchmaking', href: '/dashboard/matchmaking', icon: '🎯' },
     { label: 'Netzwerk', href: '/dashboard/netzwerk', icon: '🕸' },
     { label: 'Events', href: '/dashboard/events', icon: '🎤' },
     { label: 'Newsletter', href: '/dashboard/newsletter', icon: '📰' },

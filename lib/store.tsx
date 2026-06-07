@@ -11,9 +11,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
   MOCK_UNTERNEHMEN, MOCK_ANFRAGEN, MOCK_NETZWERKKONTAKTE,
   MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES, MOCK_KONTAKTE, MOCK_FORMULARE,
+  MOCK_MATCH_VORSCHLAEGE,
   type MockUnternehmen, type MockAnfrage, type MockNetzwerkkontakt,
   type AnfrageWorkflowStatus, type MockKontakt, type KontaktProjektZuordnung,
-  type FormularVorlage,
+  type FormularVorlage, type MatchVorschlag, type MatchStatus, type DsgvoZustimmung,
 } from './mockdata';
 
 export interface Aktivitaet {
@@ -80,6 +81,18 @@ interface DashboardStore {
     punktId: string,
   ) => void;
 
+  // Match-Vorschläge (DSGVO-konform)
+  matchVorschlaege: MatchVorschlag[];
+  addMatchVorschlag: (m: MatchVorschlag) => void;
+  updateMatchVorschlag: (id: string, patch: Partial<MatchVorschlag>) => void;
+  setzeMatchStatus: (id: string, status: MatchStatus) => void;
+  dokumentiereZustimmung: (
+    matchId: string,
+    partei: 'suchender' | 'interessent',
+    zustimmung: DsgvoZustimmung,
+  ) => void;
+  dokumentiereAblehnung: (matchId: string, partei: 'suchender' | 'interessent', grund?: string) => void;
+
   // Projektzuordnungen (n:m)
   zuordnungen: ProjektInteressent[];
   addZuordnung: (z: Omit<ProjektInteressent, 'id'>) => void;
@@ -125,6 +138,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const [geschaftskontakte, setGeschaftskontakte] = useState<MockKontakt[]>(MOCK_KONTAKTE);
   const [formulare, setFormulare] = useState<FormularVorlage[]>(MOCK_FORMULARE);
   const [zuordnungen, setZuordnungen] = useState<ProjektInteressent[]>(SEED_ZUORDNUNGEN);
+  const [matchVorschlaege, setMatchVorschlaege] = useState<MatchVorschlag[]>(MOCK_MATCH_VORSCHLAEGE);
   const [aktivitaeten, setAktivitaeten] = useState<Aktivitaet[]>([]);
   const [dbLadenStatus, setDbLadenStatus] = useState<'laden' | 'fertig' | 'fehler'>('laden');
 
@@ -318,6 +332,52 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const deleteFormular = (id: string) =>
     setFormulare(prev => prev.filter(f => f.id !== id));
 
+  // ── Match-Vorschläge (DSGVO-konform) ─────────────────────────
+
+  const addMatchVorschlag = (m: MatchVorschlag) => {
+    setMatchVorschlaege(prev => [m, ...prev]);
+    logge(`Match-Vorschlag erstellt: ${m.interessentFirma} ↔ ${m.anfrageFirma}`, m.anfrageId, 'anlegen');
+  };
+
+  const updateMatchVorschlag = (id: string, patch: Partial<MatchVorschlag>) => {
+    setMatchVorschlaege(prev => prev.map(m => m.id === id ? { ...m, ...patch, letzteAenderung: new Date().toISOString().split('T')[0] } : m));
+  };
+
+  const setzeMatchStatus = (id: string, status: MatchStatus) => {
+    setMatchVorschlaege(prev => prev.map(m => m.id === id ? { ...m, status, letzteAenderung: new Date().toISOString().split('T')[0] } : m));
+    const match = matchVorschlaege.find(m => m.id === id);
+    if (match) logge(`Match-Status: ${status}`, `${match.anfrageFirma} ↔ ${match.interessentFirma}`, 'status');
+  };
+
+  const dokumentiereZustimmung = (
+    matchId: string,
+    partei: 'suchender' | 'interessent',
+    zustimmung: DsgvoZustimmung,
+  ) => {
+    setMatchVorschlaege(prev => prev.map(m => {
+      if (m.id !== matchId) return m;
+      const updated = { ...m, letzteAenderung: new Date().toISOString().split('T')[0] };
+      if (partei === 'suchender') {
+        updated.zustimmungSuchender = zustimmung;
+        // Prüfe ob der Interessent bereits zugestimmt hat
+        updated.status = m.zustimmungInteressent ? 'beide_zugestimmt' : 'suchender_zugestimmt';
+      } else {
+        updated.zustimmungInteressent = zustimmung;
+        updated.status = m.zustimmungSuchender ? 'beide_zugestimmt' : 'interessent_zugestimmt';
+      }
+      return updated;
+    }));
+    const match = matchVorschlaege.find(m => m.id === matchId);
+    if (match) logge(`DSGVO-Zustimmung: ${zustimmung.unternehmen} (${partei})`, `${match.anfrageFirma} ↔ ${match.interessentFirma}`, 'status');
+  };
+
+  const dokumentiereAblehnung = (matchId: string, partei: 'suchender' | 'interessent', grund?: string) => {
+    const status: MatchStatus = partei === 'suchender' ? 'abgelehnt_suchender' : 'abgelehnt_interessent';
+    setMatchVorschlaege(prev => prev.map(m => m.id === matchId ? { ...m, status, ablehnungGrund: grund, letzteAenderung: new Date().toISOString().split('T')[0] } : m));
+    const match = matchVorschlaege.find(m => m.id === matchId);
+    if (match) logge(`Match abgelehnt (${partei}): ${grund || 'Kein Grund'}`, `${match.anfrageFirma} ↔ ${match.interessentFirma}`, 'status');
+  };
+
   // ── Klärungsstand-Bestätigungen ───────────────────────────────
 
   const bestaetigeKlaerungsPunkt = (
@@ -385,6 +445,8 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       addKontaktProjektZuordnung, legeKontaktAusInteressentAn,
       formulare, addFormular, updateFormular, deleteFormular,
       bestaetigeKlaerungsPunkt, entferneKlaerungsBestaetigung,
+      matchVorschlaege, addMatchVorschlag, updateMatchVorschlag,
+      setzeMatchStatus, dokumentiereZustimmung, dokumentiereAblehnung,
     }}>
       {children}
     </Ctx.Provider>

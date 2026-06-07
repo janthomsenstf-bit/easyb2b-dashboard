@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import {
-  MOCK_INTERESSENTEN, MOCK_MATCHES, getStatusLabel, getStatusColor,
+  MOCK_INTERESSENTEN,
+  getStatusLabel, getStatusColor,
   getRichtungLabel, getLandFlag,
   getKontaktZuordnungLabel, getKontaktZuordnungColor, findeFormular,
+  getMatchStatusLabel, getMatchStatusColor, getMatchStatusIcon,
   type MockAnfrage, type MarktplatzStatus, type MarktplatzEintrag,
+  type MatchVorschlag, type MatchStatus,
 } from '@/lib/mockdata';
 import { useStore, type ProjektInteressent } from '@/lib/store';
 import {
@@ -98,6 +101,9 @@ export default function ProjektePage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {gefiltert.map(({ anfrage: a, status: s }) => {
           const isOpen = offeneIds.has(a.id);
+          const projektMatches = store.matchVorschlaege.filter(m => m.anfrageId === a.id);
+          const offeneMatches = projektMatches.filter(m => !['abgeschlossen', 'abgelehnt_suchender', 'abgelehnt_interessent'].includes(m.status));
+          const wartendeMatches = projektMatches.filter(m => ['freigabe_angefragt', 'suchender_zugestimmt', 'interessent_zugestimmt'].includes(m.status));
           return (
             <div key={a.id} style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: isOpen ? '0 4px 16px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.07)' }}>
               {/* ── Karten-Header (immer sichtbar) ── */}
@@ -119,11 +125,17 @@ export default function ProjektePage() {
                     <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
                       {getRichtungLabel(a.richtung)} {a.firmenname} · {a.branche} · {a.anzeigenId}
                     </div>
-                    <div style={{ display: 'flex', gap: '18px', fontSize: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '18px', fontSize: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                       <Kpi label="Interessenten" value={s.kpi.interessenten} color="#2196F3" />
                       <Kpi label="Freigegeben"   value={s.kpi.freigegeben}   color="#4CAF50" />
                       <Kpi label="Kontakte"       value={s.kpi.kontakte}      color="#9C27B0" />
                       <Kpi label="Erfolge"        value={s.kpi.erfolge}       color="#2e7d32" />
+                      {offeneMatches.length > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', backgroundColor: wartendeMatches.length > 0 ? '#FF990020' : '#2196F320', borderRadius: '10px', fontSize: '11px', fontWeight: 700, color: wartendeMatches.length > 0 ? '#e65100' : '#1565C0' }}>
+                          🎯 {offeneMatches.length} Match{offeneMatches.length !== 1 ? 'es' : ''}
+                          {wartendeMatches.length > 0 && <span style={{ fontSize: '9px' }}>· {wartendeMatches.length} wartend</span>}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
@@ -177,7 +189,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
   const [introStatus, setIntroStatus] = useState<Record<string, 'idle'|'sending'|'sent'|'error'>>({});
   const [kontaktSucheOffen, setKontaktSucheOffen] = useState(false);
   const [kontaktSuche, setKontaktSuche] = useState('');
-  const matchVorschlaege = MOCK_MATCHES.filter(m => m.anfrageId === a.id);
+  const matchVorschlaege = store.matchVorschlaege.filter(m => m.anfrageId === a.id);
 
   // Zugeordnete Kontakte (dauerhafte Stammdaten)
   const zugeordneteKontakte = store.geschaftskontakte.filter(k =>
@@ -204,8 +216,6 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
     setKontaktSucheOffen(false);
     setKontaktSuche('');
   }
-  const aktiveMatches = interessenten.filter(i => ['kontakt_laeuft', 'erfolgreich', 'feedback_ausstehend'].includes(i.status));
-
   async function sendeIntroMail(interessentId: string, i: typeof MOCK_INTERESSENTEN[number]) {
     setIntroStatus(prev => ({ ...prev, [interessentId]: 'sending' }));
     try {
@@ -359,28 +369,8 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
         )}
       </Section>
 
-      {/* 3. Matches */}
-      <Section titel={`3 · Matches (${aktiveMatches.length} aktiv, ${matchVorschlaege.length} Vorschläge)`}>
-        {aktiveMatches.length === 0 && matchVorschlaege.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Matches.</p>
-        ) : (
-          <>
-            {aktiveMatches.map(m => (
-              <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#e8f5e9', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
-                <span>🤝 {a.firmenname} ↔ {m.firmenname}</span>
-                <span style={{ fontWeight: 600, color: '#2e7d32' }}>{getStatusLabel(m.status)}</span>
-              </div>
-            ))}
-            {matchVorschlaege.map((m, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: '#f0f4ff', borderRadius: '6px', marginBottom: '6px', fontSize: '13px' }}>
-                <span>💡 Vorschlag: {m.interessentFirma}</span>
-                <span style={{ fontWeight: 600, color: '#003366' }}>{m.score}%</span>
-              </div>
-            ))}
-          </>
-        )}
-        <a href="/dashboard/matchmaking" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Matchmaking</a>
-      </Section>
+      {/* 3. Match-Vorschläge (mit DSGVO-Consent-Workflow) */}
+      <MatchSektion anfrage={a} matchVorschlaege={matchVorschlaege} store={store} onToast={onToast} />
 
       {/* 4. Verlauf */}
       <Section titel="4 · Verlauf & nächste Aufgabe">
@@ -419,6 +409,396 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
       {/* 8. Marktplatz-Reichinhalt (öffentlich sichtbar auf der Anzeige) */}
       <MarktplatzReichinhalt anfrage={a} store={store} onToast={onToast} />
     </div>
+  );
+}
+
+// ─── MATCH-SEKTION (DSGVO-konformer Freigabeprozess) ─────────
+
+function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
+  anfrage: MockAnfrage;
+  matchVorschlaege: MatchVorschlag[];
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
+}) {
+  const [sendStatus, setSendStatus] = useState<Record<string, 'idle'|'sending'|'sent'|'error'>>({});
+  const [paketStatus, setPaketStatus] = useState<Record<string, 'idle'|'sending'|'sent'|'error'>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const aktive = matchVorschlaege.filter(m => !['abgelehnt_suchender', 'abgelehnt_interessent'].includes(m.status));
+  const abgelehnte = matchVorschlaege.filter(m => ['abgelehnt_suchender', 'abgelehnt_interessent'].includes(m.status));
+  const wartenAufConsent = matchVorschlaege.filter(m => ['freigabe_angefragt', 'suchender_zugestimmt', 'interessent_zugestimmt'].includes(m.status));
+
+  async function sendeFreigabeAnfrage(match: MatchVorschlag) {
+    setSendStatus(prev => ({ ...prev, [match.id]: 'sending' }));
+    const interessent = MOCK_INTERESSENTEN.find(i => i.id === match.interessentId);
+    try {
+      const res = await fetch('/api/email/match-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          typ: 'freigabe_anfragen',
+          suchendeEmail: a.email,
+          suchenderName: a.ansprechpartner,
+          anfrageFirma: a.firmenname,
+          anfrageAnzeigenId: a.anzeigenId,
+          anfrageBranche: a.branche,
+          anfrageRegion: a.standort,
+          anfrageSprachen: a.sprachen,
+          interessentEmail: interessent?.email || '',
+          interessentName: interessent?.ansprechpartner || '',
+          interessentFirma: match.interessentFirma,
+          interessentBranche: match.anfrageBranche || '',
+          interessentRegion: interessent?.region || '',
+          interessentSprachen: interessent?.sprachen || [],
+          matchGruende: match.gruende,
+          matchScore: match.score,
+        }),
+      });
+      if (res.ok) {
+        store.setzeMatchStatus(match.id, 'freigabe_angefragt');
+        setSendStatus(prev => ({ ...prev, [match.id]: 'sent' }));
+        onToast('Freigabe-Anfragen an beide Parteien gesendet ✓');
+      } else {
+        setSendStatus(prev => ({ ...prev, [match.id]: 'error' }));
+      }
+    } catch {
+      setSendStatus(prev => ({ ...prev, [match.id]: 'error' }));
+    }
+  }
+
+  async function sendeMatchPaket(match: MatchVorschlag) {
+    setPaketStatus(prev => ({ ...prev, [match.id]: 'sending' }));
+    const interessent = MOCK_INTERESSENTEN.find(i => i.id === match.interessentId);
+    try {
+      const res = await fetch('/api/email/match-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          typ: 'match_paket',
+          suchendeEmail: a.email,
+          suchenderName: a.ansprechpartner,
+          anfrageFirma: a.firmenname,
+          anfrageTelefon: a.telefon,
+          anfrageWebsite: '',
+          anfrageSprachen: a.sprachen,
+          interessentEmail: interessent?.email || '',
+          interessentName: interessent?.ansprechpartner || '',
+          interessentFirma: match.interessentFirma,
+          interessentTelefon: interessent?.telefon || '',
+          interessentWebsite: interessent?.website || '',
+          interessentLinkedin: interessent?.linkedin || '',
+          interessentSprachen: interessent?.sprachen || [],
+          empfohlenerErstkontakt: 'suchender',
+          empfohleneSprache: interessent?.bevorzugteSprache === 'daenisch' ? 'Dänisch / Englisch' : 'Deutsch',
+          projektziel: a.ziel,
+          hinweise: [
+            'Nennen Sie Easy-B2B als gemeinsamen Kontext.',
+            'Empfehlen Sie ein erstes kurzes Kennenlerngespräch (30 Min.).',
+            'Halten Sie Ihre Produktunterlagen bereit.',
+          ],
+        }),
+      });
+      if (res.ok) {
+        store.updateMatchVorschlag(match.id, {
+          status: 'kontaktdaten_freigegeben',
+          matchPaket: {
+            erstelltAm: new Date().toISOString().split('T')[0],
+            versendetAm: new Date().toISOString().split('T')[0],
+            empfohlenerErstkontakt: 'suchender',
+            empfohleneSprache: interessent?.bevorzugteSprache === 'daenisch' ? 'Dänisch / Englisch' : 'Deutsch',
+            hinweise: ['Easy-B2B als Kontext nennen', 'Erstes Kennenlerngespräch empfohlen'],
+          },
+        });
+        setPaketStatus(prev => ({ ...prev, [match.id]: 'sent' }));
+        onToast('Match-Paket an beide Parteien gesendet ✓');
+      } else {
+        setPaketStatus(prev => ({ ...prev, [match.id]: 'error' }));
+      }
+    } catch {
+      setPaketStatus(prev => ({ ...prev, [match.id]: 'error' }));
+    }
+  }
+
+  // Operator simuliert Zustimmung (in Produktion kommt das per E-Mail-Link)
+  function simuliereZustimmung(matchId: string, partei: 'suchender' | 'interessent') {
+    const match = matchVorschlaege.find(m => m.id === matchId);
+    if (!match) return;
+    const firma = partei === 'suchender' ? a.firmenname : match.interessentFirma;
+    const person = partei === 'suchender' ? a.ansprechpartner : (MOCK_INTERESSENTEN.find(i => i.id === match.interessentId)?.ansprechpartner || '');
+    store.dokumentiereZustimmung(matchId, partei, {
+      zeitpunkt: new Date().toISOString(),
+      person,
+      unternehmen: firma,
+    });
+    onToast(`DSGVO-Zustimmung dokumentiert: ${firma} ✓`);
+  }
+
+  function simuliereAblehnung(matchId: string, partei: 'suchender' | 'interessent') {
+    store.dokumentiereAblehnung(matchId, partei, 'Kein Interesse zum jetzigen Zeitpunkt');
+    onToast(`Ablehnung dokumentiert ✓`);
+  }
+
+  return (
+    <Section titel={`3 · Match-Vorschläge & Freigabeprozess (${aktive.length})`}>
+      {matchVorschlaege.length === 0 ? (
+        <div style={{ padding: '16px', textAlign: 'center', border: '2px dashed #e0e0e0', borderRadius: '8px' }}>
+          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
+            Noch keine Match-Vorschläge für dieses Projekt.
+          </p>
+          <p style={{ fontSize: '11px', color: '#bbb', margin: '6px 0 0 0' }}>
+            Match-Vorschläge entstehen aus geprüften Interessenten und Kontakten.
+          </p>
+        </div>
+      ) : (
+        <div>
+          {/* Info-Box bei wartenden Consents */}
+          {wartenAufConsent.length > 0 && (
+            <div style={{ marginBottom: '14px', padding: '10px 14px', backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', fontSize: '12px', color: '#8a6d00', display: 'flex', gap: '8px' }}>
+              <span>📩</span>
+              <span><strong>{wartenAufConsent.length} Match{wartenAufConsent.length !== 1 ? 'es' : ''}</strong> warten auf DSGVO-Zustimmung beider Parteien.</span>
+            </div>
+          )}
+
+          {/* Aktive Matches */}
+          {aktive.map(match => {
+            const isExpanded = expanded === match.id;
+            const interessent = MOCK_INTERESSENTEN.find(i => i.id === match.interessentId);
+            const ss = sendStatus[match.id] || 'idle';
+            const ps = paketStatus[match.id] || 'idle';
+            return (
+              <div key={match.id} style={{ marginBottom: '10px', borderRadius: '8px', border: '1px solid #e0e0e0', overflow: 'hidden', backgroundColor: 'white' }}>
+                {/* Match-Zeile */}
+                <div
+                  onClick={() => setExpanded(isExpanded ? null : match.id)}
+                  style={{ padding: '12px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '14px' }}>{getMatchStatusIcon(match.status)}</span>
+                      <span style={{ fontWeight: 600, fontSize: '14px', color: '#003366' }}>{match.interessentFirma}</span>
+                      <span style={{ fontWeight: 700, fontSize: '13px', color: match.score >= 80 ? '#4CAF50' : '#FF9900' }}>{match.score}%</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888' }}>
+                      {interessent?.ansprechpartner} · {interessent?.region || 'Region unbekannt'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getMatchStatusColor(match.status) }}>
+                      {getMatchStatusLabel(match.status)}
+                    </span>
+                    <span style={{ fontSize: '14px', color: '#ccc' }}>{isExpanded ? '▴' : '▾'}</span>
+                  </div>
+                </div>
+
+                {/* Aufgeklappte Details */}
+                {isExpanded && (
+                  <div style={{ padding: '0 14px 14px 14px', borderTop: '1px solid #f0f0f0' }}>
+                    {/* Match-Gründe */}
+                    <div style={{ margin: '12px 0', padding: '10px 12px', backgroundColor: '#f0f7ff', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#003366', marginBottom: '6px' }}>Warum passt dieser Kontakt?</div>
+                      {match.gruende.map((g, i) => (
+                        <div key={i} style={{ display: 'flex', gap: '6px', fontSize: '12px', color: '#333', padding: '2px 0' }}>
+                          <span style={{ color: '#4CAF50', flexShrink: 0 }}>✓</span><span>{g}</span>
+                        </div>
+                      ))}
+                      {match.risiken && match.risiken.length > 0 && (
+                        <div style={{ marginTop: '8px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#e65100', marginBottom: '4px' }}>Risiken / Zu klären</div>
+                          {match.risiken.map((r, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '6px', fontSize: '12px', color: '#666', padding: '2px 0' }}>
+                              <span style={{ color: '#FF9900', flexShrink: 0 }}>⚠</span><span>{r}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── STATUS-SPEZIFISCHE AKTIONEN ──────────────── */}
+
+                    {/* Vorschlag erstellt → "Match vorschlagen" (Consent starten) */}
+                    {match.status === 'vorschlag_erstellt' && (
+                      <div style={{ padding: '12px', backgroundColor: '#f0f4ff', borderRadius: '8px', marginBottom: '10px' }}>
+                        <p style={{ fontSize: '12px', color: '#003366', margin: '0 0 10px 0', fontWeight: 600 }}>
+                          Freigabeprozess starten? Beide Parteien erhalten eine E-Mail mit Match-Details — <strong>ohne Kontaktdaten</strong>.
+                        </p>
+                        {ss === 'idle' && <button onClick={() => sendeFreigabeAnfrage(match)} style={{ padding: '8px 16px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>🎯 Match vorschlagen & Freigabe anfragen</button>}
+                        {ss === 'sending' && <span style={{ fontSize: '12px', color: '#999' }}>⏳ Mails werden gesendet…</span>}
+                        {ss === 'sent' && <span style={{ fontSize: '12px', color: '#4CAF50', fontWeight: 600 }}>✅ Freigabe-Anfragen gesendet</span>}
+                        {ss === 'error' && <span style={{ fontSize: '12px', color: '#f44336' }}>❌ Fehler — API-Key prüfen</span>}
+                      </div>
+                    )}
+
+                    {/* Freigabe angefragt → DSGVO-Consent-Status */}
+                    {['freigabe_angefragt', 'suchender_zugestimmt', 'interessent_zugestimmt'].includes(match.status) && (
+                      <div style={{ padding: '14px', backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#5d4037', marginBottom: '12px' }}>📩 DSGVO-Zustimmung ausstehend</div>
+
+                        {/* Suchender */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'white', borderRadius: '6px', marginBottom: '6px', border: '1px solid #e8e8e8' }}>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>📋 {a.firmenname} <span style={{ color: '#999', fontWeight: 400 }}>(Suchender)</span></div>
+                            {match.zustimmungSuchender ? (
+                              <div style={{ fontSize: '11px', color: '#4CAF50', marginTop: '2px' }}>
+                                ✅ Zugestimmt am {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleDateString('de-DE')} um {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '11px', color: '#FF9900', marginTop: '2px' }}>⏳ Ausstehend</div>
+                            )}
+                          </div>
+                          {!match.zustimmungSuchender && (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button onClick={() => simuliereZustimmung(match.id, 'suchender')} style={{ padding: '4px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 600, color: '#2e7d32' }}>✅ Zustimmung</button>
+                              <button onClick={() => simuliereAblehnung(match.id, 'suchender')} style={{ padding: '4px 10px', backgroundColor: '#ffebee', border: '1px solid #ef9a9a', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 600, color: '#c62828' }}>❌</button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Interessent */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #e8e8e8' }}>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>👥 {match.interessentFirma} <span style={{ color: '#999', fontWeight: 400 }}>(Interessent)</span></div>
+                            {match.zustimmungInteressent ? (
+                              <div style={{ fontSize: '11px', color: '#4CAF50', marginTop: '2px' }}>
+                                ✅ Zugestimmt am {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleDateString('de-DE')} um {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '11px', color: '#FF9900', marginTop: '2px' }}>⏳ Ausstehend</div>
+                            )}
+                          </div>
+                          {!match.zustimmungInteressent && (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button onClick={() => simuliereZustimmung(match.id, 'interessent')} style={{ padding: '4px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 600, color: '#2e7d32' }}>✅ Zustimmung</button>
+                              <button onClick={() => simuliereAblehnung(match.id, 'interessent')} style={{ padding: '4px 10px', backgroundColor: '#ffebee', border: '1px solid #ef9a9a', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 600, color: '#c62828' }}>❌</button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', fontStyle: 'italic' }}>
+                          💡 In Produktion kommen Zustimmungen per E-Mail-Link. Hier können sie manuell dokumentiert werden.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Beide zugestimmt → Match-Paket senden */}
+                    {match.status === 'beide_zugestimmt' && (
+                      <div style={{ padding: '14px', backgroundColor: '#e8f5e9', border: '2px solid #4CAF50', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1b5e20', marginBottom: '10px' }}>✅ Beide Parteien haben zugestimmt!</div>
+
+                        {/* DSGVO-Dokumentation */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                          {match.zustimmungSuchender && (
+                            <div style={{ padding: '8px 10px', backgroundColor: 'white', borderRadius: '6px', fontSize: '11px' }}>
+                              <div style={{ fontWeight: 600, color: '#003366' }}>{match.zustimmungSuchender.unternehmen}</div>
+                              <div style={{ color: '#555' }}>Zustimmung: {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleDateString('de-DE')}</div>
+                              <div style={{ color: '#555' }}>{new Date(match.zustimmungSuchender.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</div>
+                              <div style={{ color: '#888' }}>Person: {match.zustimmungSuchender.person}</div>
+                            </div>
+                          )}
+                          {match.zustimmungInteressent && (
+                            <div style={{ padding: '8px 10px', backgroundColor: 'white', borderRadius: '6px', fontSize: '11px' }}>
+                              <div style={{ fontWeight: 600, color: '#003366' }}>{match.zustimmungInteressent.unternehmen}</div>
+                              <div style={{ color: '#555' }}>Zustimmung: {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleDateString('de-DE')}</div>
+                              <div style={{ color: '#555' }}>{new Date(match.zustimmungInteressent.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</div>
+                              <div style={{ color: '#888' }}>Person: {match.zustimmungInteressent.person}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <p style={{ fontSize: '12px', color: '#2e7d32', margin: '0 0 10px 0' }}>
+                          Jetzt kann das Match-Paket mit Kontaktdaten an beide Parteien versendet werden.
+                        </p>
+                        {ps === 'idle' && <button onClick={() => sendeMatchPaket(match)} style={{ padding: '8px 16px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>📦 Match-Paket senden</button>}
+                        {ps === 'sending' && <span style={{ fontSize: '12px', color: '#999' }}>⏳ Match-Paket wird versendet…</span>}
+                        {ps === 'sent' && <span style={{ fontSize: '12px', color: '#4CAF50', fontWeight: 600 }}>✅ Match-Paket versendet — Kontaktdaten freigegeben</span>}
+                        {ps === 'error' && <span style={{ fontSize: '12px', color: '#f44336' }}>❌ Fehler — API-Key prüfen</span>}
+                      </div>
+                    )}
+
+                    {/* Kontaktdaten freigegeben / Erstkontakt offen */}
+                    {['kontaktdaten_freigegeben', 'erstkontakt_offen'].includes(match.status) && (
+                      <div style={{ padding: '12px', backgroundColor: '#e8f5e9', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1b5e20', marginBottom: '8px' }}>📦 Match-Paket wurde versendet</div>
+                        {match.matchPaket && (
+                          <div style={{ fontSize: '11px', color: '#555' }}>
+                            <div>Versendet am: {match.matchPaket.versendetAm}</div>
+                            <div>Empfohlener Erstkontakt: {match.matchPaket.empfohlenerErstkontakt === 'suchender' ? a.firmenname : match.interessentFirma}</div>
+                            <div>Empfohlene Sprache: {match.matchPaket.empfohleneSprache}</div>
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                          <button onClick={() => store.setzeMatchStatus(match.id, 'erstkontakt_erfolgt')} style={{ padding: '5px 12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>🤝 Erstkontakt erfolgt</button>
+                          <button onClick={() => store.setzeMatchStatus(match.id, 'problem_gemeldet')} style={{ padding: '5px 12px', backgroundColor: '#ffebee', color: '#c62828', border: '1px solid #ef9a9a', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>⚠ Problem melden</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Erstkontakt erfolgt */}
+                    {match.status === 'erstkontakt_erfolgt' && (
+                      <div style={{ padding: '12px', backgroundColor: '#e8f5e9', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#1b5e20', marginBottom: '6px' }}>🤝 Erstkontakt hat stattgefunden</div>
+                        <button onClick={() => store.setzeMatchStatus(match.id, 'abgeschlossen')} style={{ padding: '5px 12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>⭐ Match abschließen</button>
+                      </div>
+                    )}
+
+                    {/* Abgeschlossen */}
+                    {match.status === 'abgeschlossen' && (
+                      <div style={{ padding: '12px', backgroundColor: '#e8f5e9', borderRadius: '8px', marginBottom: '10px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '20px' }}>⭐</span>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1b5e20', marginTop: '4px' }}>Match erfolgreich abgeschlossen</div>
+                      </div>
+                    )}
+
+                    {/* Problem gemeldet */}
+                    {match.status === 'problem_gemeldet' && (
+                      <div style={{ padding: '12px', backgroundColor: '#ffebee', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#c62828', marginBottom: '6px' }}>⚠ Problem gemeldet</div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => store.setzeMatchStatus(match.id, 'erstkontakt_offen')} style={{ padding: '5px 12px', backgroundColor: 'white', color: '#003366', border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>↩ Wieder öffnen</button>
+                          <button onClick={() => store.setzeMatchStatus(match.id, 'abgeschlossen')} style={{ padding: '5px 12px', backgroundColor: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>Abschließen</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* DSGVO-Dokumentation (immer sichtbar wenn Zustimmungen vorhanden) */}
+                    {(match.zustimmungSuchender || match.zustimmungInteressent) && !['freigabe_angefragt', 'suchender_zugestimmt', 'interessent_zugestimmt', 'beide_zugestimmt'].includes(match.status) && (
+                      <div style={{ padding: '10px 12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '10px', color: '#888' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '4px', color: '#666' }}>📋 DSGVO-Dokumentation</div>
+                        {match.zustimmungSuchender && <div>✅ {match.zustimmungSuchender.unternehmen}: {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleString('de-DE')} · {match.zustimmungSuchender.person}</div>}
+                        {match.zustimmungInteressent && <div>✅ {match.zustimmungInteressent.unternehmen}: {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleString('de-DE')} · {match.zustimmungInteressent.person}</div>}
+                      </div>
+                    )}
+
+                    {/* Timeline */}
+                    <div style={{ fontSize: '10px', color: '#bbb', marginTop: '8px' }}>
+                      Erstellt: {match.erstelltAm} · Letzte Änderung: {match.letzteAenderung} · Von: {match.erstelltVon}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Abgelehnte Matches (eingeklappt) */}
+          {abgelehnte.length > 0 && (
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px' }}>
+                {abgelehnte.length} abgelehnte{abgelehnte.length !== 1 ? ' Matches' : 'r Match'}
+              </div>
+              {abgelehnte.map(m => (
+                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: '#fafafa', borderRadius: '4px', marginBottom: '4px', fontSize: '12px', color: '#999' }}>
+                  <span>❌ {m.interessentFirma}</span>
+                  <span>{m.ablehnungGrund || getMatchStatusLabel(m.status)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ fontSize: '11px', color: '#999', marginTop: '10px', fontStyle: 'italic' }}>
+        ℹ️ Kontaktdaten werden erst ausgetauscht, wenn <strong>beide</strong> Parteien aktiv zugestimmt haben (DSGVO-konform).
+      </div>
+    </Section>
   );
 }
 
