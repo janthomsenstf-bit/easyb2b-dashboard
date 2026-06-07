@@ -1285,6 +1285,61 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
         Diese Inhalte machen die Anzeige zu einer „vorbereiteten Anfrage" — Motivation, Ziele, Erwartungen und Vorbereitung werden öffentlich angezeigt.
       </p>
 
+      {/* Reifegrad / Konkretisierungsgrad */}
+      <EditableSection
+        titel="Wie konkret ist das Vorhaben? (Reifegrad 1–10)"
+        startWerte={{
+          reifegradScore: String(a.reifegradScore || ''),
+          reifegradBeschreibung: a.reifegradBeschreibung || '',
+        }}
+        beimSpeichern={(w) => speichere({
+          reifegradScore: w.reifegradScore ? Math.min(10, Math.max(1, parseInt(w.reifegradScore))) : undefined,
+          reifegradBeschreibung: w.reifegradBeschreibung || undefined,
+        }, 'Reifegrad')}
+        rendere={(w, set, edit) => {
+          const score = parseInt(w.reifegradScore) || 0;
+          const lbl = score <= 3 ? 'Erste Idee' : score <= 6 ? 'Konkrete Richtung' : score <= 8 ? 'Gut vorbereitet' : score <= 10 ? 'Startklar' : '—';
+          const clr = score <= 3 ? '#94a3b8' : score <= 6 ? '#f59e0b' : score <= 8 ? '#3b82f6' : '#10b981';
+          return edit ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px' }}>
+                <label style={editLabelStyle}>Score (1–10)</label>
+                <input type="number" min={1} max={10} style={{ ...editInputStyle, width: '80px' }} value={w.reifegradScore} onChange={e => set('reifegradScore', e.target.value)} />
+                {score >= 1 && score <= 10 && (
+                  <span style={{ padding: '3px 10px', backgroundColor: clr, color: 'white', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>{lbl}</span>
+                )}
+              </div>
+              {/* Visuelle Vorschau */}
+              {score >= 1 && score <= 10 && (
+                <div style={{ display: 'flex', gap: '3px', marginBottom: '12px' }}>
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <div key={i} style={{ flex: 1, height: '8px', borderRadius: i === 0 ? '4px 0 0 4px' : i === 9 ? '0 4px 4px 0' : '0', backgroundColor: i < score ? clr : '#e2e8f0' }} />
+                  ))}
+                </div>
+              )}
+              <label style={editLabelStyle}>Öffentliche Beschreibung (optional)</label>
+              <textarea style={editTextareaStyle} value={w.reifegradBeschreibung} onChange={e => set('reifegradBeschreibung', e.target.value)} placeholder="z.B. Gut vorbereitet — Unterlagen liegen vor, Preislisten werden erstellt…" />
+            </div>
+          ) : score >= 1 ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '22px', fontWeight: 800, color: clr }}>{score}</span>
+                <span style={{ fontSize: '13px', color: '#666' }}>von 10</span>
+                <span style={{ padding: '3px 10px', backgroundColor: clr, color: 'white', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>{lbl}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '3px', marginBottom: w.reifegradBeschreibung ? '10px' : '0' }}>
+                {Array.from({ length: 10 }, (_, i) => (
+                  <div key={i} style={{ flex: 1, height: '8px', borderRadius: i === 0 ? '4px 0 0 4px' : i === 9 ? '0 4px 4px 0' : '0', backgroundColor: i < score ? clr : '#e2e8f0' }} />
+                ))}
+              </div>
+              {w.reifegradBeschreibung && <p style={{ fontSize: '13px', color: '#333', lineHeight: 1.6, margin: 0 }}>{w.reifegradBeschreibung}</p>}
+            </div>
+          ) : (
+            <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic', margin: 0 }}>Noch kein Reifegrad festgelegt.</p>
+          );
+        }}
+      />
+
       {/* Motivation */}
       <EditableSection
         titel="Warum dieses Projekt gestartet wurde (Motivation)"
@@ -1528,6 +1583,37 @@ function MarktplatzVorschau({ anfrage, md, onClose }: {
             {md.sichtbarkeit === 'anonym' ? '🔒 Anonyme Anfrage' : `📍 ${anfrage.standort}`}
           </div>
 
+          {/* Reifegrad / Konkretisierungsgrad */}
+          {(() => {
+            const score = anfrage.reifegradScore || 5;
+            const lbl = score <= 3 ? 'Erste Idee' : score <= 6 ? 'Konkrete Richtung' : score <= 8 ? 'Gut vorbereitet' : 'Startklar';
+            const clr = score <= 3 ? '#94a3b8' : score <= 6 ? '#f59e0b' : score <= 8 ? '#3b82f6' : '#10b981';
+            const bg = score <= 3 ? '#f1f5f9' : score <= 6 ? '#fffbeb' : score <= 8 ? '#eff6ff' : '#ecfdf5';
+            const brd = score <= 3 ? '#cbd5e1' : score <= 6 ? '#fde68a' : score <= 8 ? '#bfdbfe' : '#a7f3d0';
+            return (
+              <VBlock titel="Wie konkret ist das Vorhaben?" akzent={bg}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '28px', fontWeight: 800, color: clr, lineHeight: 1 }}>{score}</span>
+                  <span style={{ fontSize: '13px', color: '#555' }}>von 10</span>
+                  <span style={{ padding: '4px 12px', backgroundColor: clr, color: 'white', borderRadius: '16px', fontSize: '12px', fontWeight: 700 }}>{lbl}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '3px', marginBottom: '8px' }}>
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <div key={i} style={{ flex: 1, height: '8px', borderRadius: i === 0 ? '4px 0 0 4px' : i === 9 ? '0 4px 4px 0' : '0', backgroundColor: i < score ? clr : '#e2e8f0' }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888', marginBottom: anfrage.reifegradBeschreibung ? '12px' : '0' }}>
+                  <span>Erste Idee</span><span>Konkrete Richtung</span><span>Gut vorbereitet</span><span>Startklar</span>
+                </div>
+                {anfrage.reifegradBeschreibung && (
+                  <div style={{ padding: '10px 14px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: '6px', fontSize: '13px', color: '#333', lineHeight: 1.6 }}>
+                    {anfrage.reifegradBeschreibung}
+                  </div>
+                )}
+              </VBlock>
+            );
+          })()}
+
           {/* 1. Was wird gesucht? */}
           <VBlock titel="Was wird gesucht?">
             <p style={{ margin: 0, fontSize: '14px', color: '#333', lineHeight: 1.7 }}>{md.kurzbeschreibung}</p>
@@ -1636,16 +1722,7 @@ function MarktplatzVorschau({ anfrage, md, onClose }: {
             </VBlock>
           )}
 
-          {/* 9. Persönlicher Touch */}
-          {md.persoenlicheNote && (
-            <VBlock titel="Persönlicher Touch">
-              <div style={{ padding: '14px 18px', backgroundColor: '#fafafa', borderLeft: '4px solid #FF9900', fontSize: '14px', fontStyle: 'italic', color: '#444', lineHeight: 1.7 }}>
-                „{md.persoenlicheNote}"
-              </div>
-            </VBlock>
-          )}
-
-          {/* 10. FunFact (wenn freigegeben) */}
+          {/* FunFact (wenn freigegeben) */}
           {md.funFactFreigegeben && md.funFact && (
             <VBlock titel="🎉 Fun Fact">
               <p style={{ margin: 0, fontSize: '13px', color: '#5d4037', backgroundColor: '#fff8e1', padding: '10px 14px', borderRadius: '6px', lineHeight: 1.6 }}>

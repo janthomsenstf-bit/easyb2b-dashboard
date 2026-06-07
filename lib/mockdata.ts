@@ -312,6 +312,10 @@ export interface MockAnfrage {
   projektStartDatum?: string;
   projektEndDatum?: string;
   erstgespraechFristDatum?: string;
+
+  // Reifegrad / Konkretisierungsgrad (1-10 Skala)
+  reifegradScore?: number;             // 1-10, wie konkret ist das Vorhaben?
+  reifegradBeschreibung?: string;      // Optionale öffentliche Erklärung
 }
 
 export interface MockInteressent {
@@ -833,6 +837,9 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     projektStartDatum: '2026-09-01',
     projektEndDatum: '2027-03-31',
     erstgespraechFristDatum: '2026-07-15',
+    // ── Reifegrad ──
+    reifegradScore: 8,
+    reifegradBeschreibung: 'Gut vorbereitet — Produktunterlagen, Zertifikate und Marketingmaterial liegen vor. Deutsche Preislisten und Website werden derzeit erstellt. Partner für den Markteintritt können sofort mit konkreten Unterlagen versorgt werden.',
   },
 ];
 
