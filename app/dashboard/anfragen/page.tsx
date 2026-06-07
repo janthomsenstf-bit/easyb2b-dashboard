@@ -4,8 +4,8 @@ import { useState } from 'react';
 import {
   getStatusLabel, getStatusColor, getRichtungLabel, MOCK_INTERESSENTEN,
   getWorkflowStatusColor, getWorkflowStatusSchritt,
-  WORKFLOW_SCHRITTE,
-  type MockAnfrage,
+  WORKFLOW_SCHRITTE, PRUEF_KATEGORIEN, erstelleStandardPruefPunkte,
+  type MockAnfrage, type PruefPunkt,
 } from '@/lib/mockdata';
 import { verbessereAntwortMock } from '@/lib/funfact';
 import { useStore } from '@/lib/store';
@@ -17,7 +17,6 @@ export default function AnfragenPage() {
   const store = useStore();
   const [filterStatus, setFilterStatus] = useState('alle');
   const [filterRichtung, setFilterRichtung] = useState('alle');
-  // Variante B: nur eine Anfrage gleichzeitig offen
   const [offeneIds, setOffeneIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
 
@@ -44,12 +43,11 @@ export default function AnfragenPage() {
 
   // KPIs
   const eingehend = store.anfragen.filter(a => a.status === 'eingehend').length;
-  const aktivCount = store.anfragen.filter(a => a.status === 'aktiv').length;
-  const vermittelt = store.anfragen.filter(a => a.status === 'vermittelt').length;
+  const inPruefung = store.anfragen.filter(a => a.workflowStatus === 'in_pruefung' || a.workflowStatus === 'rueckfragen_offen').length;
+  const projektErstellt = store.anfragen.filter(a => a.workflowStatus === 'projekt_erstellt').length;
 
   return (
     <div>
-      {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, backgroundColor: '#003366', color: 'white', padding: '14px 20px', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: '14px', fontWeight: 600 }}>
           {toast}
@@ -59,7 +57,7 @@ export default function AnfragenPage() {
       <div style={{ marginBottom: '8px' }}>
         <h1 style={{ margin: 0, color: '#003366', fontSize: '24px' }}>Anfragen</h1>
         <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#555' }}>
-          Eingangskorb — Klick auf eine Anfrage öffnet die Details. Bearbeitung direkt im Kontext.
+          Eingangskorb — Anfragen prüfen, qualifizieren und als Projekt anlegen. Veröffentlichung erfolgt im Modul Projekte.
         </p>
       </div>
 
@@ -68,8 +66,8 @@ export default function AnfragenPage() {
         {[
           { label: 'Anfragen gesamt', value: store.anfragen.length, color: '#003366' },
           { label: '⏳ Eingehend', value: eingehend, color: '#E65100' },
-          { label: '🌐 Aktiv', value: aktivCount, color: '#2e7d32' },
-          { label: '🏆 Vermittelt', value: vermittelt, color: '#6a1b9a' },
+          { label: '🔍 In Prüfung', value: inPruefung, color: '#FF9900' },
+          { label: '🚀 Projekt erstellt', value: projektErstellt, color: '#9C27B0' },
         ].map(s => (
           <div key={s.label} style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.07)', borderLeft: `4px solid ${s.color}` }}>
             <div style={{ fontSize: '12px', color: '#444', fontWeight: 500 }}>{s.label}</div>
@@ -133,7 +131,6 @@ export default function AnfragenPage() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                    {/* ID-Badge mit besserem Kontrast */}
                     <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#444', backgroundColor: '#e8e8e8', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>{a.anzeigenId}</span>
                     <span style={{ fontWeight: 700, fontSize: '16px', color: '#003366' }}>{a.firmenname}</span>
                     <span style={{ fontSize: '12px', color: '#555' }}>{getRichtungLabel(a.richtung)}</span>
@@ -142,11 +139,15 @@ export default function AnfragenPage() {
                   <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: '#666', flexWrap: 'wrap' }}>
                     <span>{a.branche}</span>
                     <span>{a.standort}</span>
-                    {a.funFactAntwort && (
-                      <span title={a.funFactAntwortKI || a.funFactAntwort} style={{ filter: a.funFactOeffentlich ? 'none' : 'grayscale(1)' }}>
-                        {a.funFactOeffentlich ? '😊 FunFact' : '🔒 FunFact (intern)'}
-                      </span>
-                    )}
+                    {(() => {
+                      const punkte = a.pruefPunkte || [];
+                      const erledigt = punkte.filter(p => p.erledigt).length;
+                      const gesamt = punkte.length;
+                      if (gesamt > 0) {
+                        return <span style={{ color: erledigt === gesamt ? '#2e7d32' : '#E65100', fontWeight: 600 }}>✓ {erledigt}/{gesamt} geprüft</span>;
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
                 <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
@@ -195,6 +196,10 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
   const verknuepftesUnternehmen = a.unternehmensId ? store.unternehmen.find(u => u.id === a.unternehmensId) : null;
   const formular = a.anfrageFormularId ? store.formulare.find(f => f.id === a.anfrageFormularId) : null;
 
+  // Prüfpunkte (aus Anfrage oder Standard-Checkliste)
+  const pruefPunkte = a.pruefPunkte || [];
+  const hatPruefPunkte = pruefPunkte.length > 0;
+
   // ── Speichern-Helper für Inline-Edit ──
   const speichereBereich = (patch: Partial<MockAnfrage>, bereichName: string) => {
     store.updateAnfrage(a.id, patch);
@@ -235,7 +240,7 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
   function projektErstellen() {
     store.setzeWorkflowStatus(a.id, 'projekt_erstellt');
     store.logge('Projekt aus Anfrage erstellt', a.anzeigenId || a.id, 'anlegen');
-    onToast(`✅ Projekt erstellt`);
+    onToast(`✅ Projekt erstellt — weiter im Modul Projekte`);
   }
 
   async function kiVerbessern() {
@@ -249,8 +254,8 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
 
   return (
     <div style={{ backgroundColor: '#f9fafb', padding: '24px' }}>
-      {/* Workflow-Fortschrittsleiste */}
-      <SimpleSection titel="Workflow-Fortschritt">
+      {/* Workflow-Fortschrittsleiste (ohne Veröffentlichen) */}
+      <SimpleSection titel="Anfrage-Prozess">
         <div style={{ display: 'flex', alignItems: 'center', padding: '4px 0' }}>
           {WORKFLOW_SCHRITTE.filter(w => w.status !== 'archiviert').map((w, idx, arr) => {
             const aktuell = getWorkflowStatusSchritt(a.workflowStatus);
@@ -277,10 +282,16 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
             );
           })}
         </div>
+        {/* Hinweis: Veröffentlichung im Projekte-Modul */}
+        {a.workflowStatus === 'projekt_erstellt' && (
+          <div style={{ marginTop: '10px', padding: '8px 12px', backgroundColor: '#f3e5f5', borderRadius: '6px', fontSize: '11px', color: '#6a1b9a' }}>
+            ✅ Projekt erstellt — die Veröffentlichung auf dem Marktplatz erfolgt im <a href="/dashboard/projekte" style={{ color: '#6a1b9a', fontWeight: 700, textDecoration: 'underline' }}>Modul Projekte</a>.
+          </div>
+        )}
       </SimpleSection>
 
       {/* Workflow-Aktionen */}
-      {(!a.workflowStatus || a.workflowStatus === 'neu' || a.workflowStatus === 'in_pruefung') && (
+      {(!a.workflowStatus || a.workflowStatus === 'neu' || a.workflowStatus === 'in_pruefung' || a.workflowStatus === 'rueckfragen_offen' || a.workflowStatus === 'ausreichend_geklaert') && (
         <div style={{ backgroundColor: '#e3f2fd', border: '1px solid #90caf9', borderRadius: '8px', padding: '14px', marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#0d47a1', marginBottom: '10px' }}>
             🏢 Nächster Schritt: Unternehmen aus dieser Anfrage anlegen
@@ -318,37 +329,38 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
               </span>
             )}
           </div>
+          <p style={{ fontSize: '12px', color: '#4a148c', margin: '0 0 10px 0' }}>
+            Nach Projekterstellung wird im Modul Projekte weitergearbeitet (Marktplatz-Veröffentlichung, Matchmaking).
+          </p>
           <button onClick={projektErstellen} style={btnStyle('#6a1b9a')}>🚀 Projekt erstellen → Projekte-Modul</button>
         </div>
       )}
 
-      {/* Marktplatz-Status Schnellaktionen */}
-      {a.status === 'eingehend' && (
+      {/* Schnellaktionen für neue Anfragen */}
+      {a.status === 'eingehend' && (!a.workflowStatus || a.workflowStatus === 'neu') && (
         <div style={{ backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '8px', padding: '14px', marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#6d4c00', marginBottom: '10px' }}>
-            ⏳ Wartet auf Prüfung — Anfrage ist noch nicht öffentlich sichtbar
+            ⏳ Neue Anfrage — Prüfung starten
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button onClick={() => statusSchnellAendern('aktiv', 'Aktiv')} style={btnStyle('#2e7d32')}>✅ Freigeben & auf Marktplatz</button>
-            <button onClick={() => statusSchnellAendern('pausiert', 'Pausiert')} style={{ ...btnStyle('#eee'), color: '#444', border: '1px solid #bbb' }}>⏸ Ablehnen / Pausieren</button>
+            <button onClick={() => {
+              store.setzeWorkflowStatus(a.id, 'in_pruefung');
+              if (!a.pruefPunkte) store.initialisierePruefPunkte(a.id);
+              onToast('✅ Prüfung gestartet');
+            }} style={btnStyle('#FF9900')}>🔍 Prüfung starten</button>
+            <button onClick={() => statusSchnellAendern('pausiert', 'Pausiert')} style={{ ...btnStyle('#eee'), color: '#444', border: '1px solid #bbb' }}>⏸ Zurückstellen</button>
           </div>
         </div>
       )}
-      {a.status === 'aktiv' && (
-        <div style={{ backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '8px', padding: '14px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#1b5e20', marginBottom: '10px' }}>🌐 Öffentlich sichtbar auf dem Marktplatz</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button onClick={() => statusSchnellAendern('pausiert', 'Pausiert')} style={{ ...btnStyle('#eee'), color: '#444', border: '1px solid #bbb' }}>⏸ Vom Marktplatz nehmen</button>
-            <button onClick={() => statusSchnellAendern('vermittelt', 'Vermittelt')} style={btnStyle('#6a1b9a')}>🏆 Als vermittelt markieren</button>
-          </div>
-        </div>
-      )}
-      {a.status === 'pausiert' && (
-        <div style={{ backgroundColor: '#eeeeee', border: '1px solid #bbb', borderRadius: '8px', padding: '14px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#333', marginBottom: '10px' }}>⏸ Pausiert — nicht öffentlich sichtbar</div>
-          <button onClick={() => statusSchnellAendern('aktiv', 'Aktiv')} style={btnStyle('#2e7d32')}>▶ Wieder auf Marktplatz schalten</button>
-        </div>
-      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          PRÜFUNG & QUALIFIZIERUNG — Checkliste
+         ══════════════════════════════════════════════════════════ */}
+      <PruefungUndQualifizierung
+        anfrage={a}
+        store={store}
+        onToast={onToast}
+      />
 
       {/* 2-Spalten-Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
@@ -434,7 +446,7 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
                 <textarea style={editTextareaStyle} value={w.funFactAntwort} onChange={e => set('funFactAntwort', e.target.value)} />
                 <label style={{ ...editLabelStyle, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                   <input type="checkbox" checked={w.funFactOeffentlich} onChange={e => set('funFactOeffentlich', e.target.checked)} />
-                  Öffentlich auf dem Marktplatz anzeigen
+                  Öffentlich in der Marktplatzanzeige anzeigen
                 </label>
               </div>
             ) : (!w.funFactFrage && !w.funFactAntwort) ? (
@@ -523,7 +535,7 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
             />
           </SimpleSection>
 
-          {/* ── INTERNE NOTIZEN (Inline editierbar, NEU) ── */}
+          {/* ── INTERNE NOTIZEN (Inline editierbar) ── */}
           <EditableSection
             titel="Interne Notizen (nur Operator)"
             startWerte={{ interneNotiz: a.interneNotiz || '' }}
@@ -653,6 +665,216 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
               </div>
             )}
           />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// PRÜFUNG & QUALIFIZIERUNG — Checkliste
+// ═════════════════════════════════════════════════════════════════
+
+function PruefungUndQualifizierung({ anfrage: a, store, onToast }: {
+  anfrage: MockAnfrage;
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
+}) {
+  const [editNotiz, setEditNotiz] = useState<{ id: string; notiz: string } | null>(null);
+
+  const punkte = a.pruefPunkte || [];
+  const hatPunkte = punkte.length > 0;
+
+  if (!hatPunkte) {
+    // Noch keine Prüfpunkte → Button zum Initialisieren
+    return (
+      <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#fff8e1', border: '1px solid #ffe082', borderRadius: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#6d4c00', marginBottom: '4px' }}>
+              📋 Prüfung & Qualifizierung
+            </div>
+            <div style={{ fontSize: '12px', color: '#8a6d00' }}>
+              Noch keine Prüfpunkte angelegt. Starte die strukturierte Prüfung dieser Anfrage.
+            </div>
+          </div>
+          <button onClick={() => {
+            store.initialisierePruefPunkte(a.id);
+            onToast('✅ Prüfpunkte angelegt');
+          }} style={btnStyle('#8a6d00')}>
+            📋 Checkliste starten
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const erledigt = punkte.filter(p => p.erledigt).length;
+  const gesamt = punkte.length;
+  const kritischeOffen = punkte.filter(p => p.kritisch && !p.erledigt);
+  const fortschrittProzent = Math.round((erledigt / gesamt) * 100);
+
+  // Nach Kategorie gruppieren
+  const kategorien = PRUEF_KATEGORIEN.map(kat => ({
+    ...kat,
+    punkte: punkte.filter(p => p.kategorie === kat.key),
+  }));
+
+  return (
+    <div style={{ marginBottom: '20px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+      {/* Header mit Fortschritt */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, color: '#003366' }}>
+            📋 Prüfung & Qualifizierung
+          </h3>
+          <div style={{ fontSize: '12px', color: '#555' }}>
+            Von Easy-B2B geklärte Punkte — {erledigt} von {gesamt} Punkten geklärt
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {kritischeOffen.length > 0 && (
+            <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, backgroundColor: '#ffebee', color: '#c62828' }}>
+              ⚠️ {kritischeOffen.length} kritisch offen
+            </span>
+          )}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: fortschrittProzent >= 80 ? '#2e7d32' : fortschrittProzent >= 50 ? '#E65100' : '#c62828' }}>
+              {erledigt}/{gesamt}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fortschrittsbalken */}
+      <div style={{ height: '4px', backgroundColor: '#f0f0f0' }}>
+        <div style={{ height: '100%', width: `${fortschrittProzent}%`, backgroundColor: fortschrittProzent >= 80 ? '#4CAF50' : fortschrittProzent >= 50 ? '#FF9900' : '#f44336', transition: 'width 0.3s' }} />
+      </div>
+
+      {/* Kategorien mit Prüfpunkten */}
+      <div style={{ padding: '16px 20px' }}>
+        {kategorien.map(kat => {
+          const katErledigt = kat.punkte.filter(p => p.erledigt).length;
+          return (
+            <div key={kat.key} style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '14px' }}>{kat.icon}</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#003366', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{kat.label}</span>
+                <span style={{ fontSize: '11px', color: katErledigt === kat.punkte.length ? '#2e7d32' : '#666', fontWeight: 600 }}>
+                  {katErledigt}/{kat.punkte.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {kat.punkte.map(p => (
+                  <div key={p.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px',
+                    backgroundColor: p.erledigt ? '#f0fdf4' : (p.kritisch ? '#fff8f8' : '#fafafa'),
+                    borderRadius: '6px',
+                    borderLeft: `3px solid ${p.erledigt ? '#4CAF50' : (p.kritisch ? '#ef5350' : '#e0e0e0')}`,
+                  }}>
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={p.erledigt}
+                      onChange={e => {
+                        store.updatePruefPunkt(a.id, p.id, { erledigt: e.target.checked });
+                        onToast(e.target.checked ? `✓ "${p.label}" erledigt` : `"${p.label}" wieder offen`);
+                      }}
+                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#4CAF50', flexShrink: 0 }}
+                    />
+
+                    {/* Label */}
+                    <span style={{
+                      flex: 1, fontSize: '13px',
+                      color: p.erledigt ? '#2e7d32' : '#333',
+                      textDecoration: p.erledigt ? 'line-through' : 'none',
+                      fontWeight: p.kritisch && !p.erledigt ? 600 : 400,
+                    }}>
+                      {p.label}
+                      {p.kritisch && !p.erledigt && (
+                        <span style={{ marginLeft: '6px', fontSize: '10px', color: '#c62828', fontWeight: 700 }}>KRITISCH</span>
+                      )}
+                    </span>
+
+                    {/* Notiz-Anzeige / Button */}
+                    {p.notiz && editNotiz?.id !== p.id && (
+                      <span
+                        onClick={() => setEditNotiz({ id: p.id, notiz: p.notiz || '' })}
+                        style={{ fontSize: '11px', color: '#888', cursor: 'pointer', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        title={p.notiz}
+                      >
+                        📝 {p.notiz}
+                      </span>
+                    )}
+
+                    {/* Notiz-Edit inline */}
+                    {editNotiz?.id === p.id ? (
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <input
+                          autoFocus
+                          value={editNotiz.notiz}
+                          onChange={e => setEditNotiz({ id: p.id, notiz: e.target.value })}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              store.updatePruefPunkt(a.id, p.id, { notiz: editNotiz.notiz || undefined });
+                              setEditNotiz(null);
+                              onToast('Notiz gespeichert');
+                            }
+                            if (e.key === 'Escape') setEditNotiz(null);
+                          }}
+                          placeholder="Notiz…"
+                          style={{ padding: '3px 6px', fontSize: '11px', border: '1px solid #ccc', borderRadius: '4px', width: '140px' }}
+                        />
+                        <button onClick={() => {
+                          store.updatePruefPunkt(a.id, p.id, { notiz: editNotiz.notiz || undefined });
+                          setEditNotiz(null);
+                          onToast('Notiz gespeichert');
+                        }} style={{ padding: '2px 6px', fontSize: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>✓</button>
+                        <button onClick={() => setEditNotiz(null)} style={{ padding: '2px 6px', fontSize: '10px', backgroundColor: '#eee', color: '#666', border: '1px solid #ccc', borderRadius: '3px', cursor: 'pointer' }}>×</button>
+                      </div>
+                    ) : !p.notiz && (
+                      <button
+                        onClick={() => setEditNotiz({ id: p.id, notiz: '' })}
+                        style={{ padding: '2px 6px', fontSize: '10px', color: '#888', backgroundColor: 'transparent', border: '1px solid #ddd', borderRadius: '3px', cursor: 'pointer' }}
+                        title="Notiz hinzufügen"
+                      >
+                        📝
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Workflow-Status Schnellaktionen basierend auf Prüfstand */}
+        <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '8px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '12px', color: '#555', fontWeight: 600 }}>Status setzen:</span>
+          {a.workflowStatus !== 'rueckfragen_offen' && (
+            <button onClick={() => {
+              store.setzeWorkflowStatus(a.id, 'rueckfragen_offen');
+              onToast('Status: Rückfragen offen');
+            }} style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, backgroundColor: '#ffebee', color: '#c62828', border: '1px solid #ef9a9a', borderRadius: '6px', cursor: 'pointer' }}>
+              ❓ Rückfragen offen
+            </button>
+          )}
+          {a.workflowStatus !== 'ausreichend_geklaert' && erledigt >= Math.ceil(gesamt * 0.6) && (
+            <button onClick={() => {
+              store.setzeWorkflowStatus(a.id, 'ausreichend_geklaert');
+              onToast('Status: Ausreichend geklärt');
+            }} style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, backgroundColor: '#e8f5e9', color: '#2e7d32', border: '1px solid #a5d6a7', borderRadius: '6px', cursor: 'pointer' }}>
+              ✅ Ausreichend geklärt
+            </button>
+          )}
+          {a.workflowStatus === 'rueckfragen_offen' && (
+            <button onClick={() => {
+              store.setzeWorkflowStatus(a.id, 'in_pruefung');
+              onToast('Status: Wieder in Prüfung');
+            }} style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, backgroundColor: '#fff8e1', color: '#6d4c00', border: '1px solid #ffe082', borderRadius: '6px', cursor: 'pointer' }}>
+              🔍 Zurück in Prüfung
+            </button>
+          )}
         </div>
       </div>
     </div>

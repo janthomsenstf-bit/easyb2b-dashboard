@@ -213,21 +213,67 @@ export interface MarktplatzEintrag {
 export type AnfrageWorkflowStatus =
   | 'neu'
   | 'in_pruefung'
+  | 'rueckfragen_offen'
+  | 'ausreichend_geklaert'
   | 'unternehmen_angelegt'
   | 'unternehmen_verifiziert'
   | 'projekt_erstellt'
-  | 'veroeffentlicht'
   | 'archiviert';
 
 export const WORKFLOW_SCHRITTE: { status: AnfrageWorkflowStatus; label: string; schritt: number }[] = [
-  { status: 'neu',                   label: 'Neu',                   schritt: 1 },
-  { status: 'in_pruefung',           label: 'In Prüfung',            schritt: 2 },
-  { status: 'unternehmen_angelegt',  label: 'Unternehmen',           schritt: 3 },
-  { status: 'unternehmen_verifiziert',label:'Verifiziert',           schritt: 4 },
-  { status: 'projekt_erstellt',      label: 'Projekt',               schritt: 5 },
-  { status: 'veroeffentlicht',       label: 'Veröffentlicht',        schritt: 6 },
-  { status: 'archiviert',            label: 'Archiviert',            schritt: 7 },
+  { status: 'neu',                    label: 'Eingegangen',            schritt: 1 },
+  { status: 'in_pruefung',            label: 'Prüfung',               schritt: 2 },
+  { status: 'unternehmen_angelegt',   label: 'Unternehmen',            schritt: 3 },
+  { status: 'unternehmen_verifiziert',label: 'Qualifiziert',           schritt: 4 },
+  { status: 'projekt_erstellt',       label: 'Projekt erstellt',       schritt: 5 },
+  { status: 'archiviert',             label: 'Archiviert',             schritt: 6 },
 ];
+
+// ─── PRÜFPUNKTE (Qualifizierungs-Checkliste) ────────────────
+
+export interface PruefPunkt {
+  id: string;
+  kategorie: 'basisdaten' | 'anfragequalitaet' | 'ernsthaftigkeit' | 'intern';
+  label: string;
+  erledigt: boolean;
+  notiz?: string;
+  kritisch?: boolean;  // wenn true und nicht erledigt → Hinweis
+}
+
+export const PRUEF_KATEGORIEN: { key: PruefPunkt['kategorie']; label: string; icon: string }[] = [
+  { key: 'basisdaten',       label: 'Basisdaten',                     icon: '📋' },
+  { key: 'anfragequalitaet', label: 'Anfragequalität',                icon: '🎯' },
+  { key: 'ernsthaftigkeit',  label: 'Ernsthaftigkeit / Vorbereitung', icon: '💼' },
+  { key: 'intern',           label: 'Interne Prüfung',                icon: '🔒' },
+];
+
+export function erstelleStandardPruefPunkte(): PruefPunkt[] {
+  return [
+    // Basisdaten
+    { id: 'pp-01', kategorie: 'basisdaten', label: 'Ansprechpartner vorhanden',         erledigt: false, kritisch: true },
+    { id: 'pp-02', kategorie: 'basisdaten', label: 'E-Mail vorhanden',                  erledigt: false, kritisch: true },
+    { id: 'pp-03', kategorie: 'basisdaten', label: 'Telefonnummer vorhanden',            erledigt: false },
+    { id: 'pp-04', kategorie: 'basisdaten', label: 'Website / LinkedIn vorhanden',       erledigt: false },
+    { id: 'pp-05', kategorie: 'basisdaten', label: 'Kommunikationssprache geklärt',      erledigt: false, kritisch: true },
+    // Anfragequalität
+    { id: 'pp-06', kategorie: 'anfragequalitaet', label: 'Suchziel verständlich',        erledigt: false, kritisch: true },
+    { id: 'pp-07', kategorie: 'anfragequalitaet', label: 'Zielregion definiert',         erledigt: false },
+    { id: 'pp-08', kategorie: 'anfragequalitaet', label: 'Branche / Zielgruppe definiert', erledigt: false, kritisch: true },
+    { id: 'pp-09', kategorie: 'anfragequalitaet', label: 'Anforderungen beschrieben',    erledigt: false },
+    { id: 'pp-10', kategorie: 'anfragequalitaet', label: 'Zeitfenster angegeben',        erledigt: false },
+    // Ernsthaftigkeit
+    { id: 'pp-11', kategorie: 'ernsthaftigkeit', label: 'Motivation beschrieben',        erledigt: false },
+    { id: 'pp-12', kategorie: 'ernsthaftigkeit', label: 'Reifegrad angegeben',           erledigt: false },
+    { id: 'pp-13', kategorie: 'ernsthaftigkeit', label: 'Erstgespräch grundsätzlich erwünscht', erledigt: false },
+    { id: 'pp-14', kategorie: 'ernsthaftigkeit', label: 'Vorhandene Unterlagen geklärt', erledigt: false },
+    { id: 'pp-15', kategorie: 'ernsthaftigkeit', label: 'Erwartungen an Partner beschrieben', erledigt: false },
+    // Interne Prüfung
+    { id: 'pp-16', kategorie: 'intern', label: 'Rückfragen notwendig',                  erledigt: false },
+    { id: 'pp-17', kategorie: 'intern', label: 'Rückfragen erledigt',                   erledigt: false },
+    { id: 'pp-18', kategorie: 'intern', label: 'Interne Notiz vorhanden',               erledigt: false },
+    { id: 'pp-19', kategorie: 'intern', label: 'Freigabe durch Operator',               erledigt: false, kritisch: true },
+  ];
+}
 
 export function getWorkflowStatusLabel(s?: AnfrageWorkflowStatus): string {
   return WORKFLOW_SCHRITTE.find(w => w.status === s)?.label ?? 'Neu';
@@ -241,10 +287,11 @@ export function getWorkflowStatusColor(s?: AnfrageWorkflowStatus): string {
   const map: Record<AnfrageWorkflowStatus, string> = {
     neu:                    '#9E9E9E',
     in_pruefung:            '#FF9900',
+    rueckfragen_offen:      '#e53935',
+    ausreichend_geklaert:   '#43a047',
     unternehmen_angelegt:   '#2196F3',
     unternehmen_verifiziert:'#4CAF50',
     projekt_erstellt:       '#9C27B0',
-    veroeffentlicht:        '#2e7d32',
     archiviert:             '#546e7a',
   };
   return map[s ?? 'neu'] ?? '#9E9E9E';
@@ -292,6 +339,8 @@ export interface MockAnfrage {
   klaerungsBestaetigungen?: Record<string, { notiz?: string; bestaetigtVon: string; bestaetigtAm: string }>;
   // Interne Operator-Notizen (nicht öffentlich)
   interneNotiz?: string;
+  // Prüfung & Qualifizierung (Checkliste)
+  pruefPunkte?: PruefPunkt[];
 
   // ── Marktplatz-Reichinhalt (öffentlich sichtbar auf der Anzeige) ──
   motivation?: string;                  // „Warum dieses Projekt gestartet wurde"
@@ -971,8 +1020,29 @@ export const MOCK_ANFRAGEN: MockAnfrage[] = [
     kulturHinweis: 'Dänischer Kommunikationsstil: direkt, partnerschaftlich, ohne lange Umwege. Lars schätzt klare Worte und persönliche Treffen vor formalen Vertragsverhandlungen.',
     gespraechseinstieg: 'Frag Lars nach der Tradition von Nordhavn — das Familienunternehmen ist seit zwei Generationen in Aalborg verwurzelt und stolz auf die handwerkliche Qualität.',
     funFactOeffentlich: true,
-    workflowStatus: 'veroeffentlicht',
+    workflowStatus: 'projekt_erstellt',
     unternehmensId: 'unt-nordhavn',
+    pruefPunkte: [
+      { id: 'pp-01', kategorie: 'basisdaten', label: 'Ansprechpartner vorhanden', erledigt: true, kritisch: true },
+      { id: 'pp-02', kategorie: 'basisdaten', label: 'E-Mail vorhanden', erledigt: true, kritisch: true },
+      { id: 'pp-03', kategorie: 'basisdaten', label: 'Telefonnummer vorhanden', erledigt: true },
+      { id: 'pp-04', kategorie: 'basisdaten', label: 'Website / LinkedIn vorhanden', erledigt: true },
+      { id: 'pp-05', kategorie: 'basisdaten', label: 'Kommunikationssprache geklärt', erledigt: true, kritisch: true },
+      { id: 'pp-06', kategorie: 'anfragequalitaet', label: 'Suchziel verständlich', erledigt: true, kritisch: true },
+      { id: 'pp-07', kategorie: 'anfragequalitaet', label: 'Zielregion definiert', erledigt: true },
+      { id: 'pp-08', kategorie: 'anfragequalitaet', label: 'Branche / Zielgruppe definiert', erledigt: true, kritisch: true },
+      { id: 'pp-09', kategorie: 'anfragequalitaet', label: 'Anforderungen beschrieben', erledigt: true },
+      { id: 'pp-10', kategorie: 'anfragequalitaet', label: 'Zeitfenster angegeben', erledigt: true },
+      { id: 'pp-11', kategorie: 'ernsthaftigkeit', label: 'Motivation beschrieben', erledigt: true },
+      { id: 'pp-12', kategorie: 'ernsthaftigkeit', label: 'Reifegrad angegeben', erledigt: true },
+      { id: 'pp-13', kategorie: 'ernsthaftigkeit', label: 'Erstgespräch grundsätzlich erwünscht', erledigt: true },
+      { id: 'pp-14', kategorie: 'ernsthaftigkeit', label: 'Vorhandene Unterlagen geklärt', erledigt: true },
+      { id: 'pp-15', kategorie: 'ernsthaftigkeit', label: 'Erwartungen an Partner beschrieben', erledigt: true },
+      { id: 'pp-16', kategorie: 'intern', label: 'Rückfragen notwendig', erledigt: false, notiz: 'Keine Rückfragen nötig' },
+      { id: 'pp-17', kategorie: 'intern', label: 'Rückfragen erledigt', erledigt: false, notiz: 'Entfällt' },
+      { id: 'pp-18', kategorie: 'intern', label: 'Interne Notiz vorhanden', erledigt: true },
+      { id: 'pp-19', kategorie: 'intern', label: 'Freigabe durch Operator', erledigt: true, kritisch: true },
+    ],
     anfrageFormularId: 'form-003',
     interessentFormularId: 'form-004',
     marktplatzStatus: 'veroeffentlicht',

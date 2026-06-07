@@ -15,7 +15,7 @@ import {
   type MockUnternehmen, type MockAnfrage, type MockNetzwerkkontakt,
   type AnfrageWorkflowStatus, type MockKontakt, type KontaktProjektZuordnung,
   type FormularVorlage, type MatchVorschlag, type MatchStatus, type DsgvoZustimmung,
-  type MatchmailVorlage,
+  type MatchmailVorlage, type PruefPunkt, erstelleStandardPruefPunkte,
 } from './mockdata';
 
 export interface Aktivitaet {
@@ -58,6 +58,9 @@ interface DashboardStore {
   legeUnternehmenAusAnfrageAn: (anfrageId: string) => string | null;
   verknuepfeMitUnternehmen: (anfrageId: string, unternehmensId: string) => void;
   setzeWorkflowStatus: (anfrageId: string, status: AnfrageWorkflowStatus) => void;
+  // Prüfpunkte (Qualifizierung)
+  updatePruefPunkt: (anfrageId: string, punktId: string, patch: Partial<PruefPunkt>) => void;
+  initialisierePruefPunkte: (anfrageId: string) => void;
   // Geschäftskontakte
   geschaftskontakte: MockKontakt[];
   addGeschaftskontakt: (k: MockKontakt) => void;
@@ -278,6 +281,27 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
     if (anfrage) logge(`Workflow-Status: ${status}`, anfrage.anzeigenId || anfrageId, 'status');
   };
 
+  // ── Prüfpunkte (Qualifizierung) ───────────────────────────────
+
+  const updatePruefPunkt = (anfrageId: string, punktId: string, patch: Partial<PruefPunkt>) => {
+    setAnfragen(prev => prev.map(a => {
+      if (a.id !== anfrageId) return a;
+      const punkte = (a.pruefPunkte || erstelleStandardPruefPunkte()).map(p =>
+        p.id === punktId ? { ...p, ...patch } : p
+      );
+      return { ...a, pruefPunkte: punkte };
+    }));
+  };
+
+  const initialisierePruefPunkte = (anfrageId: string) => {
+    setAnfragen(prev => prev.map(a => {
+      if (a.id !== anfrageId || a.pruefPunkte) return a;
+      return { ...a, pruefPunkte: erstelleStandardPruefPunkte() };
+    }));
+    const anfrage = anfragen.find(a => a.id === anfrageId);
+    if (anfrage) logge('Prüfpunkte initialisiert', anfrage.anzeigenId || anfrageId, 'anlegen');
+  };
+
   // ── Geschäftskontakte ──────────────────────────────────────────
 
   const addGeschaftskontakt = (k: MockKontakt) =>
@@ -450,6 +474,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       zuordnungen, addZuordnung, updateZuordnung,
       aktivitaeten, logge, dbLadenStatus,
       legeUnternehmenAusAnfrageAn, verknuepfeMitUnternehmen, setzeWorkflowStatus,
+      updatePruefPunkt, initialisierePruefPunkte,
       geschaftskontakte, addGeschaftskontakt, updateGeschaftskontakt,
       addKontaktProjektZuordnung, legeKontaktAusInteressentAn,
       formulare, addFormular, updateFormular, deleteFormular,
