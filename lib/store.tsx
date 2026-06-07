@@ -11,10 +11,11 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
   MOCK_UNTERNEHMEN, MOCK_ANFRAGEN, MOCK_NETZWERKKONTAKTE,
   MOCK_INTERESSENTEN, MOCK_EVENTS, MOCK_SUCCESS_STORIES, MOCK_KONTAKTE, MOCK_FORMULARE,
-  MOCK_MATCH_VORSCHLAEGE,
+  MOCK_MATCH_VORSCHLAEGE, MOCK_MATCHMAIL_VORLAGEN,
   type MockUnternehmen, type MockAnfrage, type MockNetzwerkkontakt,
   type AnfrageWorkflowStatus, type MockKontakt, type KontaktProjektZuordnung,
   type FormularVorlage, type MatchVorschlag, type MatchStatus, type DsgvoZustimmung,
+  type MatchmailVorlage,
 } from './mockdata';
 
 export interface Aktivitaet {
@@ -68,6 +69,9 @@ interface DashboardStore {
   addFormular: (f: FormularVorlage) => void;
   updateFormular: (id: string, patch: Partial<FormularVorlage>) => void;
   deleteFormular: (id: string) => void;
+  // Matchmaking-Vorlagen (E-Mail-Templates)
+  matchmailVorlagen: MatchmailVorlage[];
+  updateMatchmailVorlage: (id: string, patch: Partial<MatchmailVorlage>) => void;
   // Klärungsstand-Bestätigungen
   bestaetigeKlaerungsPunkt: (
     typ: 'anfrage' | 'interessent' | 'unternehmen',
@@ -137,6 +141,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const [kontakte, setKontakte] = useState<MockNetzwerkkontakt[]>(MOCK_NETZWERKKONTAKTE);
   const [geschaftskontakte, setGeschaftskontakte] = useState<MockKontakt[]>(MOCK_KONTAKTE);
   const [formulare, setFormulare] = useState<FormularVorlage[]>(MOCK_FORMULARE);
+  const [matchmailVorlagen, setMatchmailVorlagen] = useState<MatchmailVorlage[]>(MOCK_MATCHMAIL_VORLAGEN);
   const [zuordnungen, setZuordnungen] = useState<ProjektInteressent[]>(SEED_ZUORDNUNGEN);
   const [matchVorschlaege, setMatchVorschlaege] = useState<MatchVorschlag[]>(MOCK_MATCH_VORSCHLAEGE);
   const [aktivitaeten, setAktivitaeten] = useState<Aktivitaet[]>([]);
@@ -332,6 +337,10 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
   const deleteFormular = (id: string) =>
     setFormulare(prev => prev.filter(f => f.id !== id));
 
+  // ── Matchmaking-Vorlagen ──────────────────────────────────────
+  const updateMatchmailVorlage = (id: string, patch: Partial<MatchmailVorlage>) =>
+    setMatchmailVorlagen(prev => prev.map(v => v.id === id ? { ...v, ...patch, letzteBearbeitung: new Date().toISOString().split('T')[0] } : v));
+
   // ── Match-Vorschläge (DSGVO-konform) ─────────────────────────
 
   const addMatchVorschlag = (m: MatchVorschlag) => {
@@ -444,6 +453,7 @@ export function DashboardStoreProvider({ children }: { children: ReactNode }) {
       geschaftskontakte, addGeschaftskontakt, updateGeschaftskontakt,
       addKontaktProjektZuordnung, legeKontaktAusInteressentAn,
       formulare, addFormular, updateFormular, deleteFormular,
+      matchmailVorlagen, updateMatchmailVorlage,
       bestaetigeKlaerungsPunkt, entferneKlaerungsBestaetigung,
       matchVorschlaege, addMatchVorschlag, updateMatchVorschlag,
       setzeMatchStatus, dokumentiereZustimmung, dokumentiereAblehnung,

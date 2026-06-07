@@ -519,6 +519,207 @@ export const MOCK_FORMULARE: FormularVorlage[] = [
   },
 ];
 
+// ─── MATCHMAKING-VORLAGEN (editierbare E-Mail-Templates) ────
+
+export type MatchmailTyp =
+  | 'vorschlag_suchender'        // A) Match-Vorschlag an Suchenden
+  | 'vorschlag_interessent'      // B) Match-Vorschlag an Interessenten
+  | 'kontaktfreigabe'            // C) Kontaktdaten freigegeben (nach beidseitiger Zustimmung)
+  | 'erinnerung_zustimmung'      // D) Erinnerung zur Zustimmung
+  | 'beide_zugestimmt'           // E) Bestätigung: Beide haben zugestimmt
+  | 'erstkontakt_erinnerung'     // F) Erstkontakt-Erinnerung
+  | 'problem_meldung';           // G) Problemmeldung
+
+export interface MatchmailPlatzhalter {
+  key: string;         // z.B. "{{Projektname}}"
+  label: string;       // z.B. "Projektname"
+  beispiel: string;    // z.B. "Vertriebspartner für Fisch- und Backwaren"
+}
+
+export interface MatchmailButton {
+  label: string;       // z.B. "✅ Kontaktdaten freigeben"
+  aktion: string;      // z.B. "zustimmung" | "ablehnung" | "link"
+  farbe: string;       // z.B. "#4CAF50"
+}
+
+export interface MatchmailVorlage {
+  id: string;
+  typ: MatchmailTyp;
+  name: string;
+  beschreibung: string;
+  betreff: string;
+  einleitung: string;         // Text vor dem Hauptinhalt
+  hauptinhalt: string;        // Haupttext (mit Platzhaltern)
+  hinweis: string;            // DSGVO-Hinweis oder ähnliches
+  buttons: MatchmailButton[];
+  platzhalter: MatchmailPlatzhalter[];
+  fusszeile: string;
+  aktiv: boolean;
+  letzteBearbeitung?: string;
+}
+
+export const MATCHMAIL_TYP_LABELS: Record<MatchmailTyp, string> = {
+  vorschlag_suchender: 'Match-Vorschlag an Suchenden',
+  vorschlag_interessent: 'Match-Vorschlag an Interessenten',
+  kontaktfreigabe: 'Kontaktdaten freigegeben',
+  erinnerung_zustimmung: 'Erinnerung zur Zustimmung',
+  beide_zugestimmt: 'Beide Parteien haben zugestimmt',
+  erstkontakt_erinnerung: 'Erstkontakt-Erinnerung',
+  problem_meldung: 'Problemmeldung',
+};
+
+export const MATCHMAIL_TYP_ICONS: Record<MatchmailTyp, string> = {
+  vorschlag_suchender: '🎯',
+  vorschlag_interessent: '🎯',
+  kontaktfreigabe: '📦',
+  erinnerung_zustimmung: '⏰',
+  beide_zugestimmt: '✅',
+  erstkontakt_erinnerung: '📞',
+  problem_meldung: '⚠️',
+};
+
+// Standard-Platzhalter, die in allen Vorlagen verfügbar sind
+export const ALLE_PLATZHALTER: MatchmailPlatzhalter[] = [
+  { key: '{{Projektname}}', label: 'Projektname', beispiel: 'Vertriebspartner für Fisch- und Backwaren' },
+  { key: '{{AnfrageId}}', label: 'Anfrage-Nr.', beispiel: 'EB-2026-001' },
+  { key: '{{Unternehmen}}', label: 'Suchendes Unternehmen', beispiel: 'Nordhavn Foods A/S' },
+  { key: '{{Interessent}}', label: 'Interessent', beispiel: 'NordConsult Vertrieb GmbH' },
+  { key: '{{Ansprechpartner}}', label: 'Ansprechpartner', beispiel: 'Lars Jensen' },
+  { key: '{{AnsprechpartnerInteressent}}', label: 'Ansprechpartner Interessent', beispiel: 'Michael Petersen' },
+  { key: '{{Region}}', label: 'Region', beispiel: 'Norddeutschland' },
+  { key: '{{Branche}}', label: 'Branche', beispiel: 'Lebensmittel' },
+  { key: '{{MatchScore}}', label: 'Match-Score', beispiel: '92%' },
+  { key: '{{MatchGruende}}', label: 'Match-Gründe (Liste)', beispiel: '• Food-Erfahrung\n• Kontakte zum LEH' },
+  { key: '{{Email}}', label: 'E-Mail', beispiel: 'l.jensen@nordhavn-foods.dk' },
+  { key: '{{Telefon}}', label: 'Telefon', beispiel: '+45 70 12 34 56' },
+  { key: '{{Website}}', label: 'Website', beispiel: 'https://www.nordhavn-foods.dk' },
+  { key: '{{Sprachen}}', label: 'Sprachen', beispiel: 'Dänisch, Englisch' },
+  { key: '{{EmpfohleneSprache}}', label: 'Empfohlene Sprache', beispiel: 'Deutsch' },
+  { key: '{{Datum}}', label: 'Aktuelles Datum', beispiel: new Date().toLocaleDateString('de-DE') },
+];
+
+export const MOCK_MATCHMAIL_VORLAGEN: MatchmailVorlage[] = [
+  {
+    id: 'mmv-001',
+    typ: 'vorschlag_suchender',
+    name: 'Match-Vorschlag an Suchenden',
+    beschreibung: 'Wird an das suchende Unternehmen gesendet, wenn ein passender Interessent gefunden wurde.',
+    betreff: '🎯 Easy-B2B: Passender Kontakt gefunden ({{AnfrageId}})',
+    einleitung: 'Hallo {{Ansprechpartner}},\n\nwir haben einen Interessenten für Ihre Anfrage {{AnfrageId}} geprüft und halten ihn für passend.',
+    hauptinhalt: 'MATCH-VORSCHLAG · {{MatchScore}} PASSUNG\n\n{{Interessent}}\n\nBranche: {{Branche}}\nRegion: {{Region}}\nSprachen: {{Sprachen}}\n\nWarum wir glauben, dass dieser Kontakt passt:\n{{MatchGruende}}',
+    hinweis: 'Kontaktdaten werden erst nach Ihrer ausdrücklichen Zustimmung ausgetauscht. Der Interessent wird ebenfalls um Zustimmung gebeten.\n\nMit Ihrer Zustimmung dürfen wir Ihre Kontaktdaten an den Interessenten weitergeben.',
+    buttons: [
+      { label: '✅ Kontaktdaten freigeben', aktion: 'zustimmung', farbe: '#4CAF50' },
+      { label: '❌ Kein Interesse', aktion: 'ablehnung', farbe: '#f5f5f5' },
+    ],
+    platzhalter: ALLE_PLATZHALTER.filter(p => ['{{Ansprechpartner}}','{{AnfrageId}}','{{Interessent}}','{{Branche}}','{{Region}}','{{Sprachen}}','{{MatchScore}}','{{MatchGruende}}','{{Datum}}'].includes(p.key)),
+    fusszeile: 'Diese E-Mail wurde im Rahmen des Easy-B2B Matchmaking-Prozesses versendet. Ihre Zustimmung wird DSGVO-konform dokumentiert (Zeitpunkt, Person, Unternehmen). Ohne Ihre aktive Freigabe werden keine Kontaktdaten weitergegeben.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+  {
+    id: 'mmv-002',
+    typ: 'vorschlag_interessent',
+    name: 'Match-Vorschlag an Interessenten',
+    beschreibung: 'Wird an den Interessenten gesendet, um ihn einem suchenden Unternehmen vorzustellen.',
+    betreff: '🎯 Easy-B2B möchte Sie einem Unternehmen vorstellen',
+    einleitung: 'Hallo {{AnsprechpartnerInteressent}},\n\nwir glauben, dass das Projekt {{AnfrageId}} sehr gut zu Ihrem Profil passt.',
+    hauptinhalt: 'PROJEKT-VORSTELLUNG · {{MatchScore}} PASSUNG\n\n{{Unternehmen}}\n\nBranche: {{Branche}}\nRegion: {{Region}}\nSprachen: {{Sprachen}}\n\nWarum wir glauben, dass dieses Projekt für Sie interessant ist:\n{{MatchGruende}}',
+    hinweis: 'Kontaktdaten werden erst nach Ihrer ausdrücklichen Zustimmung ausgetauscht. Das suchende Unternehmen wird ebenfalls um Zustimmung gebeten.\n\nMit Ihrer Zustimmung dürfen wir Ihre Kontaktdaten an das suchende Unternehmen weitergeben.',
+    buttons: [
+      { label: '✅ Kontaktdaten freigeben', aktion: 'zustimmung', farbe: '#4CAF50' },
+      { label: '❌ Kein Interesse', aktion: 'ablehnung', farbe: '#f5f5f5' },
+    ],
+    platzhalter: ALLE_PLATZHALTER.filter(p => ['{{AnsprechpartnerInteressent}}','{{AnfrageId}}','{{Unternehmen}}','{{Branche}}','{{Region}}','{{Sprachen}}','{{MatchScore}}','{{MatchGruende}}','{{Datum}}'].includes(p.key)),
+    fusszeile: 'Diese E-Mail wurde im Rahmen des Easy-B2B Matchmaking-Prozesses versendet. Ihre Zustimmung wird DSGVO-konform dokumentiert (Zeitpunkt, Person, Unternehmen). Ohne Ihre aktive Freigabe werden keine Kontaktdaten weitergegeben.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+  {
+    id: 'mmv-003',
+    typ: 'kontaktfreigabe',
+    name: 'Kontaktdaten freigegeben (Match-Paket)',
+    beschreibung: 'Wird an beide Parteien gesendet, nachdem beide zugestimmt haben. Enthält die Kontaktdaten des jeweiligen Partners.',
+    betreff: '📦 Easy-B2B Match-Paket: Kontaktdaten {{Interessent}}',
+    einleitung: 'Hallo {{Ansprechpartner}},\n\nbeide Seiten haben der Kontaktfreigabe zugestimmt. Hier sind die Kontaktdaten Ihres Match-Partners:',
+    hauptinhalt: '✅ MATCH BESTÄTIGT — KONTAKTDATEN\n\n{{Interessent}}\n\nAnsprechpartner: {{AnsprechpartnerInteressent}}\nE-Mail: {{Email}}\nTelefon: {{Telefon}}\nWebsite: {{Website}}\nSprachen: {{Sprachen}}',
+    hinweis: 'Hinweise zum Erstkontakt:\n\n• Empfohlene Sprache: {{EmpfohleneSprache}}\n• Nennen Sie Easy-B2B als gemeinsamen Kontext — das schafft sofort Vertrauen\n• Wir freuen uns über Feedback nach dem ersten Gespräch',
+    buttons: [],
+    platzhalter: ALLE_PLATZHALTER,
+    fusszeile: 'Tipp: Nennen Sie Easy-B2B als gemeinsamen Kontext — das schafft sofort Vertrauen. Wir freuen uns über Feedback nach dem ersten Gespräch.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+  {
+    id: 'mmv-004',
+    typ: 'erinnerung_zustimmung',
+    name: 'Erinnerung: Zustimmung ausstehend',
+    beschreibung: 'Wird gesendet, wenn eine Partei noch nicht auf den Match-Vorschlag reagiert hat.',
+    betreff: '⏰ Easy-B2B: Ihr Match-Vorschlag wartet auf Ihre Rückmeldung',
+    einleitung: 'Hallo {{Ansprechpartner}},\n\nvor einigen Tagen haben wir Ihnen einen Match-Vorschlag für Projekt {{AnfrageId}} zugesendet. Ihre Rückmeldung steht noch aus.',
+    hauptinhalt: 'Wir möchten Sie freundlich daran erinnern, dass ein Interessent auf Ihre Entscheidung wartet.\n\nProjekt: {{Projektname}}\nMatch-Score: {{MatchScore}}\n\nSie können den Vorschlag jederzeit annehmen oder ablehnen.',
+    hinweis: 'Ohne Ihre aktive Rückmeldung können wir den Matchmaking-Prozess nicht fortsetzen. Ihre Kontaktdaten werden nicht ohne Ihre Zustimmung weitergegeben.',
+    buttons: [
+      { label: '✅ Kontaktdaten freigeben', aktion: 'zustimmung', farbe: '#4CAF50' },
+      { label: '❌ Kein Interesse', aktion: 'ablehnung', farbe: '#f5f5f5' },
+    ],
+    platzhalter: ALLE_PLATZHALTER.filter(p => ['{{Ansprechpartner}}','{{AnfrageId}}','{{Projektname}}','{{MatchScore}}','{{Datum}}'].includes(p.key)),
+    fusszeile: 'Diese E-Mail wurde im Rahmen des Easy-B2B Matchmaking-Prozesses versendet.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+  {
+    id: 'mmv-005',
+    typ: 'beide_zugestimmt',
+    name: 'Bestätigung: Beide haben zugestimmt',
+    beschreibung: 'Kurze Bestätigungsmail, wenn die zweite Partei zugestimmt hat. Kündigt das Match-Paket an.',
+    betreff: '✅ Easy-B2B: Beide Seiten haben zugestimmt!',
+    einleitung: 'Hallo {{Ansprechpartner}},\n\ngute Nachrichten! Beide Seiten haben der Kontaktfreigabe für Projekt {{AnfrageId}} zugestimmt.',
+    hauptinhalt: 'Wir bereiten jetzt Ihr Match-Paket mit den Kontaktdaten vor.\n\nSie erhalten in Kürze eine separate E-Mail mit allen relevanten Informationen für den Erstkontakt.',
+    hinweis: 'Bitte beachten Sie: Die Kontaktdaten werden vertraulich und ausschließlich für den vereinbarten Zweck übermittelt.',
+    buttons: [],
+    platzhalter: ALLE_PLATZHALTER.filter(p => ['{{Ansprechpartner}}','{{AnfrageId}}','{{Datum}}'].includes(p.key)),
+    fusszeile: 'Diese E-Mail wurde im Rahmen des Easy-B2B Matchmaking-Prozesses versendet.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+  {
+    id: 'mmv-006',
+    typ: 'erstkontakt_erinnerung',
+    name: 'Erstkontakt-Erinnerung',
+    beschreibung: 'Wird gesendet, wenn nach der Kontaktfreigabe noch kein Erstkontakt stattgefunden hat.',
+    betreff: '📞 Easy-B2B: Haben Sie schon Kontakt aufgenommen?',
+    einleitung: 'Hallo {{Ansprechpartner}},\n\nvor einigen Tagen haben wir Ihnen die Kontaktdaten Ihres Match-Partners für Projekt {{AnfrageId}} zugesendet.',
+    hauptinhalt: 'Haben Sie bereits Kontakt aufgenommen?\n\nFalls ja: Wunderbar! Wir freuen uns über eine kurze Rückmeldung, wie das erste Gespräch verlaufen ist.\n\nFalls nein: Kein Problem — aber je schneller der Erstkontakt stattfindet, desto besser. Der erste Schritt ist oft der wichtigste.',
+    hinweis: 'Empfohlene Sprache: {{EmpfohleneSprache}}\n\nTipp: Ein kurzer Anruf oder eine persönliche E-Mail mit Bezug auf Easy-B2B ist oft der beste Einstieg.',
+    buttons: [
+      { label: '✅ Ja, Kontakt hergestellt', aktion: 'bestaetigung', farbe: '#4CAF50' },
+      { label: '⚠️ Problem melden', aktion: 'problem', farbe: '#FF9900' },
+    ],
+    platzhalter: ALLE_PLATZHALTER.filter(p => ['{{Ansprechpartner}}','{{AnfrageId}}','{{EmpfohleneSprache}}','{{Datum}}'].includes(p.key)),
+    fusszeile: 'Diese E-Mail wurde im Rahmen des Easy-B2B Matchmaking-Prozesses versendet.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+  {
+    id: 'mmv-007',
+    typ: 'problem_meldung',
+    name: 'Problemmeldung',
+    beschreibung: 'Wird an den Operator weitergeleitet, wenn eine Partei ein Problem meldet.',
+    betreff: '⚠️ Easy-B2B: Problemmeldung zu Projekt {{AnfrageId}}',
+    einleitung: 'Hallo {{Ansprechpartner}},\n\nes tut uns leid zu hören, dass es Schwierigkeiten gibt.',
+    hauptinhalt: 'Bitte beschreiben Sie uns kurz das Problem — wir kümmern uns darum.\n\nProjekt: {{Projektname}}\nMatch-Partner: {{Interessent}}\n\nSie können uns jederzeit per E-Mail oder Telefon erreichen.',
+    hinweis: 'Unser Team prüft Ihre Meldung zeitnah. In dringenden Fällen melden wir uns innerhalb von 24 Stunden.',
+    buttons: [
+      { label: '📧 Problem beschreiben', aktion: 'antwort', farbe: '#FF9900' },
+    ],
+    platzhalter: ALLE_PLATZHALTER.filter(p => ['{{Ansprechpartner}}','{{AnfrageId}}','{{Projektname}}','{{Interessent}}','{{Datum}}'].includes(p.key)),
+    fusszeile: 'Diese E-Mail wurde im Rahmen des Easy-B2B Matchmaking-Prozesses versendet.',
+    aktiv: true,
+    letzteBearbeitung: '2026-06-05',
+  },
+];
+
 // ─── KONTAKTE ────────────────────────────────────────────────
 // Dauerhafte Stammdaten — entstehen aus geprüften Interessenten
 // oder werden manuell angelegt.

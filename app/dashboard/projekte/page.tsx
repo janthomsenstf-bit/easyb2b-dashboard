@@ -621,6 +621,19 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                         <p style={{ fontSize: '12px', color: '#003366', margin: '0 0 10px 0', fontWeight: 600 }}>
                           Freigabeprozess starten? Beide Parteien erhalten eine E-Mail mit Match-Details — <strong>ohne Kontaktdaten</strong>.
                         </p>
+
+                        {/* Transparenz: Was wird gesendet? */}
+                        <div style={{ margin: '10px 0', padding: '10px 12px', backgroundColor: '#e8f5e9', borderRadius: '6px', border: '1px solid #c8e6c9' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#2e7d32', marginBottom: '6px' }}>📧 Diese E-Mails werden versendet:</div>
+                          <div style={{ fontSize: '11px', color: '#1b5e20', lineHeight: 1.7 }}>
+                            <div>1️⃣ <strong>An {a.firmenname}</strong> (Suchender): Match-Vorschlag mit anonymisiertem Interessenten-Profil</div>
+                            <div>2️⃣ <strong>An Interessent</strong>: Match-Vorschlag mit Projekt-Übersicht</div>
+                          </div>
+                          <div style={{ fontSize: '10px', color: '#388e3c', marginTop: '6px' }}>
+                            💡 Vorlagen bearbeiten unter: Formulare → 🎯 Matchmaking-Vorlagen
+                          </div>
+                        </div>
+
                         {ss === 'idle' && <button onClick={() => sendeFreigabeAnfrage(match)} style={{ padding: '8px 16px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>🎯 Match vorschlagen & Freigabe anfragen</button>}
                         {ss === 'sending' && <span style={{ fontSize: '12px', color: '#666' }}>⏳ Mails werden gesendet…</span>}
                         {ss === 'sent' && <span style={{ fontSize: '12px', color: '#4CAF50', fontWeight: 600 }}>✅ Freigabe-Anfragen gesendet</span>}
