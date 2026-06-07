@@ -139,7 +139,7 @@ export default function DashboardPage() {
           Aktivitätenprotokoll
         </h2>
         {aktivitaeten.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
             Noch keine Aktivitäten in dieser Session. Bearbeite ein Unternehmen, lege einen Kontakt an oder ändere einen Status — alles erscheint hier.
           </p>
         ) : (
@@ -148,7 +148,7 @@ export default function DashboardPage() {
               <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', backgroundColor: '#f9f9f9', borderRadius: '6px', fontSize: '13px' }}>
                 <span style={{ fontSize: '16px' }}>{a.typ === 'anlegen' ? '➕' : a.typ === 'status' ? '🔄' : '✏️'}</span>
                 <span style={{ flex: 1, color: '#333' }}>{a.was}</span>
-                <span style={{ fontSize: '11px', color: '#999' }}>{a.wer} · {a.zeit}</span>
+                <span style={{ fontSize: '11px', color: '#666' }}>{a.wer} · {a.zeit}</span>
               </div>
             ))}
           </div>

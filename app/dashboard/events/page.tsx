@@ -254,7 +254,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
             <h2 style={{ margin: 0, color: '#003366', fontSize: '17px' }}>{event.titel}</h2>
             <div style={{ fontSize: '12px', color: '#666', marginTop: '3px' }}>{getEventTypLabel(event.typ)}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666' }}>×</button>
         </div>
         <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getEventStatusColor(event.status) }}>
           {getEventStatusLabel(event.status)}
@@ -266,7 +266,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               padding: '8px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
               backgroundColor: 'transparent',
-              color: activeTab === t.id ? '#003366' : '#999',
+              color: activeTab === t.id ? '#003366' : '#666',
               borderBottom: activeTab === t.id ? '2px solid #003366' : '2px solid transparent',
               marginBottom: '-2px',
             }}>
@@ -324,7 +324,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
             </div>
 
             {event.teilnehmer.length === 0 ? (
-              <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Noch keine Anmeldungen</div>
+              <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px' }}>Noch keine Anmeldungen</div>
             ) : (
               event.teilnehmer.map(t => (
                 <div key={t.id} style={{
@@ -361,7 +361,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
         {activeTab === 'feedback' && (
           <div>
             {event.feedback.length === 0 ? (
-              <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
+              <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
                 {event.status !== 'durchgefuehrt' ? 'Feedback wird nach dem Event erfasst.' : 'Noch kein Feedback vorhanden.'}
               </div>
             ) : (
@@ -397,7 +397,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
         {activeTab === 'matches' && (
           <div>
             {event.matches.length === 0 ? (
-              <div style={{ color: '#999', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
+              <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
                 Noch keine Matches dokumentiert.
               </div>
             ) : (
@@ -418,7 +418,7 @@ function EventDetailPanel({ event, activeTab, setActiveTab, onClose }: {
                     {m.kooperation && <MiniTag label={`Kooperation: ${m.kooperationsArt || 'entstanden'}`} color="#4CAF50" />}
                   </div>
                   {m.notiz && <p style={{ fontSize: '12px', color: '#555', margin: 0, fontStyle: 'italic' }}>{m.notiz}</p>}
-                  {m.vermitteltDurch && <div style={{ fontSize: '11px', color: '#999', marginTop: '6px' }}>Vermittelt von: {m.vermitteltDurch}</div>}
+                  {m.vermitteltDurch && <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>Vermittelt von: {m.vermitteltDurch}</div>}
                 </div>
               ))
             )}
@@ -490,7 +490,7 @@ function EventAnalytics({ totalEvents, durchgefuehrt, totalTeilnehmer, totalErsc
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.07)' }}>
           <h3 style={{ marginTop: 0, color: '#003366', fontSize: '16px', marginBottom: '16px' }}>Feedback-Überblick</h3>
           {allFeedbacks.length === 0 ? (
-            <p style={{ color: '#999', fontSize: '13px' }}>Noch kein Feedback vorhanden.</p>
+            <p style={{ color: '#666', fontSize: '13px' }}>Noch kein Feedback vorhanden.</p>
           ) : (
             <>
               <FeedbackMetric label="Würden wieder teilnehmen" value={wiederRate} color="#4CAF50" />
@@ -516,7 +516,7 @@ function EventAnalytics({ totalEvents, durchgefuehrt, totalTeilnehmer, totalErsc
             { label: 'Kooperationen', value: totalKooperationen, color: '#4CAF50' },
           ].map((s, i) => (
             <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {i > 0 && <span style={{ color: '#ccc', fontSize: '20px', flexShrink: 0 }}>→</span>}
+              {i > 0 && <span style={{ color: '#999', fontSize: '20px', flexShrink: 0 }}>→</span>}
               <div style={{ flex: 1, padding: '14px', backgroundColor: s.color + '15', borderRadius: '8px', textAlign: 'center', border: `2px solid ${s.color}30` }}>
                 <div style={{ fontSize: '24px', fontWeight: 700, color: s.color }}>{s.value}</div>
                 <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{s.label}</div>
@@ -535,7 +535,7 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
   return (
     <div style={{ display: 'flex', gap: '10px', marginBottom: '8px', fontSize: '13px' }}>
       <span style={{ minWidth: '18px' }}>{icon}</span>
-      <span style={{ color: '#999', minWidth: '80px', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: '#666', minWidth: '80px', flexShrink: 0 }}>{label}</span>
       <span style={{ color: '#333' }}>{value}</span>
     </div>
   );

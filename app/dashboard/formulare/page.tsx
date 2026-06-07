@@ -60,7 +60,7 @@ export default function FormularePage() {
         {/* LISTE */}
         <div style={{ width: selected ? '320px' : '100%', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {liste.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: '#999', fontSize: '14px', backgroundColor: 'white', borderRadius: '8px' }}>
+            <div style={{ textAlign: 'center', padding: '30px', color: '#666', fontSize: '14px', backgroundColor: 'white', borderRadius: '8px' }}>
               Keine Vorlagen. Lege eine neue an.
             </div>
           ) : liste.map(f => (
@@ -81,7 +81,7 @@ export default function FormularePage() {
                   {!f.aktiv && <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 600, backgroundColor: '#e8e8e8', color: '#444' }}>inaktiv</span>}
                 </div>
               </div>
-              {f.beschreibung && <div style={{ fontSize: '12px', color: '#888', marginTop: '6px' }}>{f.beschreibung}</div>}
+              {f.beschreibung && <div style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>{f.beschreibung}</div>}
             </div>
           ))}
         </div>
@@ -227,7 +227,7 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
           <label style={{ fontSize: '11px', color: '#666', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
             <input type="checkbox" checked={f.aktiv} onChange={e => store.updateFormular(f.id, { aktiv: e.target.checked })} /> aktiv
           </label>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666' }}>×</button>
         </div>
       </div>
 
@@ -236,7 +236,7 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
         {([['editor', '✏️ Editor'], ['vorschau', '👁 Vorschau'], ['ki', '🤖 KI-Hilfe']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setEditorTab(id)} style={{
             padding: '7px 14px', borderRadius: '6px 6px 0 0', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-            backgroundColor: editorTab === id ? '#f0f4ff' : 'transparent', color: editorTab === id ? '#003366' : '#999',
+            backgroundColor: editorTab === id ? '#f0f4ff' : 'transparent', color: editorTab === id ? '#003366' : '#666',
           }}>
             {label}
           </button>
@@ -248,7 +248,7 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
         {editorTab === 'editor' && (
           <div>
             {f.fragen.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '20px' }}>Noch keine Fragen. Füge unten die erste hinzu oder nutze die KI-Hilfe.</p>
+              <p style={{ fontSize: '13px', color: '#666', textAlign: 'center', padding: '20px' }}>Noch keine Fragen. Füge unten die erste hinzu oder nutze die KI-Hilfe.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                 {f.fragen.map((fr, idx) => (
@@ -309,14 +309,14 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
             </div>
             <div style={{ border: '1px solid #e0e0e0', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: '20px' }}>
               {f.fragen.length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#999' }}>Noch keine Fragen.</p>
+                <p style={{ fontSize: '13px', color: '#666' }}>Noch keine Fragen.</p>
               ) : f.fragen.map((fr, idx) => (
                 <div key={fr.id} style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#333', marginBottom: '5px' }}>
                     {idx + 1}. {fr.text}{fr.pflicht && <span style={{ color: '#f44336' }}> *</span>}
                   </label>
                   <VorschauFeld frage={fr} />
-                  {fr.hinweis && <div style={{ fontSize: '11px', color: '#999', marginTop: '3px' }}>{fr.hinweis}</div>}
+                  {fr.hinweis && <div style={{ fontSize: '11px', color: '#666', marginTop: '3px' }}>{fr.hinweis}</div>}
                 </div>
               ))}
               {f.fragen.length > 0 && (
@@ -342,7 +342,7 @@ function FormularEditor({ formular: f, store, onClose, onToast }: {
                   <div style={{ fontSize: '11px', color: '#1565C0', fontWeight: 700, marginBottom: '8px' }}>Erkannt: {kiBranche} · {kiFragen.length} Vorschläge</div>
                   {kiFragen.map((fr, i) => (
                     <div key={i} style={{ fontSize: '12px', color: '#444', padding: '4px 0', borderBottom: '1px solid #f5f5f5' }}>
-                      • {fr.text} <span style={{ color: '#999' }}>({getFrageTypLabel(fr.typ)})</span>
+                      • {fr.text} <span style={{ color: '#666' }}>({getFrageTypLabel(fr.typ)})</span>
                     </div>
                   ))}
                   <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
@@ -390,7 +390,7 @@ function VorschauFeld({ frage }: { frage: FormularFrage }) {
     case 'text_lang': return <textarea rows={3} disabled style={{ ...base, resize: 'none' }} placeholder="Antwort…" />;
     case 'zahl': return <input type="number" disabled style={base} placeholder="0" />;
     case 'datum': return <input type="date" disabled style={base} />;
-    case 'datei': return <div style={{ ...base, color: '#999' }}>📎 Datei auswählen…</div>;
+    case 'datei': return <div style={{ ...base, color: '#666' }}>📎 Datei auswählen…</div>;
     case 'ja_nein': return (
       <div style={{ display: 'flex', gap: '12px' }}>
         <label style={{ fontSize: '13px' }}><input type="radio" disabled /> Ja</label>
@@ -399,7 +399,7 @@ function VorschauFeld({ frage }: { frage: FormularFrage }) {
     );
     case 'skala': return (
       <div style={{ display: 'flex', gap: '4px' }}>
-        {[1,2,3,4,5,6,7,8,9,10].map(n => <span key={n} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#999' }}>{n}</span>)}
+        {[1,2,3,4,5,6,7,8,9,10].map(n => <span key={n} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#666' }}>{n}</span>)}
       </div>
     );
     case 'auswahl_single': return (
@@ -433,7 +433,7 @@ function NeueVorlageModal({ onClose, onErstellen }: {
       <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '440px', boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, fontSize: '18px', color: '#003366' }}>Neue Formular-Vorlage</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', color: '#999' }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', color: '#666' }}>×</button>
         </div>
         <div style={{ padding: '24px' }}>
           <label style={{ fontSize: '12px', fontWeight: 600, color: '#555' }}>Name *
@@ -459,5 +459,5 @@ function NeueVorlageModal({ onClose, onErstellen }: {
 }
 
 function arrowBtn(disabled: boolean): React.CSSProperties {
-  return { background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer', fontSize: '10px', color: disabled ? '#ddd' : '#999', padding: '2px', lineHeight: 1 };
+  return { background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer', fontSize: '10px', color: disabled ? '#ddd' : '#666', padding: '2px', lineHeight: 1 };
 }

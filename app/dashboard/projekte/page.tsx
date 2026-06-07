@@ -141,7 +141,7 @@ export default function ProjektePage() {
                   <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                     <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: s.veroeffentlichungColor }}>{s.veroeffentlichung}</span>
                     <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, color: 'white', backgroundColor: getStatusColor(a.status) }}>{getStatusLabel(a.status)}</span>
-                    <span style={{ fontSize: '18px', color: '#ccc', lineHeight: 1 }}>{isOpen ? '▴' : '▾'}</span>
+                    <span style={{ fontSize: '18px', color: '#999', lineHeight: 1 }}>{isOpen ? '▴' : '▾'}</span>
                   </div>
                 </div>
                 {s.hinweis && !isOpen && (
@@ -167,7 +167,7 @@ export default function ProjektePage() {
         })}
 
         {gefiltert.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '14px' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666', fontSize: '14px' }}>
             Keine Projekte gefunden.
           </div>
         )}
@@ -267,10 +267,10 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
       <Section titel="1 · Anfrage">
         <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: '0 0 10px 0' }}>{a.beschreibung}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
-          <div><span style={{ color: '#999' }}>Region:</span> {getLandFlag(a.standort.includes('Dänemark') ? 'daenemark' : 'deutschland')} {a.standort}</div>
-          <div><span style={{ color: '#999' }}>Branche:</span> {a.branche}</div>
-          <div><span style={{ color: '#999' }}>Art:</span> {a.art}</div>
-          <div><span style={{ color: '#999' }}>Sichtbarkeit:</span> {a.sichtbarkeit}</div>
+          <div><span style={{ color: '#666' }}>Region:</span> {getLandFlag(a.standort.includes('Dänemark') ? 'daenemark' : 'deutschland')} {a.standort}</div>
+          <div><span style={{ color: '#666' }}>Branche:</span> {a.branche}</div>
+          <div><span style={{ color: '#666' }}>Art:</span> {a.art}</div>
+          <div><span style={{ color: '#666' }}>Sichtbarkeit:</span> {a.sichtbarkeit}</div>
         </div>
         <a href="/dashboard/anfragen" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Anfrage bearbeiten</a>
       </Section>
@@ -278,7 +278,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
       {/* 2. Interessenten */}
       <Section titel={`2 · Interessenten (${zuordnungen.length})`}>
         {zuordnungen.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Es gibt Match-Vorschläge (siehe unten).'}</p>
+          <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Es gibt Match-Vorschläge (siehe unten).'}</p>
         ) : (
           zuordnungen.map((z: ProjektInteressent) => {
             const i = MOCK_INTERESSENTEN.find(x => x.id === z.interessentId);
@@ -290,7 +290,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
                 <div style={{ flex: 1 }}>
                   <div>
                     <span style={{ fontWeight: 600, color: '#003366' }}>{i.firmenname}</span>
-                    <span style={{ color: '#999' }}> · {i.ansprechpartner}</span>
+                    <span style={{ color: '#666' }}> · {i.ansprechpartner}</span>
                     <span style={{ marginLeft: '6px', padding: '1px 6px', borderRadius: '8px', fontSize: '9px', fontWeight: 700, backgroundColor: z.zuordnungsart === 'manuell' ? '#FF990020' : '#99999920', color: z.zuordnungsart === 'manuell' ? '#e65100' : '#777' }}>
                       {z.zuordnungsart === 'manuell' ? '✋ manuell' : '⚙ auto'}
                     </span>
@@ -298,7 +298,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
                   {kannIntro && (
                     <div style={{ marginTop: '5px' }}>
                       {istatus === 'idle'    && <button onClick={() => sendeIntroMail(i.id, i)} style={{ padding: '4px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '5px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32', fontWeight: 600 }}>✉️ Intro-Mail senden</button>}
-                      {istatus === 'sending' && <span style={{ fontSize: '11px', color: '#999' }}>⏳ Wird gesendet…</span>}
+                      {istatus === 'sending' && <span style={{ fontSize: '11px', color: '#666' }}>⏳ Wird gesendet…</span>}
                       {istatus === 'sent'    && <span style={{ fontSize: '11px', color: '#4CAF50', fontWeight: 600 }}>✅ Intro-Mail gesendet</span>}
                       {istatus === 'error'   && <span style={{ fontSize: '11px', color: '#f44336' }}>❌ Fehler — API-Key prüfen</span>}
                     </div>
@@ -313,7 +313,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
           })
         )}
         <a href="/dashboard/interessenten" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Interessenten verwalten</a>
-        <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', fontStyle: 'italic' }}>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '6px', fontStyle: 'italic' }}>
           ℹ️ Eingangskorb — neue Interessensbekundungen vom Marktplatz. Nach Prüfung „Kontakt erstellen".
         </div>
       </Section>
@@ -321,7 +321,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
       {/* 2b. Zugeordnete Kontakte (dauerhafte Stammdaten) */}
       <Section titel={`2b · Zugeordnete Kontakte (${zugeordneteKontakte.length})`}>
         {zugeordneteKontakte.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#999', margin: '0 0 10px 0' }}>Noch keine dauerhaften Kontakte zugeordnet.</p>
+          <p style={{ fontSize: '13px', color: '#666', margin: '0 0 10px 0' }}>Noch keine dauerhaften Kontakte zugeordnet.</p>
         ) : (
           zugeordneteKontakte.map(k => {
             const z = k.projektZuordnungen.find(zz => zz.projektId === a.id)!;
@@ -329,9 +329,9 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
               <div key={k.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e8e8e8', fontSize: '13px' }}>
                 <div>
                   <span style={{ fontWeight: 600, color: '#003366' }}>{k.firmenname}</span>
-                  <span style={{ color: '#999' }}> · {k.ansprechpartner}</span>
-                  {k.region && <span style={{ color: '#bbb', fontSize: '11px' }}> · {k.region}</span>}
-                  {z.notiz && <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>„{z.notiz}"</div>}
+                  <span style={{ color: '#666' }}> · {k.ansprechpartner}</span>
+                  {k.region && <span style={{ color: '#888', fontSize: '11px' }}> · {k.region}</span>}
+                  {z.notiz && <div style={{ fontSize: '11px', color: '#666', fontStyle: 'italic', marginTop: '2px' }}>„{z.notiz}"</div>}
                 </div>
                 <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getKontaktZuordnungColor(z.status), flexShrink: 0 }}>
                   {getKontaktZuordnungLabel(z.status)}
@@ -354,11 +354,11 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
             <input value={kontaktSuche} onChange={e => setKontaktSuche(e.target.value)} placeholder="Name, Firma, Branche, Region, E-Mail…" style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box', marginBottom: '8px' }} />
             <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {verfuegbareKontakte.length === 0 ? (
-                <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>Keine passenden Kontakte. Lege im Kontakte-Modul einen neuen an.</p>
+                <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>Keine passenden Kontakte. Lege im Kontakte-Modul einen neuen an.</p>
               ) : verfuegbareKontakte.slice(0, 8).map(k => (
                 <button key={k.id} onClick={() => kontaktHinzufuegen(k.id)} style={{ textAlign: 'left', padding: '8px 10px', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
                   <div style={{ fontWeight: 600, color: '#003366' }}>{k.firmenname}</div>
-                  <div style={{ fontSize: '11px', color: '#888' }}>{k.ansprechpartner} · {k.email}{k.region ? ` · ${k.region}` : ''}</div>
+                  <div style={{ fontSize: '11px', color: '#666' }}>{k.ansprechpartner} · {k.email}{k.region ? ` · ${k.region}` : ''}</div>
                 </button>
               ))}
             </div>
@@ -542,10 +542,10 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
     <Section titel={`3 · Match-Vorschläge & Freigabeprozess (${aktive.length})`}>
       {matchVorschlaege.length === 0 ? (
         <div style={{ padding: '16px', textAlign: 'center', border: '2px dashed #e0e0e0', borderRadius: '8px' }}>
-          <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>
+          <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
             Noch keine Match-Vorschläge für dieses Projekt.
           </p>
-          <p style={{ fontSize: '11px', color: '#bbb', margin: '6px 0 0 0' }}>
+          <p style={{ fontSize: '11px', color: '#888', margin: '6px 0 0 0' }}>
             Match-Vorschläge entstehen aus geprüften Interessenten und Kontakten.
           </p>
         </div>
@@ -578,7 +578,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                       <span style={{ fontWeight: 600, fontSize: '14px', color: '#003366' }}>{match.interessentFirma}</span>
                       <span style={{ fontWeight: 700, fontSize: '13px', color: match.score >= 80 ? '#4CAF50' : '#FF9900' }}>{match.score}%</span>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>
+                    <div style={{ fontSize: '11px', color: '#666' }}>
                       {interessent?.ansprechpartner} · {interessent?.region || 'Region unbekannt'}
                     </div>
                   </div>
@@ -586,7 +586,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                     <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, color: 'white', backgroundColor: getMatchStatusColor(match.status) }}>
                       {getMatchStatusLabel(match.status)}
                     </span>
-                    <span style={{ fontSize: '14px', color: '#ccc' }}>{isExpanded ? '▴' : '▾'}</span>
+                    <span style={{ fontSize: '14px', color: '#999' }}>{isExpanded ? '▴' : '▾'}</span>
                   </div>
                 </div>
 
@@ -622,7 +622,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                           Freigabeprozess starten? Beide Parteien erhalten eine E-Mail mit Match-Details — <strong>ohne Kontaktdaten</strong>.
                         </p>
                         {ss === 'idle' && <button onClick={() => sendeFreigabeAnfrage(match)} style={{ padding: '8px 16px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>🎯 Match vorschlagen & Freigabe anfragen</button>}
-                        {ss === 'sending' && <span style={{ fontSize: '12px', color: '#999' }}>⏳ Mails werden gesendet…</span>}
+                        {ss === 'sending' && <span style={{ fontSize: '12px', color: '#666' }}>⏳ Mails werden gesendet…</span>}
                         {ss === 'sent' && <span style={{ fontSize: '12px', color: '#4CAF50', fontWeight: 600 }}>✅ Freigabe-Anfragen gesendet</span>}
                         {ss === 'error' && <span style={{ fontSize: '12px', color: '#f44336' }}>❌ Fehler — API-Key prüfen</span>}
                       </div>
@@ -636,7 +636,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                         {/* Suchender */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'white', borderRadius: '6px', marginBottom: '6px', border: '1px solid #e8e8e8' }}>
                           <div>
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>📋 {a.firmenname} <span style={{ color: '#999', fontWeight: 400 }}>(Suchender)</span></div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>📋 {a.firmenname} <span style={{ color: '#666', fontWeight: 400 }}>(Suchender)</span></div>
                             {match.zustimmungSuchender ? (
                               <div style={{ fontSize: '11px', color: '#4CAF50', marginTop: '2px' }}>
                                 ✅ Zugestimmt am {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleDateString('de-DE')} um {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
@@ -656,7 +656,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                         {/* Interessent */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #e8e8e8' }}>
                           <div>
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>👥 {match.interessentFirma} <span style={{ color: '#999', fontWeight: 400 }}>(Interessent)</span></div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>👥 {match.interessentFirma} <span style={{ color: '#666', fontWeight: 400 }}>(Interessent)</span></div>
                             {match.zustimmungInteressent ? (
                               <div style={{ fontSize: '11px', color: '#4CAF50', marginTop: '2px' }}>
                                 ✅ Zugestimmt am {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleDateString('de-DE')} um {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
@@ -673,7 +673,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                           )}
                         </div>
 
-                        <div style={{ fontSize: '10px', color: '#999', marginTop: '8px', fontStyle: 'italic' }}>
+                        <div style={{ fontSize: '10px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>
                           💡 In Produktion kommen Zustimmungen per E-Mail-Link. Hier können sie manuell dokumentiert werden.
                         </div>
                       </div>
@@ -691,7 +691,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                               <div style={{ fontWeight: 600, color: '#003366' }}>{match.zustimmungSuchender.unternehmen}</div>
                               <div style={{ color: '#555' }}>Zustimmung: {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleDateString('de-DE')}</div>
                               <div style={{ color: '#555' }}>{new Date(match.zustimmungSuchender.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</div>
-                              <div style={{ color: '#888' }}>Person: {match.zustimmungSuchender.person}</div>
+                              <div style={{ color: '#666' }}>Person: {match.zustimmungSuchender.person}</div>
                             </div>
                           )}
                           {match.zustimmungInteressent && (
@@ -699,7 +699,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                               <div style={{ fontWeight: 600, color: '#003366' }}>{match.zustimmungInteressent.unternehmen}</div>
                               <div style={{ color: '#555' }}>Zustimmung: {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleDateString('de-DE')}</div>
                               <div style={{ color: '#555' }}>{new Date(match.zustimmungInteressent.zeitpunkt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</div>
-                              <div style={{ color: '#888' }}>Person: {match.zustimmungInteressent.person}</div>
+                              <div style={{ color: '#666' }}>Person: {match.zustimmungInteressent.person}</div>
                             </div>
                           )}
                         </div>
@@ -708,7 +708,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                           Jetzt kann das Match-Paket mit Kontaktdaten an beide Parteien versendet werden.
                         </p>
                         {ps === 'idle' && <button onClick={() => sendeMatchPaket(match)} style={{ padding: '8px 16px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>📦 Match-Paket senden</button>}
-                        {ps === 'sending' && <span style={{ fontSize: '12px', color: '#999' }}>⏳ Match-Paket wird versendet…</span>}
+                        {ps === 'sending' && <span style={{ fontSize: '12px', color: '#666' }}>⏳ Match-Paket wird versendet…</span>}
                         {ps === 'sent' && <span style={{ fontSize: '12px', color: '#4CAF50', fontWeight: 600 }}>✅ Match-Paket versendet — Kontaktdaten freigegeben</span>}
                         {ps === 'error' && <span style={{ fontSize: '12px', color: '#f44336' }}>❌ Fehler — API-Key prüfen</span>}
                       </div>
@@ -761,7 +761,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
 
                     {/* DSGVO-Dokumentation (immer sichtbar wenn Zustimmungen vorhanden) */}
                     {(match.zustimmungSuchender || match.zustimmungInteressent) && !['freigabe_angefragt', 'suchender_zugestimmt', 'interessent_zugestimmt', 'beide_zugestimmt'].includes(match.status) && (
-                      <div style={{ padding: '10px 12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '10px', color: '#888' }}>
+                      <div style={{ padding: '10px 12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '10px', color: '#666' }}>
                         <div style={{ fontWeight: 600, marginBottom: '4px', color: '#666' }}>📋 DSGVO-Dokumentation</div>
                         {match.zustimmungSuchender && <div>✅ {match.zustimmungSuchender.unternehmen}: {new Date(match.zustimmungSuchender.zeitpunkt).toLocaleString('de-DE')} · {match.zustimmungSuchender.person}</div>}
                         {match.zustimmungInteressent && <div>✅ {match.zustimmungInteressent.unternehmen}: {new Date(match.zustimmungInteressent.zeitpunkt).toLocaleString('de-DE')} · {match.zustimmungInteressent.person}</div>}
@@ -769,7 +769,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
                     )}
 
                     {/* Timeline */}
-                    <div style={{ fontSize: '10px', color: '#bbb', marginTop: '8px' }}>
+                    <div style={{ fontSize: '10px', color: '#888', marginTop: '8px' }}>
                       Erstellt: {match.erstelltAm} · Letzte Änderung: {match.letzteAenderung} · Von: {match.erstelltVon}
                     </div>
                   </div>
@@ -781,11 +781,11 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
           {/* Abgelehnte Matches (eingeklappt) */}
           {abgelehnte.length > 0 && (
             <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px' }}>
+              <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px' }}>
                 {abgelehnte.length} abgelehnte{abgelehnte.length !== 1 ? ' Matches' : 'r Match'}
               </div>
               {abgelehnte.map(m => (
-                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: '#fafafa', borderRadius: '4px', marginBottom: '4px', fontSize: '12px', color: '#999' }}>
+                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: '#fafafa', borderRadius: '4px', marginBottom: '4px', fontSize: '12px', color: '#666' }}>
                   <span>❌ {m.interessentFirma}</span>
                   <span>{m.ablehnungGrund || getMatchStatusLabel(m.status)}</span>
                 </div>
@@ -795,7 +795,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
         </div>
       )}
 
-      <div style={{ fontSize: '11px', color: '#999', marginTop: '10px', fontStyle: 'italic' }}>
+      <div style={{ fontSize: '11px', color: '#666', marginTop: '10px', fontStyle: 'italic' }}>
         ℹ️ Kontaktdaten werden erst ausgetauscht, wenn <strong>beide</strong> Parteien aktiv zugestimmt haben (DSGVO-konform).
       </div>
     </Section>
@@ -843,7 +843,7 @@ function FormularSektion({ anfrage: a, store, onToast }: {
             ))}
           </select>
           {aktAnfrage && (
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
               {aktAnfrage.fragen.length} Fragen{!a.anfrageFormularId && autoAnfrage ? ' · automatisch gewählt' : ''}
               {' · '}<a href="/dashboard/formulare" style={{ color: '#003366', fontWeight: 600, textDecoration: 'none' }}>bearbeiten →</a>
             </div>
@@ -861,7 +861,7 @@ function FormularSektion({ anfrage: a, store, onToast }: {
             ))}
           </select>
           {aktInteressent && (
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
               {aktInteressent.fragen.length} Fragen{!a.interessentFormularId && autoInteressent ? ' · automatisch gewählt' : ''}
               {' · '}<a href="/dashboard/formulare" style={{ color: '#003366', fontWeight: 600, textDecoration: 'none' }}>bearbeiten →</a>
             </div>
@@ -1112,7 +1112,7 @@ function MarktplatzSektion({ anfrage, store, onToast }: {
             <div style={{ marginBottom: '14px', padding: '12px 14px', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
               <div style={{ fontWeight: 600, color: '#003366', marginBottom: '4px' }}>{md.titel}</div>
               <div style={{ color: '#555', lineHeight: 1.5 }}>{md.kurzbeschreibung?.slice(0, 150)}{(md.kurzbeschreibung?.length || 0) > 150 ? '…' : ''}</div>
-              <div style={{ marginTop: '8px', display: 'flex', gap: '12px', fontSize: '11px', color: '#888' }}>
+              <div style={{ marginTop: '8px', display: 'flex', gap: '12px', fontSize: '11px', color: '#666' }}>
                 <span>👁 {md.sichtbarkeit === 'oeffentlich' ? 'Öffentlich' : 'Anonym'}</span>
                 <span>⏱ {md.laufzeitMonate} Monate</span>
               </div>
@@ -1168,7 +1168,7 @@ function MarktplatzSektion({ anfrage, store, onToast }: {
                 </div>
                 {kiOutput && (
                   <div style={{ marginTop: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #90caf9', fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px', fontWeight: 600 }}>KI-ERGEBNIS (Entwurf — bitte prüfen):</div>
+                    <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px', fontWeight: 600 }}>KI-ERGEBNIS (Entwurf — bitte prüfen):</div>
                     {kiOutput}
                     <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
                       <button onClick={() => { setFormData(p => ({ ...p, kurzbeschreibung: kiOutput })); setKiOutput(''); }} style={{ padding: '3px 10px', backgroundColor: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', color: '#2e7d32' }}>Übernehmen</button>
@@ -1261,7 +1261,7 @@ function Kpi({ label, value, color }: { label: string; value: number; color: str
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
       <span style={{ fontWeight: 700, color, fontSize: '14px' }}>{value}</span>
-      <span style={{ color: '#888' }}>{label}</span>
+      <span style={{ color: '#666' }}>{label}</span>
     </span>
   );
 }
@@ -1295,7 +1295,7 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
         ) : w.motivation ? (
           <p style={{ fontSize: '13px', color: '#333', lineHeight: 1.6, margin: 0 }}>{w.motivation}</p>
         ) : (
-          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Motivation erfasst.</p>
+          <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic', margin: 0 }}>Noch keine Motivation erfasst.</p>
         )}
       />
 
@@ -1312,7 +1312,7 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
         ) : zeilen(w.ziele).length > 0 ? (
           <ul style={{ margin: 0, paddingLeft: '18px' }}>{zeilen(w.ziele).map((z: string, i: number) => <li key={i} style={{ fontSize: '13px', color: '#333', padding: '2px 0' }}>{z}</li>)}</ul>
         ) : (
-          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Ziele erfasst.</p>
+          <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic', margin: 0 }}>Noch keine Ziele erfasst.</p>
         )}
       />
 
@@ -1329,7 +1329,7 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
         ) : zeilen(w.partnerErwartungen).length > 0 ? (
           <ul style={{ margin: 0, paddingLeft: '18px' }}>{zeilen(w.partnerErwartungen).map((z: string, i: number) => <li key={i} style={{ fontSize: '13px', color: '#333', padding: '2px 0' }}>{z}</li>)}</ul>
         ) : (
-          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Erwartungen erfasst.</p>
+          <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic', margin: 0 }}>Noch keine Erwartungen erfasst.</p>
         )}
       />
 
@@ -1350,7 +1350,7 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
             ))}
           </div>
         ) : (
-          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch keine Zielgruppe definiert.</p>
+          <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic', margin: 0 }}>Noch keine Zielgruppe definiert.</p>
         )}
       />
 
@@ -1455,7 +1455,7 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
             {w.erstgespraechFristDatum && <div>💬 <strong>Erste Gespräche bis:</strong> {w.erstgespraechFristDatum}</div>}
           </div>
         ) : (
-          <p style={{ fontSize: '13px', color: '#888', fontStyle: 'italic', margin: 0 }}>Noch kein Zeitfenster definiert.</p>
+          <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic', margin: 0 }}>Noch kein Zeitfenster definiert.</p>
         )}
       />
     </Section>

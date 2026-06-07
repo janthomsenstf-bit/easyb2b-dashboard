@@ -169,7 +169,7 @@ export default function KontaktePage() {
         {/* Liste */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {gefiltert.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '14px', backgroundColor: 'white', borderRadius: '8px' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666', fontSize: '14px', backgroundColor: 'white', borderRadius: '8px' }}>
               Keine Kontakte gefunden.
             </div>
           ) : gefiltert.map(k => (
@@ -285,7 +285,7 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
           </div>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '3px' }}>{k.ansprechpartner}</div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666' }}>×</button>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -352,7 +352,7 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
       {tab === 'projekte' && (
         <div>
           {k.projektZuordnungen.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#999' }}>Noch keinem Projekt zugeordnet.</p>
+            <p style={{ fontSize: '13px', color: '#666' }}>Noch keinem Projekt zugeordnet.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
               {k.projektZuordnungen.map(z => {
@@ -360,8 +360,8 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
                 return (
                   <div key={z.id} style={{ padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: `3px solid ${getKontaktZuordnungColor(z.status)}` }}>
                     <div style={{ fontWeight: 600, fontSize: '13px', color: '#003366' }}>{proj ? `${proj.anzeigenId} – ${proj.ziel}` : 'Projekt'}</div>
-                    {proj && <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{getRichtungLabel(proj.richtung)} {proj.firmenname}</div>}
-                    {z.notiz && <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '4px' }}>„{z.notiz}"</div>}
+                    {proj && <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{getRichtungLabel(proj.richtung)} {proj.firmenname}</div>}
+                    {z.notiz && <div style={{ fontSize: '11px', color: '#666', fontStyle: 'italic', marginTop: '4px' }}>„{z.notiz}"</div>}
                     <div style={{ marginTop: '8px' }}>
                       <select value={z.status} onChange={e => aendereZuordnungStatus(z.id, e.target.value as KontaktZuordnungStatus)} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '11px' }}>
                         {ZUORDNUNG_OPTIONEN.map(s => <option key={s} value={s}>{getKontaktZuordnungLabel(s)}</option>)}
@@ -384,11 +384,11 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
               <textarea value={zuordnungGrund} onChange={e => setZuordnungGrund(e.target.value)} placeholder="Grund / Notiz (optional)" rows={2} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '12px', boxSizing: 'border-box', marginBottom: '8px', fontFamily: 'inherit', resize: 'vertical' }} />
               <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {verfuegbareProjekte.length === 0 ? (
-                  <p style={{ fontSize: '12px', color: '#999', margin: 0 }}>Keine passenden Projekte.</p>
+                  <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>Keine passenden Projekte.</p>
                 ) : verfuegbareProjekte.slice(0, 8).map(a => (
                   <button key={a.id} onClick={() => projektZuordnen(a.id)} style={{ textAlign: 'left', padding: '8px 10px', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
                     <div style={{ fontWeight: 600, color: '#003366' }}>{a.anzeigenId} – {a.ziel}</div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>{a.firmenname} · {a.branche}</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>{a.firmenname} · {a.branche}</div>
                   </button>
                 ))}
               </div>
@@ -404,7 +404,7 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
       {tab === 'historie' && (
         <div>
           {meineAktivitaeten.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#999' }}>Noch keine Aktivitäten protokolliert.</p>
+            <p style={{ fontSize: '13px', color: '#666' }}>Noch keine Aktivitäten protokolliert.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {meineAktivitaeten.map(a => (
@@ -412,7 +412,7 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
                   <span>{a.typ === 'anlegen' ? '➕' : a.typ === 'status' ? '🔄' : '✏️'}</span>
                   <div>
                     <div style={{ color: '#333' }}>{a.was}</div>
-                    <div style={{ fontSize: '11px', color: '#999' }}>{a.wer} · {a.zeit}</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>{a.wer} · {a.zeit}</div>
                   </div>
                 </div>
               ))}
@@ -427,7 +427,7 @@ function KontaktDetail({ kontakt: k, store, onClose, onEdit, onToast }: {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #f5f5f5' }}>
-      <span style={{ color: '#999', width: '90px', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: '#666', width: '90px', flexShrink: 0 }}>{label}</span>
       <span style={{ color: '#333' }}>{value}</span>
     </div>
   );

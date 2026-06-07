@@ -192,7 +192,7 @@ export default function LoginPage() {
             paddingTop: '16px',
             borderTop: '1px solid #eee',
             fontSize: '12px',
-            color: '#999',
+            color: '#666',
             textAlign: 'center',
           }}
         >

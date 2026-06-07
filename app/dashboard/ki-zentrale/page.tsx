@@ -81,7 +81,7 @@ export default function KiZentralePage() {
         <div style={{ marginTop: '24px', padding: '12px', backgroundColor: '#e8f0fe', borderRadius: '8px', fontSize: '11px', color: '#3c4043' }}>
           <div style={{ fontWeight: 600, marginBottom: '4px' }}>🔌 API-Status</div>
           <div>Mock-Modus aktiv</div>
-          <div style={{ color: '#999', marginTop: '4px' }}>Anthropic Claude API bereit zur Integration</div>
+          <div style={{ color: '#666', marginTop: '4px' }}>Anthropic Claude API bereit zur Integration</div>
         </div>
       </div>
 
@@ -446,14 +446,14 @@ function ToolVoiceCheck({ laedt, setLaedt }: ToolProps) {
               flexShrink: 0,
             }}>
               <div style={{ fontSize: '22px', fontWeight: 700, color: ergebnis.score >= 80 ? '#2e7d32' : ergebnis.score >= 60 ? '#e65100' : '#c62828', lineHeight: 1 }}>{ergebnis.score}</div>
-              <div style={{ fontSize: '10px', color: '#999' }}>/ 100</div>
+              <div style={{ fontSize: '10px', color: '#666' }}>/ 100</div>
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: '15px', color: '#003366', marginBottom: '4px' }}>
                 {ergebnis.score >= 80 ? '✅ Gut!' : ergebnis.score >= 60 ? '⚠️ Überarbeitbar' : '🚫 Überarbeitung nötig'}
               </div>
               <div style={{ fontSize: '13px', color: '#555' }}>{ergebnis.empfehlung}</div>
-              <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>{ergebnis.wortanzahl} Wörter · {ergebnis.probleme.length} Problem(e) gefunden</div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>{ergebnis.wortanzahl} Wörter · {ergebnis.probleme.length} Problem(e) gefunden</div>
             </div>
           </div>
 
@@ -644,7 +644,7 @@ function ToolMatching({ laedt, setLaedt }: ToolProps) {
               backgroundColor: 'white', border: `3px solid ${levelColors[ergebnis.level]}`,
             }}>
               <div style={{ fontSize: '22px', fontWeight: 700, color: levelColors[ergebnis.level], lineHeight: 1 }}>{ergebnis.score}</div>
-              <div style={{ fontSize: '10px', color: '#999' }}>%</div>
+              <div style={{ fontSize: '10px', color: '#666' }}>%</div>
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: '17px', color: levelColors[ergebnis.level] }}>
@@ -734,7 +734,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const ergebnisLabelStyle: React.CSSProperties = {
-  fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase',
+  fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase',
   letterSpacing: '0.5px', marginBottom: '5px',
 };
 

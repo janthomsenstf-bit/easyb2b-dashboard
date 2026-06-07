@@ -252,7 +252,7 @@ function KontaktKarte({ kontakt, selected, onClick }: {
             <div style={{ fontSize: '13px', color: '#444' }}>
               {kontakt.position && `${kontakt.position} · `}{kontakt.organisation || '–'}
             </div>
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '3px' }}>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '3px' }}>
               {getLandFlag(kontakt.land)} {kontakt.region || kontakt.land}
               {kontakt.branche && ` · ${kontakt.branche}`}
             </div>
@@ -280,7 +280,7 @@ function KontaktKarte({ kontakt, selected, onClick }: {
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', gap: '16px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f0f0f0', fontSize: '11px', color: '#999' }}>
+      <div style={{ display: 'flex', gap: '16px', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f0f0f0', fontSize: '11px', color: '#666' }}>
         <span>{getKontaktKategorieLabel(kontakt.kategorie)}</span>
         <span>📨 {kontakt.empfehlungen.length} Empfehlung(en)</span>
         <span>📋 {kontakt.historie.length} Einträge</span>
@@ -329,9 +329,9 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
           <div style={{ flex: 1 }}>
             <h2 style={{ margin: 0, fontSize: '17px', color: '#003366' }}>{kontakt.name}</h2>
             <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>{kontakt.position}</div>
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{kontakt.organisation}</div>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{kontakt.organisation}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999', flexShrink: 0 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666', flexShrink: 0 }}>×</button>
         </div>
 
         {/* Netzwerkwert */}
@@ -343,7 +343,7 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '24px', fontWeight: 700, color: getNetzwerkWertColor(kontakt.netzwerkWert), lineHeight: 1 }}>{kontakt.netzwerkWert}</div>
-            <div style={{ fontSize: '9px', color: '#999' }}>/ 100</div>
+            <div style={{ fontSize: '9px', color: '#666' }}>/ 100</div>
           </div>
           <div>
             <div style={{ fontWeight: 600, fontSize: '13px', color: getNetzwerkWertColor(kontakt.netzwerkWert) }}>{getNetzwerkWertLabel(kontakt.netzwerkWert)}</div>
@@ -372,7 +372,7 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               padding: '8px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
               backgroundColor: 'transparent',
-              color: activeTab === t.id ? '#003366' : '#999',
+              color: activeTab === t.id ? '#003366' : '#666',
               borderBottom: activeTab === t.id ? '2px solid #003366' : '2px solid transparent',
               marginBottom: '-2px',
             }}>
@@ -452,7 +452,7 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
                       <span style={{ fontWeight: 600, fontSize: '13px', color: h.erledigt ? '#666' : '#003366' }}>
                         {getHistorieTypLabel(h.typ)}
                       </span>
-                      <span style={{ fontSize: '11px', color: '#999' }}>{h.datum}</span>
+                      <span style={{ fontSize: '11px', color: '#666' }}>{h.datum}</span>
                     </div>
                     <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.5, margin: '0 0 6px 0' }}>{h.notiz}</p>
                     {h.ergebnis && (
@@ -467,7 +467,7 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
                       </div>
                     )}
                     {h.eingetragenVon && (
-                      <div style={{ fontSize: '10px', color: '#bbb', marginTop: '4px' }}>von {h.eingetragenVon}</div>
+                      <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>von {h.eingetragenVon}</div>
                     )}
                   </div>
                 </div>
@@ -480,7 +480,7 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
         {activeTab === 'empfehlungen' && (
           <div>
             {kontakt.empfehlungen.length === 0 ? (
-              <p style={{ color: '#999', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>Noch keine Empfehlungen von diesem Kontakt.</p>
+              <p style={{ color: '#666', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>Noch keine Empfehlungen von diesem Kontakt.</p>
             ) : (
               kontakt.empfehlungen.map(e => (
                 <div key={e.id} style={{
@@ -496,7 +496,7 @@ function KontaktDetailPanel({ kontakt, activeTab, setActiveTab, onClose, onActio
                   </div>
                   {e.kontext && <p style={{ fontSize: '12px', color: '#555', margin: '0 0 6px 0', fontStyle: 'italic' }}>{e.kontext}</p>}
                   {e.ergebnis && <p style={{ fontSize: '12px', color: '#2e7d32', margin: '0', fontWeight: 600 }}>→ {e.ergebnis}</p>}
-                  <div style={{ fontSize: '10px', color: '#bbb', marginTop: '6px' }}>{e.datum}</div>
+                  <div style={{ fontSize: '10px', color: '#888', marginTop: '6px' }}>{e.datum}</div>
                 </div>
               ))
             )}
@@ -607,7 +607,7 @@ function NetzwerkAnalytics({ kontakte }: { kontakte: MockNetzwerkkontakt[] }) {
           <h3 style={{ marginTop: 0, color: '#003366', fontSize: '15px', marginBottom: '16px' }}>Top-Netzwerkpartner</h3>
           {top5.map((k, i) => (
             <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '16px', fontWeight: 700, color: '#ccc', minWidth: '20px' }}>#{i + 1}</span>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#999', minWidth: '20px' }}>#{i + 1}</span>
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: getKontaktKategorieColor(k.kategorie) + '20', border: `2px solid ${getKontaktKategorieColor(k.kategorie)}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
                 {getKontaktKategorieIcon(k.kategorie)}
               </div>
@@ -617,7 +617,7 @@ function NetzwerkAnalytics({ kontakte }: { kontakte: MockNetzwerkkontakt[] }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 700, fontSize: '15px', color: getNetzwerkWertColor(k.netzwerkWert) }}>{k.netzwerkWert}</div>
-                <div style={{ fontSize: '9px', color: '#999' }}>{k.empfehlungen.filter(e => e.erfolgreich).length} Erfolge</div>
+                <div style={{ fontSize: '9px', color: '#666' }}>{k.empfehlungen.filter(e => e.erfolgreich).length} Erfolge</div>
               </div>
             </div>
           ))}
@@ -669,7 +669,7 @@ function NetzwerkAnalytics({ kontakte }: { kontakte: MockNetzwerkkontakt[] }) {
 // ─── HILFSKOMPONENTEN ─────────────────────────────────────────
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '16px', marginBottom: '8px' }}>{children}</div>;
+  return <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '16px', marginBottom: '8px' }}>{children}</div>;
 }
 
 function InfoZeile({ icon, value }: { icon: string; value: React.ReactNode }) {

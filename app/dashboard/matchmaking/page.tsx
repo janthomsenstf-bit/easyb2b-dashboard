@@ -54,7 +54,7 @@ export default function MatchmakingPage() {
               <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
                 {a.branche} · {a.ziel}
               </div>
-              <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                 {a.standort} · Seit: {a.createdAt}
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function MatchmakingPage() {
           >
             {/* Suchende Firma */}
             <div>
-              <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Sucht</div>
+              <div style={{ fontSize: '11px', color: '#666', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Sucht</div>
               <div style={{ fontWeight: 600, fontSize: '15px', color: '#003366' }}>{m.anfrageFirma}</div>
               <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{m.anfrageBranche}</div>
             </div>
@@ -115,12 +115,12 @@ export default function MatchmakingPage() {
               }}>
                 {m.score}%
               </div>
-              <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Match</div>
+              <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>Match</div>
             </div>
 
             {/* Vorgeschlagene Firma */}
             <div>
-              <div style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Vorschlag</div>
+              <div style={{ fontSize: '11px', color: '#666', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Vorschlag</div>
               <div style={{ fontWeight: 600, fontSize: '15px', color: '#003366' }}>{m.interessentFirma}</div>
               <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{m.grund}</div>
             </div>

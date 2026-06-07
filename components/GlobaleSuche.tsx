@@ -21,7 +21,7 @@ export default function GlobaleSuche() {
   return (
     <div style={{ position: 'relative', flex: 1, maxWidth: '560px' }}>
       <div style={{ position: 'relative' }}>
-        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: '#999' }}>🔍</span>
+        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: '#666' }}>🔍</span>
         <input
           value={query}
           onChange={e => { setQuery(e.target.value); setOffen(true); }}
@@ -36,7 +36,7 @@ export default function GlobaleSuche() {
         />
         {query && (
           <button onClick={() => { setQuery(''); setOffen(false); }}
-            style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#999', fontSize: '16px' }}>×</button>
+            style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666', fontSize: '16px' }}>×</button>
         )}
       </div>
 
@@ -48,7 +48,7 @@ export default function GlobaleSuche() {
           maxHeight: '70vh', overflowY: 'auto', border: '1px solid #e0e0e0',
         }}>
           {ergebnisse.length === 0 ? (
-            <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+            <div style={{ padding: '24px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
               Keine Treffer für „{query}"
             </div>
           ) : (
@@ -58,7 +58,7 @@ export default function GlobaleSuche() {
               </div>
               {Object.entries(gruppen).map(([modul, items]) => (
                 <div key={modul}>
-                  <div style={{ padding: '8px 16px 4px 16px', fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ padding: '8px 16px 4px 16px', fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {items[0].modulIcon} {modul} ({items.length})
                   </div>
                   {items.map((e, i) => (
@@ -78,7 +78,7 @@ export default function GlobaleSuche() {
                         </div>
                         <div style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.untertitel}</div>
                       </div>
-                      <span style={{ fontSize: '11px', color: '#bbb', flexShrink: 0 }}>→</span>
+                      <span style={{ fontSize: '11px', color: '#888', flexShrink: 0 }}>→</span>
                     </div>
                   ))}
                 </div>

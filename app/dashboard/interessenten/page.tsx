@@ -254,7 +254,7 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
                 Match {i.matchScore}%
               </span>
             )}
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px', color: '#999' }}>×</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px', color: '#666' }}>×</button>
           </div>
         </div>
 
@@ -345,7 +345,7 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
             </Box>
           ) : (
             <Box titel="Antworten aus dem Interessentenformular" bg="#fffde7">
-              <p style={{ fontSize: '13px', color: '#888', margin: 0 }}>
+              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
                 Dieser Interessent hat nur Basisdaten übermittelt. Ergänze fehlende Infos über „Bearbeiten" nach einem Telefonat.
               </p>
             </Box>
@@ -363,8 +363,8 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
                         {proj?.ziel || z.projektId}
                       </div>
                       <div style={{ fontSize: '12px', color: '#666' }}>{proj?.firmenname} · {proj?.anzeigenId}</div>
-                      {z.grund && <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', marginTop: '4px' }}>„{z.grund}"</div>}
-                      <div style={{ fontSize: '10px', color: '#bbb', marginTop: '4px' }}>
+                      {z.grund && <div style={{ fontSize: '11px', color: '#666', fontStyle: 'italic', marginTop: '4px' }}>„{z.grund}"</div>}
+                      <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>
                         {z.zuordnungsart === 'automatisch' ? '⚙ Automatisch' : '✋ Manuell'} · {z.erstelltVon} · {z.erstelltAm}
                       </div>
                     </div>
@@ -391,12 +391,12 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
             {/* Zuordnen-Formular */}
             {zuordnenOffen ? (
               <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '14px', border: '1px solid #c5d3f0', marginTop: '4px' }}>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Projekt wählen</label>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Projekt wählen</label>
                 <select value={neuProjekt} onChange={e => setNeuProjekt(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', marginBottom: '8px' }}>
                   <option value="">— Projekt auswählen —</option>
                   {verfuegbareProjekte.map(a => <option key={a.id} value={a.id}>{a.ziel} ({a.firmenname})</option>)}
                 </select>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Grund der Zuordnung</label>
+                <label style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Grund der Zuordnung</label>
                 <textarea value={neuGrund} onChange={e => setNeuGrund(e.target.value)} rows={2}
                   placeholder="z.B. Hat im Telefonat am 03.06. Interesse an diesem Projekt geäußert."
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', marginBottom: '8px' }} />
@@ -427,7 +427,7 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
             </div>
             {/* Gesprächsnotiz */}
             <div style={{ marginTop: '12px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>Gesprächsnotiz</label>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Gesprächsnotiz</label>
               <textarea
                 defaultValue={i.gespraechsnotiz || ''}
                 onBlur={e => onUpdate(i.id, { gespraechsnotiz: e.target.value }, 'Notiz gespeichert')}
@@ -457,7 +457,7 @@ function InteressentDetail({ interessent: i, alle, onClose, onUpdate, onToast }:
               stand={berechneInteressentKlaerung(i)}
               typ="interessent"
             />
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '8px', fontStyle: 'italic' }}>
+            <div style={{ fontSize: '11px', color: '#666', marginTop: '8px', fontStyle: 'italic' }}>
               💡 Nach Konvertierung zum Kontakt werden Klärungspunkte dort dauerhaft pflegbar.
             </div>
           </Box>
@@ -526,7 +526,7 @@ function btnStyle(bg: string): React.CSSProperties {
 
 function PruefDot({ label, aktiv }: { label: string; aktiv?: boolean }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: aktiv ? '#4CAF50' : '#bbb' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: aktiv ? '#4CAF50' : '#888' }}>
       <span>{aktiv ? '✓' : '○'}</span>{label}
     </span>
   );
@@ -557,7 +557,7 @@ function Feld({ label, wert }: { label: string; wert: React.ReactNode }) {
 function Antwort({ frage, antwort }: { frage: string; antwort: string }) {
   return (
     <div style={{ marginBottom: '10px' }}>
-      <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', marginBottom: '2px' }}>{frage}</div>
+      <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic', marginBottom: '2px' }}>{frage}</div>
       <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.5 }}>{antwort}</div>
     </div>
   );
@@ -570,7 +570,7 @@ function MiniTag({ color, children }: { color: string; children: React.ReactNode
 function SelectFeld({ label, wert, optionen, onChange }: { label: string; wert?: string; optionen: [string, string][]; onChange: (v: string) => void }) {
   return (
     <div>
-      <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>{label}</label>
+      <label style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>{label}</label>
       <select value={wert || ''} onChange={e => onChange(e.target.value)} style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px' }}>
         <option value="">—</option>
         {optionen.map(([v, l]) => <option key={v} value={v}>{l}</option>)}

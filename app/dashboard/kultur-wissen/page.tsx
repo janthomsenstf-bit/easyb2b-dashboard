@@ -180,7 +180,7 @@ function MomentDetail({ m, onClose }: { m: MockKulturMoment; onClose: () => void
           <div style={{ fontSize: '22px', marginBottom: '4px' }}>{getKategorieIcon(m.kategorie)} {getLandFlagKultur(m.land)}</div>
           <h2 style={{ margin: 0, fontSize: '18px', color: '#003366', fontStyle: m.originalSprache ? 'italic' : 'normal' }}>{m.titel}</h2>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666' }}>×</button>
       </div>
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '18px', flexWrap: 'wrap' }}>
@@ -198,7 +198,7 @@ function MomentDetail({ m, onClose }: { m: MockKulturMoment; onClose: () => void
 
       {/* Content-Nutzung */}
       <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Verwenden für</div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Verwenden für</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
           {['🌐 Homepage', '📧 Newsletter', '💼 LinkedIn', '🎤 Event'].map(z => (
             <button key={z} onClick={() => zeigeToast(`Für ${z.split(' ')[1]} übernommen`)} style={{ padding: '8px', backgroundColor: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#444' }}>{z}</button>
@@ -236,7 +236,7 @@ function GeschichteKarte({ g, selected, onClick }: { g: MockGrenzgeschichte; sel
             <Tag color="#9C27B0">{getGeschichteTypLabel(g.typ)}</Tag>
           </div>
         </div>
-        <div style={{ flexShrink: 0, textAlign: 'right', fontSize: '10px', color: '#999' }}>
+        <div style={{ flexShrink: 0, textAlign: 'right', fontSize: '10px', color: '#666' }}>
           <div>{g.oeffentlich ? '🌐 Öffentlich' : '🔒 Intern'}</div>
           <div style={{ marginTop: '4px' }}>{g.verwendetCount}× genutzt</div>
         </div>
@@ -266,7 +266,7 @@ function GeschichteDetail({ g, onClose }: { g: MockGrenzgeschichte; onClose: () 
           <div style={{ fontSize: '22px', marginBottom: '4px' }}>{getGeschichteTypIcon(g.typ)}</div>
           <h2 style={{ margin: 0, fontSize: '17px', color: '#003366' }}>{g.titel}</h2>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999' }}>×</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666' }}>×</button>
       </div>
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '18px', flexWrap: 'wrap' }}>
@@ -286,7 +286,7 @@ function GeschichteDetail({ g, onClose }: { g: MockGrenzgeschichte; onClose: () 
       <Block label="💡 Erkenntnis" text={g.erkenntnis} bg="#e8f5e9" highlight />
 
       <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Verwenden für</div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Verwenden für</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
           {['📧 Newsletter', '💼 LinkedIn', '🌐 Website', '🎤 Event'].map(z => (
             <button key={z} onClick={() => zeigeToast(`Für ${z.split(' ')[1]} übernommen`)} style={{ padding: '8px', backgroundColor: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: '#444' }}>{z}</button>
@@ -344,7 +344,7 @@ function KulturAnalytics() {
           <h3 style={{ marginTop: 0, color: '#003366', fontSize: '15px', marginBottom: '16px' }}>Meistgenutzte Inhalte</h3>
           {topGenutzt.map((m, i) => (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#ccc', minWidth: '18px' }}>#{i + 1}</span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#999', minWidth: '18px' }}>#{i + 1}</span>
               <span style={{ fontSize: '16px' }}>{getKategorieIcon(m.kategorie)}</span>
               <span style={{ flex: 1, fontSize: '13px' }}>{m.titel}</span>
               <span style={{ fontWeight: 700, fontSize: '14px', color: '#FF9900' }}>{m.verwendetCount}×</span>
@@ -375,7 +375,7 @@ function Tag({ color, children }: { color: string; children: React.ReactNode }) 
 function Block({ label, text, bg, highlight }: { label: string; text: string; bg?: string; highlight?: boolean }) {
   return (
     <div style={{ marginBottom: '14px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: highlight ? '#2e7d32' : '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>{label}</div>
+      <div style={{ fontSize: '11px', fontWeight: 700, color: highlight ? '#2e7d32' : '#666', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>{label}</div>
       <div style={{
         fontSize: '13px', color: '#333', lineHeight: 1.6,
         backgroundColor: bg || 'transparent',

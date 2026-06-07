@@ -67,7 +67,7 @@ function NewsletterUebersicht({ onCreate }: { onCreate: () => void }) {
                 </span>
               </div>
               <div style={{ fontSize: '13px', color: '#444', marginBottom: '6px' }}>{nl.betreff}</div>
-              <div style={{ fontSize: '12px', color: '#888' }}>{nl.vorschautext}</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>{nl.vorschautext}</div>
               <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
                 {nl.zielgruppen.map(z => (
                   <span key={z} style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', backgroundColor: '#e8f0fe', color: '#003366' }}>{z}</span>
@@ -79,16 +79,16 @@ function NewsletterUebersicht({ onCreate }: { onCreate: () => void }) {
                 <>
                   <div style={{ fontSize: '12px', color: '#666' }}>{nl.empfaengerCount} Empfänger</div>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#4CAF50', marginTop: '4px' }}>{nl.oeffnungsrate}%</div>
-                  <div style={{ fontSize: '10px', color: '#999' }}>Öffnungsrate</div>
+                  <div style={{ fontSize: '10px', color: '#666' }}>Öffnungsrate</div>
                   <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>{nl.versendetAm}</div>
                 </>
               ) : nl.status === 'geplant' ? (
                 <>
-                  <div style={{ fontSize: '11px', color: '#999' }}>Geplant für</div>
+                  <div style={{ fontSize: '11px', color: '#666' }}>Geplant für</div>
                   <div style={{ fontSize: '14px', fontWeight: 700, color: '#2196F3' }}>{nl.geplantFuer}</div>
                 </>
               ) : (
-                <span style={{ fontSize: '12px', color: '#999' }}>Entwurf</span>
+                <span style={{ fontSize: '12px', color: '#666' }}>Entwurf</span>
               )}
             </div>
           </div>
@@ -191,7 +191,7 @@ function NewsletterEditor() {
 
         {/* Blöcke */}
         {bloecke.length === 0 ? (
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '40px', textAlign: 'center', color: '#999', border: '2px dashed #ddd' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '40px', textAlign: 'center', color: '#666', border: '2px dashed #ddd' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>📰</div>
             <p style={{ fontSize: '14px' }}>Noch keine Blöcke. Lass die KI einen Entwurf erstellen oder füge rechts Blöcke hinzu.</p>
           </div>
@@ -261,7 +261,7 @@ function NewsletterEditor() {
               <span style={{ fontSize: '16px' }}>{b.icon}</span>
               <div>
                 <div style={{ fontWeight: 600, color: '#003366' }}>{b.label}</div>
-                <div style={{ fontSize: '10px', color: '#999' }}>{b.beschreibung}</div>
+                <div style={{ fontSize: '10px', color: '#666' }}>{b.beschreibung}</div>
               </div>
             </button>
           ))}
@@ -395,15 +395,15 @@ function NewsletterStatistiken() {
           <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingBottom: '14px', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: '13px', color: '#003366' }}>{n.titel}</div>
-              <div style={{ fontSize: '11px', color: '#999' }}>{n.versendetAm} · {n.empfaengerCount} Empfänger</div>
+              <div style={{ fontSize: '11px', color: '#666' }}>{n.versendetAm} · {n.empfaengerCount} Empfänger</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#4CAF50' }}>{n.oeffnungsrate}%</div>
-              <div style={{ fontSize: '10px', color: '#999' }}>Öffnung</div>
+              <div style={{ fontSize: '10px', color: '#666' }}>Öffnung</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '16px', fontWeight: 700, color: '#2196F3' }}>{n.klickrate}%</div>
-              <div style={{ fontSize: '10px', color: '#999' }}>Klick</div>
+              <div style={{ fontSize: '10px', color: '#666' }}>Klick</div>
             </div>
           </div>
         ))}

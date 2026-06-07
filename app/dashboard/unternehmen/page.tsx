@@ -123,7 +123,7 @@ export default function UnternehmenPage() {
                 </div>
               </div>
               {/* Schnell-KPIs */}
-              <div style={{ display: 'flex', gap: '16px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f0f0f0', fontSize: '12px', color: '#888' }}>
+              <div style={{ display: 'flex', gap: '16px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f0f0f0', fontSize: '12px', color: '#666' }}>
                 <span>🚀 {projekte.length} Projekt(e)</span>
                 <span>👥 {interessen.length} Beteiligung(en)</span>
                 <span style={{ marginLeft: 'auto' }}>Aktiv: {u.letzteAktivitaet}</span>
@@ -300,7 +300,7 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onToast }
         <div>
           {eigeneProjekte.length === 0 ? (
             <Card titel="Noch keine eigenen Projekte">
-              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Dieses Unternehmen hat noch keine Anfrage gestellt.</p>
+              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>Dieses Unternehmen hat noch keine Anfrage gestellt.</p>
             </Card>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -376,7 +376,7 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onToast }
         <div>
           {beteiligungen.length === 0 ? (
             <Card titel="Keine Beteiligungen">
-              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Dieses Unternehmen hat sich noch bei keinem Projekt als Interessent gemeldet.</p>
+              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>Dieses Unternehmen hat sich noch bei keinem Projekt als Interessent gemeldet.</p>
             </Card>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -405,13 +405,13 @@ function UnternehmenDetail({ u, store, tab, setTab, onZurueck, onEdit, onToast }
         <div>
           <Card titel="Aktivitätenprotokoll">
             {meineAktivitaeten.length === 0 ? (
-              <p style={{ fontSize: '13px', color: '#999', margin: 0 }}>Noch keine protokollierten Aktivitäten für dieses Unternehmen.</p>
+              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>Noch keine protokollierten Aktivitäten für dieses Unternehmen.</p>
             ) : (
               meineAktivitaeten.map((a: any) => (
                 <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: '13px' }}>
                   <span>{a.typ === 'anlegen' ? '➕' : a.typ === 'status' ? '🔄' : '✏️'}</span>
                   <span style={{ flex: 1, color: '#333' }}>{a.was}</span>
-                  <span style={{ fontSize: '11px', color: '#999' }}>{a.wer} · {a.zeit}</span>
+                  <span style={{ fontSize: '11px', color: '#666' }}>{a.wer} · {a.zeit}</span>
                 </div>
               ))
             )}
@@ -476,7 +476,7 @@ function Card({ titel, children, style: s }: { titel: string; children: React.Re
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontSize: '13px' }}>
-      <span style={{ color: '#999', minWidth: '80px', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: '#666', minWidth: '80px', flexShrink: 0 }}>{label}</span>
       <span style={{ color: '#333' }}>{value}</span>
     </div>
   );

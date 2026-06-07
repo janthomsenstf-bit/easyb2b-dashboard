@@ -188,7 +188,7 @@ function StoryCard({ story, selected, onClick }: {
           </span>
           <div style={{ textAlign: 'right', fontSize: '12px', color: '#666' }}>
             <div>{story.firma1Name}</div>
-            <div style={{ color: '#ccc' }}>↔</div>
+            <div style={{ color: '#999' }}>↔</div>
             <div>{story.firma2Name}</div>
           </div>
         </div>
@@ -244,7 +244,7 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
             <span style={{ fontSize: '16px', marginRight: '8px' }}>{getEntstehungswegIcon(story.entstehungsweg)}</span>
             <h2 style={{ margin: '4px 0 0 0', color: '#003366', fontSize: '16px', lineHeight: 1.3 }}>{story.titel}</h2>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#999', flexShrink: 0 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#666', flexShrink: 0 }}>×</button>
         </div>
 
         <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, color: 'white', backgroundColor: getFreigabeColor(story.freigabe) }}>
@@ -257,7 +257,7 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
               padding: '8px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
               backgroundColor: 'transparent',
-              color: activeTab === t.id ? '#003366' : '#999',
+              color: activeTab === t.id ? '#003366' : '#666',
               borderBottom: activeTab === t.id ? '2px solid #003366' : '2px solid transparent',
               marginBottom: '-2px',
             }}>
@@ -288,7 +288,7 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
               { label: 'Erkenntnisse', value: story.erkenntnisse },
             ].filter(f => f.value).map(f => (
               <div key={f.label} style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{f.label}</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>{f.label}</div>
                 <div style={{
                   fontSize: '13px', color: f.highlight ? '#003366' : '#444', lineHeight: 1.6,
                   backgroundColor: f.highlight ? '#e8f5e9' : 'transparent',
@@ -304,7 +304,7 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
 
             {/* Ergebnis-Typen */}
             <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f0f0f0' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Ergebnis-Typen</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Ergebnis-Typen</div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {story.ergebnisTypen.map(t => (
                   <span key={t} style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600, backgroundColor: getErgebnisTypColor(t) + '20', color: getErgebnisTypColor(t) }}>
@@ -320,7 +320,7 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
         {activeTab === 'veroeffentlichung' && (
           <div>
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Aktueller Status</div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Aktueller Status</div>
               <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: getFreigabeColor(story.freigabe) + '15', border: `1px solid ${getFreigabeColor(story.freigabe)}40` }}>
                 <div style={{ fontWeight: 700, color: getFreigabeColor(story.freigabe), fontSize: '14px' }}>
                   {getFreigabeIcon(story.freigabe)} {getFreigabeLabel(story.freigabe)}
@@ -336,16 +336,16 @@ function StoryDetailPanel({ story, activeTab, setActiveTab, onClose, onKiGenerie
             {/* Anonymisierte Version */}
             {(story.titelAnon || story.ergebnisAnon) && (
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', marginBottom: '8px' }}>Anonymisierte Version</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#666', textTransform: 'uppercase', marginBottom: '8px' }}>Anonymisierte Version</div>
                 {story.titelAnon && (
                   <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '11px', color: '#999', marginBottom: '3px' }}>Titel (anon):</div>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '3px' }}>Titel (anon):</div>
                     <div style={{ fontSize: '13px', color: '#333', fontStyle: 'italic' }}>{story.titelAnon}</div>
                   </div>
                 )}
                 {story.ergebnisAnon && (
                   <div>
-                    <div style={{ fontSize: '11px', color: '#999', marginBottom: '3px' }}>Ergebnis (anon):</div>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '3px' }}>Ergebnis (anon):</div>
                     <div style={{ fontSize: '13px', color: '#333', fontStyle: 'italic', backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '6px' }}>{story.ergebnisAnon}</div>
                   </div>
                 )}
