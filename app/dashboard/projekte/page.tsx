@@ -822,65 +822,96 @@ function FormularSektion({ anfrage: a, store, onToast }: {
   store: ReturnType<typeof useStore>;
   onToast: (m: string) => void;
 }) {
-  const anfrageFormulare = store.formulare.filter(f => f.typ === 'anfrage' && f.aktiv);
+  const [zeigeVorschau, setZeigeVorschau] = useState(false);
   const interessentFormulare = store.formulare.filter(f => f.typ === 'interessent' && f.aktiv);
 
   // Auto-Vorauswahl: Branchen-Spezial vor Standard
-  const autoAnfrage = findeFormular(store.formulare, 'anfrage', a.branche);
   const autoInteressent = findeFormular(store.formulare, 'interessent', a.branche);
-
-  const aktAnfrageId = a.anfrageFormularId || autoAnfrage?.id || '';
   const aktInteressentId = a.interessentFormularId || autoInteressent?.id || '';
-
-  const aktAnfrage = store.formulare.find(f => f.id === aktAnfrageId);
   const aktInteressent = store.formulare.find(f => f.id === aktInteressentId);
 
   const SELECT: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box', marginTop: '4px' };
 
   return (
-    <Section titel="6 · Formulare">
-      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 12px 0' }}>
-        Bestimmt, welche Fragen beim Anfragen und beim Interesse-Bekunden gestellt werden.
+    <Section titel="6 · Interessentenformular">
+      <p style={{ fontSize: '12px', color: '#666', margin: '0 0 14px 0' }}>
+        Bestimmt, welche Fragen ein Interessent beantworten muss, wenn er auf die Marktplatzanzeige dieses Projekts reagiert.
         Ohne Auswahl gilt automatisch das Branchen-Spezial- oder Standardformular.
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>📋 Anfrageformular</label>
-          <select
-            value={aktAnfrageId}
-            onChange={e => { store.updateAnfrage(a.id, { anfrageFormularId: e.target.value }); store.logge('Anfrageformular zugeordnet', a.anzeigenId, 'bearbeiten'); onToast('Anfrageformular zugeordnet ✓'); }}
-            style={SELECT}
-          >
-            {anfrageFormulare.map(f => (
-              <option key={f.id} value={f.id}>{f.name}{f.istStandard ? ' (Standard)' : f.branche ? ` · ${f.branche}` : ''}</option>
-            ))}
-          </select>
-          {aktAnfrage && (
-            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-              {aktAnfrage.fragen.length} Fragen{!a.anfrageFormularId && autoAnfrage ? ' · automatisch gewählt' : ''}
-              {' · '}<a href="/dashboard/formulare" style={{ color: '#003366', fontWeight: 600, textDecoration: 'none' }}>bearbeiten →</a>
-            </div>
-          )}
-        </div>
-        <div>
-          <label style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>👥 Interessentenformular</label>
-          <select
-            value={aktInteressentId}
-            onChange={e => { store.updateAnfrage(a.id, { interessentFormularId: e.target.value }); store.logge('Interessentenformular zugeordnet', a.anzeigenId, 'bearbeiten'); onToast('Interessentenformular zugeordnet ✓'); }}
-            style={SELECT}
-          >
-            {interessentFormulare.map(f => (
-              <option key={f.id} value={f.id}>{f.name}{f.istStandard ? ' (Standard)' : f.branche ? ` · ${f.branche}` : ''}</option>
-            ))}
-          </select>
-          {aktInteressent && (
-            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-              {aktInteressent.fragen.length} Fragen{!a.interessentFormularId && autoInteressent ? ' · automatisch gewählt' : ''}
-              {' · '}<a href="/dashboard/formulare" style={{ color: '#003366', fontWeight: 600, textDecoration: 'none' }}>bearbeiten →</a>
-            </div>
-          )}
-        </div>
+
+      {/* Formular-Auswahl */}
+      <div>
+        <label style={{ fontSize: '12px', fontWeight: 600, color: '#003366' }}>👥 Interessentenformular auswählen</label>
+        <select
+          value={aktInteressentId}
+          onChange={e => { store.updateAnfrage(a.id, { interessentFormularId: e.target.value }); store.logge('Interessentenformular zugeordnet', a.anzeigenId, 'bearbeiten'); onToast('Interessentenformular zugeordnet ✓'); }}
+          style={SELECT}
+        >
+          {interessentFormulare.map(f => (
+            <option key={f.id} value={f.id}>{f.name}{f.istStandard ? ' (Standard)' : f.branche ? ` · ${f.branche}` : ''}</option>
+          ))}
+        </select>
       </div>
+
+      {/* Aktives Formular Info + Aktionen */}
+      {aktInteressent && (
+        <div style={{ marginTop: '12px', padding: '14px', backgroundColor: '#f0f4ff', borderRadius: '8px', border: '1px solid #d0ddf0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#003366' }}>{aktInteressent.name}</div>
+              <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>
+                {aktInteressent.fragen.length} Fragen
+                {aktInteressent.branche && <span> · Branche: {aktInteressent.branche}</span>}
+                {!a.interessentFormularId && autoInteressent ? ' · automatisch gewählt' : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <button
+                onClick={() => setZeigeVorschau(prev => !prev)}
+                style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, backgroundColor: 'white', color: '#003366', border: '1px solid #bfdbfe', borderRadius: '6px', cursor: 'pointer' }}
+              >
+                {zeigeVorschau ? '▴ Vorschau ausblenden' : '👁 Vorschau'}
+              </button>
+              <a href="/dashboard/formulare" style={{ padding: '5px 12px', fontSize: '11px', fontWeight: 600, backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>
+                ✏️ Bearbeiten
+              </a>
+            </div>
+          </div>
+
+          {/* Fragenvorschau */}
+          {zeigeVorschau && (
+            <div style={{ marginTop: '10px', borderTop: '1px solid #d0ddf0', paddingTop: '10px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                Fragen, die der Interessent beantworten muss:
+              </div>
+              {aktInteressent.fragen.length === 0 ? (
+                <div style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>Noch keine Fragen definiert.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {aktInteressent.fragen.map((fr, idx) => (
+                    <div key={fr.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '12px', color: '#333', padding: '4px 0' }}>
+                      <span style={{ color: '#003366', fontWeight: 700, flexShrink: 0, minWidth: '18px' }}>{idx + 1}.</span>
+                      <span>{fr.text}</span>
+                      {fr.pflicht && <span style={{ color: '#c62828', fontSize: '10px', flexShrink: 0 }}>*</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Workflow-Hinweis */}
+          <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#e8f5e9', borderRadius: '6px', fontSize: '11px', color: '#1b5e20' }}>
+            💡 Wenn dieses Projekt auf dem Marktplatz veröffentlicht wird, erhalten Interessenten automatisch dieses Formular beim Klick auf „Interesse bekunden".
+          </div>
+        </div>
+      )}
+
+      {!aktInteressent && (
+        <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff8e1', borderRadius: '6px', fontSize: '12px', color: '#6d4c00' }}>
+          ⚠️ Kein passendes Interessentenformular gefunden. Bitte im <a href="/dashboard/formulare" style={{ color: '#6d4c00', fontWeight: 700 }}>Formulare-Modul</a> ein aktives Interessentenformular erstellen.
+        </div>
+      )}
     </Section>
   );
 }
