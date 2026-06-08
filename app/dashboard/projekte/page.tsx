@@ -190,6 +190,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
   const [kontaktSucheOffen, setKontaktSucheOffen] = useState(false);
   const [kontaktSuche, setKontaktSuche] = useState('');
   const matchVorschlaege = store.matchVorschlaege.filter(m => m.anfrageId === a.id);
+  const [aktiveTab, setAktiveTab] = useState<'anfrage' | 'marktplatz' | 'matches' | 'social' | 'aktivitaeten'>('anfrage');
 
   // Zugeordnete Kontakte (dauerhafte Stammdaten)
   const zugeordneteKontakte = store.geschaftskontakte.filter(k =>
@@ -263,8 +264,31 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
         </div>
       )}
 
-      {/* 1. Anfrage */}
-      <Section titel="1 · Anfrage">
+      {/* ── Tab-Navigation ── */}
+      <div style={{ display: 'flex', gap: '0', borderBottom: '2px solid #e0e0e0', marginBottom: '24px', overflowX: 'auto' }}>
+        {([
+          { key: 'anfrage' as const, label: 'Anfrage', icon: '📋' },
+          { key: 'marktplatz' as const, label: 'Marktplatz', icon: '🏪' },
+          { key: 'matches' as const, label: 'Matches', icon: '🎯' },
+          { key: 'social' as const, label: 'Social Media', icon: '📣' },
+          { key: 'aktivitaeten' as const, label: 'Aktivitäten', icon: '📊' },
+        ] as const).map(tab => (
+          <button key={tab.key} onClick={() => setAktiveTab(tab.key)} style={{
+            padding: '10px 20px', fontSize: '13px', fontWeight: aktiveTab === tab.key ? 700 : 500, cursor: 'pointer',
+            border: 'none', borderBottom: aktiveTab === tab.key ? '3px solid #003366' : '3px solid transparent',
+            backgroundColor: aktiveTab === tab.key ? '#f0f4ff' : 'transparent',
+            color: aktiveTab === tab.key ? '#003366' : '#666',
+            marginBottom: '-2px', whiteSpace: 'nowrap' as const,
+            display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s',
+          }}>
+            <span>{tab.icon}</span> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── REITER: ANFRAGE ── */}
+      {aktiveTab === 'anfrage' && (
+      <Section titel="Anfragebeschreibung">
         <p style={{ fontSize: '13px', color: '#444', lineHeight: 1.6, margin: '0 0 10px 0' }}>{a.beschreibung}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
           <div><span style={{ color: '#666' }}>Region:</span> {getLandFlag(a.standort.includes('Dänemark') ? 'daenemark' : 'deutschland')} {a.standort}</div>
@@ -274,9 +298,11 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
         </div>
         <a href="/dashboard/anfragen" style={{ fontSize: '12px', color: '#003366', fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>→ Anfrage bearbeiten</a>
       </Section>
+      )}
 
-      {/* 2. Interessenten */}
-      <Section titel={`2 · Interessenten (${zuordnungen.length})`}>
+      {/* ── REITER: MATCHES ── */}
+      {aktiveTab === 'matches' && (<>
+      <Section titel={`Interessenten (${zuordnungen.length})`}>
         {zuordnungen.length === 0 ? (
           <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>Noch keine Interessenten. {matchVorschlaege.length > 0 && 'Es gibt Match-Vorschläge (siehe unten).'}</p>
         ) : (
@@ -319,7 +345,7 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
       </Section>
 
       {/* 2b. Zugeordnete Kontakte (dauerhafte Stammdaten) */}
-      <Section titel={`2b · Zugeordnete Kontakte (${zugeordneteKontakte.length})`}>
+      <Section titel={`Zugeordnete Kontakte (${zugeordneteKontakte.length})`}>
         {zugeordneteKontakte.length === 0 ? (
           <p style={{ fontSize: '13px', color: '#666', margin: '0 0 10px 0' }}>Noch keine dauerhaften Kontakte zugeordnet.</p>
         ) : (
@@ -369,11 +395,12 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
         )}
       </Section>
 
-      {/* 3. Match-Vorschläge (mit DSGVO-Consent-Workflow) */}
       <MatchSektion anfrage={a} matchVorschlaege={matchVorschlaege} store={store} onToast={onToast} />
+      </>)}
 
-      {/* 4. Verlauf */}
-      <Section titel="4 · Verlauf & nächste Aufgabe">
+      {/* ── REITER: AKTIVITÄTEN ── */}
+      {aktiveTab === 'aktivitaeten' && (<>
+      <Section titel="Verlauf & nächste Aufgabe">
         <div style={{ fontSize: '13px', color: '#444' }}>
           <div style={{ marginBottom: '6px' }}>📅 Erstellt: {a.createdAt}</div>
           <div style={{ marginBottom: '6px' }}>📊 Letzte Aktivität: {interessenten[0]?.createdAt || a.createdAt}</div>
@@ -382,15 +409,19 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
           </div>
         </div>
       </Section>
+      <AktivitaetenTab anfrage={a} status={s} interessenten={interessenten} store={store} matchVorschlaege={matchVorschlaege} />
+      </>)}
 
-      {/* 5. Marktplatz */}
+      {/* ── REITER: MARKTPLATZ ── */}
+      {aktiveTab === 'marktplatz' && (<>
       <MarktplatzSektion anfrage={a} store={store} onToast={onToast} />
 
-      {/* 6. Formulare */}
       <FormularSektion anfrage={a} store={store} onToast={onToast} />
+      </>)}
 
-      {/* 7. Klärungsstand */}
-      <Section titel="7 · Klärungsstand">
+      {/* ── REITER: ANFRAGE (Fortsetzung) ── */}
+      {aktiveTab === 'anfrage' && (<>
+      <Section titel="Von Easy-B2B geklärte Punkte">
         <KlaerungsBox
           stand={berechneAnfrageKlaerung(a, a.klaerungsBestaetigungen)}
           typ="anfrage"
@@ -406,8 +437,278 @@ function ProjektInhalt({ anfrage: a, status: s, zuordnungen, interessenten, stor
         />
       </Section>
 
-      {/* 8. Marktplatz-Reichinhalt (öffentlich sichtbar auf der Anzeige) */}
       <MarktplatzReichinhalt anfrage={a} store={store} onToast={onToast} />
+      </>)}
+
+      {/* ── REITER: SOCIAL MEDIA ── */}
+      {aktiveTab === 'social' && (
+        <SocialMediaTab anfrage={a} store={store} onToast={onToast} />
+      )}
+    </div>
+  );
+}
+
+// ─── SOCIAL MEDIA TAB ─────────────────────────────────────────
+
+function SocialMediaTab({ anfrage: a, store, onToast }: {
+  anfrage: MockAnfrage;
+  store: ReturnType<typeof useStore>;
+  onToast: (m: string) => void;
+}) {
+  const [plattform, setPlattform] = useState<'linkedin' | 'facebook' | 'instagram'>('linkedin');
+  const [generating, setGenerating] = useState(false);
+  const [beitrag, setBeitrag] = useState('');
+  const [hashtags, setHashtags] = useState('');
+  const [gespeichert, setGespeichert] = useState<Record<string, { text: string; hashtags: string }>>({});
+
+  const META = {
+    linkedin: { label: 'LinkedIn', icon: '💼', maxLen: 3000, tip: 'Professionell, B2B-Ton, Suchmaschinen-relevant' },
+    facebook: { label: 'Facebook', icon: '📘', maxLen: 2000, tip: 'Lockerer Ton, Community-ansprechend, mit Fragen' },
+    instagram: { label: 'Instagram', icon: '📸', maxLen: 2200, tip: 'Kurz, visuell, Emoji-freundlich, viele Hashtags' },
+  };
+
+  function generiere() {
+    setGenerating(true);
+    setTimeout(() => {
+      const texte: Record<string, string> = {
+        linkedin: `🤝 Neues Projekt auf dem Easy-B2B Marktplatz!\n\n${a.firmenname} aus ${a.standort} sucht ${a.ziel.toLowerCase()}.\n\n${a.beschreibung.slice(0, 300)}\n\nSie kennen jemanden, der passen könnte? Leiten Sie diesen Beitrag gerne weiter.\n\n👉 Mehr erfahren auf easy-b2b.de`,
+        facebook: `🇩🇰🇩🇪 Deutsch-dänische Geschäftsbeziehungen stärken!\n\n${a.firmenname} sucht ${a.ziel.toLowerCase()} — ein spannendes Projekt auf unserem Easy-B2B Marktplatz.\n\n${a.beschreibung.slice(0, 200)}\n\nKennen Sie den richtigen Ansprechpartner? Teilen Sie diesen Beitrag! 🤝\n\n🔗 easy-b2b.de`,
+        instagram: `🤝 Neues auf dem Marktplatz!\n\n${a.ziel} — ${a.beschreibung.slice(0, 150)}…\n\n📍 ${a.standort}\n🏢 ${a.branche}\n\nLink in Bio 👆`,
+      };
+      const hashtagSets: Record<string, string> = {
+        linkedin: `#B2B #DeutschDänisch #Matchmaking #${a.branche.replace(/\s/g, '')} #EasyB2B #Geschäftspartner`,
+        facebook: `#EasyB2B #DeutschDänisch #B2B #${a.branche.replace(/\s/g, '')} #Matchmaking #Business`,
+        instagram: `#EasyB2B #B2B #DeutschDänisch #Matchmaking #Business #${a.branche.replace(/\s/g, '')} #Vertriebspartner #Export #Import`,
+      };
+      setBeitrag(texte[plattform]);
+      setHashtags(hashtagSets[plattform]);
+      setGenerating(false);
+    }, 1200);
+  }
+
+  function kopiere() {
+    const text = beitrag + (hashtags ? '\n\n' + hashtags : '');
+    navigator.clipboard.writeText(text).then(() => onToast('In die Zwischenablage kopiert ✓'));
+  }
+
+  function speichere() {
+    setGespeichert(prev => ({ ...prev, [plattform]: { text: beitrag, hashtags } }));
+    store.logge(`Social-Media-Beitrag gespeichert: ${META[plattform].label}`, a.anzeigenId, 'bearbeiten');
+    onToast(`${META[plattform].label}-Beitrag gespeichert ✓`);
+  }
+
+  return (
+    <div>
+      <Section titel="Beiträge erstellen">
+        <p style={{ fontSize: '12px', color: '#666', margin: '0 0 16px 0' }}>
+          Social-Media-Beiträge generieren, um das Projekt außerhalb des Marktplatzes zu verbreiten.
+          Die KI erstellt einen Vorschlag basierend auf den Projektdaten.
+        </p>
+
+        {/* Plattform-Auswahl */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+          {(['linkedin', 'facebook', 'instagram'] as const).map(p => {
+            const m = META[p];
+            const saved = gespeichert[p];
+            return (
+              <button key={p} onClick={() => { setPlattform(p); if (saved) { setBeitrag(saved.text); setHashtags(saved.hashtags); } else if (plattform !== p) { setBeitrag(''); setHashtags(''); } }} style={{
+                flex: 1, padding: '14px 10px', borderRadius: '10px', cursor: 'pointer',
+                border: plattform === p ? '2px solid #003366' : '1px solid #ddd',
+                backgroundColor: plattform === p ? '#f0f4ff' : 'white',
+                textAlign: 'center', transition: 'all 0.15s',
+              }}>
+                <div style={{ fontSize: '24px', marginBottom: '6px' }}>{m.icon}</div>
+                <div style={{ fontSize: '13px', fontWeight: plattform === p ? 700 : 500, color: plattform === p ? '#003366' : '#666' }}>{m.label}</div>
+                {saved && <div style={{ fontSize: '10px', color: '#4CAF50', marginTop: '3px', fontWeight: 600 }}>✓ Gespeichert</div>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tipp */}
+        <div style={{ padding: '10px 14px', backgroundColor: '#f0f4ff', borderRadius: '8px', fontSize: '12px', color: '#003366', marginBottom: '16px' }}>
+          💡 <strong>Tipp für {META[plattform].label}:</strong> {META[plattform].tip}
+        </div>
+
+        {/* Generieren-Button */}
+        {!beitrag && (
+          <div style={{ textAlign: 'center', padding: '30px', border: '2px dashed #d0ddf0', borderRadius: '10px', backgroundColor: '#fafbff' }}>
+            <div style={{ fontSize: '28px', marginBottom: '10px' }}>{META[plattform].icon}</div>
+            <button onClick={generiere} disabled={generating} style={{
+              padding: '10px 28px', backgroundColor: '#003366', color: 'white', border: 'none',
+              borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: generating ? 'wait' : 'pointer',
+              opacity: generating ? 0.7 : 1,
+            }}>
+              {generating ? '⏳ KI generiert…' : `✨ ${META[plattform].label}-Beitrag erstellen`}
+            </button>
+          </div>
+        )}
+
+        {/* Beitrag Editor */}
+        {beitrag && (
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 700, color: '#003366', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Beitragstext</label>
+            <textarea
+              value={beitrag}
+              onChange={e => setBeitrag(e.target.value)}
+              style={{ width: '100%', minHeight: '200px', padding: '14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '13px', fontFamily: 'inherit', lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888', marginTop: '4px' }}>
+              <span>{beitrag.length} / {META[plattform].maxLen} Zeichen</span>
+              {beitrag.length > META[plattform].maxLen && <span style={{ color: '#c62828', fontWeight: 600 }}>⚠ Zu lang!</span>}
+            </div>
+
+            <div style={{ marginTop: '10px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: '#003366', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hashtags</label>
+              <input
+                value={hashtags}
+                onChange={e => setHashtags(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '12px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Vorschau */}
+            <div style={{ marginTop: '14px', padding: '14px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#666', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vorschau</div>
+              <div style={{ fontSize: '13px', color: '#333', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{beitrag}</div>
+              {hashtags && <div style={{ fontSize: '12px', color: '#1565C0', marginTop: '10px' }}>{hashtags}</div>}
+            </div>
+
+            {/* Aktionen */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+              <button onClick={kopiere} style={{ padding: '8px 18px', backgroundColor: '#003366', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                📋 Kopieren
+              </button>
+              <button onClick={speichere} style={{ padding: '8px 18px', backgroundColor: '#e8f5e9', color: '#1b5e20', border: '1px solid #a5d6a7', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                💾 Speichern
+              </button>
+              <button onClick={generiere} disabled={generating} style={{ padding: '8px 18px', backgroundColor: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: generating ? 'wait' : 'pointer' }}>
+                🔄 Neu generieren
+              </button>
+              <button onClick={() => { setBeitrag(''); setHashtags(''); }} style={{ padding: '8px 18px', backgroundColor: 'transparent', color: '#666', border: '1px solid #ddd', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>
+                ✕ Verwerfen
+              </button>
+            </div>
+          </div>
+        )}
+      </Section>
+
+      {/* Gespeicherte Beiträge */}
+      {Object.keys(gespeichert).length > 0 && (
+        <Section titel="Gespeicherte Beiträge">
+          {Object.entries(gespeichert).map(([key, val]) => (
+            <div key={key} style={{ padding: '12px 14px', backgroundColor: '#f8f9fa', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e8e8e8' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#003366' }}>{META[key as keyof typeof META]?.icon} {META[key as keyof typeof META]?.label}</span>
+                <button onClick={() => { navigator.clipboard.writeText(val.text + (val.hashtags ? '\n\n' + val.hashtags : '')); onToast('Kopiert ✓'); }} style={{ padding: '4px 12px', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600, color: '#003366' }}>📋 Kopieren</button>
+              </div>
+              <div style={{ fontSize: '12px', color: '#555', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{val.text.slice(0, 200)}{val.text.length > 200 ? '…' : ''}</div>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* Zukunfts-Hinweis */}
+      <div style={{ padding: '16px', backgroundColor: '#f0f4ff', borderRadius: '10px', border: '1px dashed #90caf9' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#003366', marginBottom: '6px' }}>🔮 Zukünftig geplant</div>
+        <div style={{ fontSize: '12px', color: '#555', lineHeight: 1.6 }}>
+          Direkte Veröffentlichung über API-Anbindung an LinkedIn, Facebook und Instagram.
+          Aktuell: Beitrag erstellen → kopieren → manuell in der jeweiligen Plattform posten.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AKTIVITÄTEN TAB ──────────────────────────────────────────
+
+function AktivitaetenTab({ anfrage: a, status: s, interessenten, store, matchVorschlaege }: {
+  anfrage: MockAnfrage;
+  status: ReturnType<typeof berechneProjekt>;
+  interessenten: typeof MOCK_INTERESSENTEN;
+  store: ReturnType<typeof useStore>;
+  matchVorschlaege: MatchVorschlag[];
+}) {
+  const logs = store.aktivitaeten.filter(l =>
+    l.bezug === a.anzeigenId || l.bezug === a.id || l.bezug === a.firmenname
+  );
+
+  return (
+    <div>
+      {/* Projekt-Zeitlinie */}
+      <Section titel="Projekt-Zeitlinie">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          {[
+            { icon: '📅', color: '#003366', label: 'Projekt erstellt', datum: a.createdAt, show: true },
+            { icon: '🚀', color: '#2e7d32', label: 'Veröffentlicht', datum: a.veroeffentlichtAm, show: !!a.veroeffentlichtAm },
+            { icon: '👥', color: '#2196F3', label: 'Erster Interessent', datum: interessenten[0]?.createdAt, show: interessenten.length > 0 },
+            { icon: '🎯', color: '#FF9900', label: 'Erster Match-Vorschlag', datum: matchVorschlaege[0]?.erstelltAm, show: matchVorschlaege.length > 0 },
+            { icon: '📊', color: '#9C27B0', label: 'Letzte Aktivität', datum: logs.length > 0 ? logs[logs.length - 1].zeit.split('T')[0] : a.createdAt, show: true },
+          ].filter(e => e.show).map((evt, i, arr) => (
+            <div key={evt.label} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: evt.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px' }}>{evt.icon}</span>
+                {i < arr.length - 1 && <div style={{ width: '2px', height: '24px', backgroundColor: '#e0e0e0' }} />}
+              </div>
+              <div style={{ paddingTop: '4px', paddingBottom: i < arr.length - 1 ? '12px' : '0' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>{evt.label}</div>
+                <div style={{ fontSize: '11px', color: '#666' }}>{evt.datum || '—'}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Statistiken */}
+      <Section titel="Projekt-Statistiken">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+          {[
+            { label: 'Interessenten gesamt', value: interessenten.length, icon: '👥', color: '#2196F3' },
+            { label: 'Match-Vorschläge', value: matchVorschlaege.length, icon: '🎯', color: '#FF9900' },
+            { label: 'Aktive Matches', value: matchVorschlaege.filter(m => !['abgelehnt_suchender', 'abgelehnt_interessent', 'abgeschlossen'].includes(m.status)).length, icon: '🤝', color: '#003366' },
+            { label: 'Abgeschlossen', value: matchVorschlaege.filter(m => m.status === 'abgeschlossen').length, icon: '⭐', color: '#2e7d32' },
+            { label: 'Abgelehnt', value: matchVorschlaege.filter(m => m.status.startsWith('abgelehnt')).length, icon: '❌', color: '#c62828' },
+            { label: 'Erfolgsquote', value: `${s.erfolgsquote}%`, icon: '📈', color: '#9C27B0' },
+          ].map(stat => (
+            <div key={stat.label} style={{ padding: '12px', backgroundColor: stat.color + '08', borderRadius: '8px', textAlign: 'center', border: `1px solid ${stat.color}20` }}>
+              <div style={{ fontSize: '18px', marginBottom: '4px' }}>{stat.icon}</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: stat.color }}>{stat.value}</div>
+              <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Aktivitätsprotokoll */}
+      <Section titel="Aktivitätsprotokoll">
+        {logs.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', border: '2px dashed #e0e0e0', borderRadius: '8px' }}>
+            <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
+              Noch keine protokollierten Aktivitäten für dieses Projekt.
+            </p>
+            <p style={{ fontSize: '11px', color: '#888', margin: '6px 0 0 0' }}>
+              Aktivitäten werden automatisch beim Bearbeiten, Veröffentlichen und Matchen protokolliert.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '400px', overflowY: 'auto' }}>
+            {logs.slice().reverse().map((log, i) => (
+              <div key={log.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '8px 12px', backgroundColor: i % 2 === 0 ? '#f8f9fa' : 'white', borderRadius: '6px', fontSize: '12px' }}>
+                <span style={{ fontSize: '14px', flexShrink: 0 }}>
+                  {log.typ === 'status' ? '🔄' : log.typ === 'anlegen' ? '✨' : '✏️'}
+                </span>
+                <span style={{ color: '#888', flexShrink: 0, fontSize: '11px', minWidth: '70px' }}>
+                  {log.zeit.split('T')[0]}
+                </span>
+                <span style={{ color: '#333', flex: 1 }}>{log.was}</span>
+                <span style={{ padding: '2px 8px', backgroundColor: log.typ === 'status' ? '#e3f2fd' : log.typ === 'anlegen' ? '#e8f5e9' : '#fff3e0', borderRadius: '8px', fontSize: '9px', fontWeight: 600, color: log.typ === 'status' ? '#1565C0' : log.typ === 'anlegen' ? '#2e7d32' : '#e65100', flexShrink: 0 }}>
+                  {log.typ === 'status' ? 'Status' : log.typ === 'anlegen' ? 'Neu' : 'Bearbeitet'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
     </div>
   );
 }
@@ -539,7 +840,7 @@ function MatchSektion({ anfrage: a, matchVorschlaege, store, onToast }: {
   }
 
   return (
-    <Section titel={`3 · Match-Vorschläge & Freigabeprozess (${aktive.length})`}>
+    <Section titel={`Match-Vorschläge & Freigabeprozess (${aktive.length})`}>
       {matchVorschlaege.length === 0 ? (
         <div style={{ padding: '16px', textAlign: 'center', border: '2px dashed #e0e0e0', borderRadius: '8px' }}>
           <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
@@ -833,7 +1134,7 @@ function FormularSektion({ anfrage: a, store, onToast }: {
   const SELECT: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box', marginTop: '4px' };
 
   return (
-    <Section titel="6 · Interessentenformular">
+    <Section titel="Interessentenformular">
       <p style={{ fontSize: '12px', color: '#666', margin: '0 0 14px 0' }}>
         Bestimmt, welche Fragen ein Interessent beantworten muss, wenn er auf die Marktplatzanzeige dieses Projekts reagiert.
         Ohne Auswahl gilt automatisch das Branchen-Spezial- oder Standardformular.
@@ -1089,7 +1390,7 @@ function MarktplatzSektion({ anfrage, store, onToast }: {
   const TEXTAREA: React.CSSProperties = { ...INPUT, minHeight: '70px', resize: 'vertical' };
 
   return (
-    <Section titel="5 · Marktplatz-Veröffentlichung">
+    <Section titel="Marktplatz-Veröffentlichung">
       {/* Vorschau-Modal */}
       {showVorschau && md && (
         <MarktplatzVorschau anfrage={anfrage} md={md} onClose={() => setShowVorschau(false)} />
@@ -1324,7 +1625,7 @@ function MarktplatzReichinhalt({ anfrage: a, store, onToast }: {
   };
 
   return (
-    <Section titel="8 · Marktplatz-Reichinhalt (was Interessenten sehen)">
+    <Section titel="Marktplatz-Reichinhalt (was Interessenten sehen)">
       <p style={{ fontSize: '12px', color: '#666', margin: '0 0 14px 0' }}>
         Diese Inhalte machen die Anzeige zu einer „vorbereiteten Anfrage" — Motivation, Ziele, Erwartungen und Vorbereitung werden öffentlich angezeigt.
       </p>
