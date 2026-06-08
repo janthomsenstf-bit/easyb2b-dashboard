@@ -518,8 +518,8 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
             )}
           />
 
-          {/* ── KLÄRUNGSSTAND ── */}
-          <SimpleSection titel="Klärungsstand">
+          {/* ── KLÄRUNGSSTAND (auf-/zuklappbar) ── */}
+          <CollapsibleSection titel="Von Easy-B2B geklärte Punkte" icon="✓">
             <KlaerungsBox
               stand={berechneAnfrageKlaerung(a, a.klaerungsBestaetigungen)}
               typ="anfrage"
@@ -533,7 +533,7 @@ function AnfrageInhalt({ anfrage: a, store, onToast }: {
                 onToast('Bestätigung entfernt');
               }}
             />
-          </SimpleSection>
+          </CollapsibleSection>
 
           {/* ── INTERNE NOTIZEN (Inline editierbar) ── */}
           <EditableSection
@@ -681,6 +681,7 @@ function PruefungUndQualifizierung({ anfrage: a, store, onToast }: {
   onToast: (m: string) => void;
 }) {
   const [editNotiz, setEditNotiz] = useState<{ id: string; notiz: string } | null>(null);
+  const [offen, setOffen] = useState(false);
 
   const punkte = a.pruefPunkte || [];
   const hatPunkte = punkte.length > 0;
@@ -722,8 +723,11 @@ function PruefungUndQualifizierung({ anfrage: a, store, onToast }: {
 
   return (
     <div style={{ marginBottom: '20px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
-      {/* Header mit Fortschritt */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Header mit Fortschritt — klickbar zum Auf-/Zuklappen */}
+      <div
+        onClick={() => setOffen(prev => !prev)}
+        style={{ padding: '16px 20px', borderBottom: offen ? '1px solid #f0f0f0' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+      >
         <div>
           <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 700, color: '#003366' }}>
             📋 Prüfung & Qualifizierung
@@ -743,16 +747,17 @@ function PruefungUndQualifizierung({ anfrage: a, store, onToast }: {
               {erledigt}/{gesamt}
             </div>
           </div>
+          <span style={{ fontSize: '18px', color: '#888', lineHeight: 1, transition: 'transform 0.2s', transform: offen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
         </div>
       </div>
 
-      {/* Fortschrittsbalken */}
+      {/* Fortschrittsbalken — immer sichtbar */}
       <div style={{ height: '4px', backgroundColor: '#f0f0f0' }}>
         <div style={{ height: '100%', width: `${fortschrittProzent}%`, backgroundColor: fortschrittProzent >= 80 ? '#4CAF50' : fortschrittProzent >= 50 ? '#FF9900' : '#f44336', transition: 'width 0.3s' }} />
       </div>
 
-      {/* Kategorien mit Prüfpunkten */}
-      <div style={{ padding: '16px 20px' }}>
+      {/* Kategorien mit Prüfpunkten — nur wenn offen */}
+      {offen && <div style={{ padding: '16px 20px' }}>
         {kategorien.map(kat => {
           const katErledigt = kat.punkte.filter(p => p.erledigt).length;
           return (
@@ -876,7 +881,7 @@ function PruefungUndQualifizierung({ anfrage: a, store, onToast }: {
             </button>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -888,6 +893,33 @@ function SimpleSection({ titel, children }: { titel: string; children: React.Rea
     <div style={{ marginBottom: '20px' }}>
       <h3 style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: 700, color: '#003366', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{titel}</h3>
       {children}
+    </div>
+  );
+}
+
+function CollapsibleSection({ titel, icon, children, initialOffen = false }: {
+  titel: string;
+  icon?: string;
+  children: React.ReactNode;
+  initialOffen?: boolean;
+}) {
+  const [offen, setOffen] = useState(initialOffen);
+  return (
+    <div style={{ marginBottom: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div
+        onClick={() => setOffen(prev => !prev)}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '12px 14px', cursor: 'pointer', userSelect: 'none',
+          borderBottom: offen ? '1px solid #f0f0f0' : 'none',
+        }}
+      >
+        <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#003366', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {icon && <span style={{ marginRight: '6px' }}>{icon}</span>}{titel}
+        </h3>
+        <span style={{ fontSize: '16px', color: '#888', lineHeight: 1, transition: 'transform 0.2s', transform: offen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+      </div>
+      {offen && <div style={{ padding: '14px' }}>{children}</div>}
     </div>
   );
 }
